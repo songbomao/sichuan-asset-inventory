@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  font-family: 'Roboto', 'Noto Sans SC', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background: #f0f2f5;
+}
+
+/* 移动端容器居中 */
+#root {
+  max-width: 480px;
+  margin: 0 auto;
+  background: #f0f2f5;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* 水印照片预览 */
+.watermark-photo {
+  border-radius: 12px;
+  border: 2px solid rgba(124, 77, 255, 0.3);
+  box-shadow: 0 0 12px rgba(124, 77, 255, 0.2);
+}
+
+/* 渐变文字 */
+.text-gradient {
+  background: linear-gradient(135deg, #1a237e 0%, #7c4dff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* 微光边框动画 */
+.glow-border {
+  position: relative;
+}
+.glow-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  padding: 1.5px;
+  background: linear-gradient(135deg, #7c4dff, #1a237e, #7c4dff);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* 下拉刷新动画 */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.animate-spin-refresh {
+  animation: spin 0.8s linear infinite;
+}
+
+/* 刷卡过渡 */
+.swipe-enter {
+  opacity: 0;
+  transform: translateX(100%);
+}
+.swipe-enter-active {
+  opacity: 1;
+  transform: translateX(0);
+  transition: all 0.3s ease-out;
+}
+.swipe-exit {
+  opacity: 1;
+  transform: translateX(0);
+}
+.swipe-exit-active {
+  opacity: 0;
+  transform: translateX(-100%);
+  transition: all 0.3s ease-in;
+}
