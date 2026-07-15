@@ -10,6 +10,7 @@ import BusinessIcon from '@mui/icons-material/Business';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import FingerprintIcon from '@mui/icons-material/Fingerprint';
 import { useAuth } from '../contexts/AuthContext';
+import { APP_VERSION, RELEASE_NOTES } from '../config/version';
 
 /**
  * 个人中心页面
@@ -95,7 +96,10 @@ export default function ProfilePage() {
 
       {/* 底部版权 */}
       <p className="text-center text-xs text-gray-400 pt-4">
-        四川固定资产盘点系统 v1.0.0
+        {APP_VERSION}
+      </p>
+      <p className="text-center text-xs text-gray-300 px-2" style={{ lineHeight: 1.4 }}>
+        {RELEASE_NOTES}
       </p>
     </div>
   );
