@@ -5,6 +5,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
 import { dingtalkLogin } from '../api/auth';
 import { useAuth } from '../contexts/AuthContext';
+import { APP_VERSION, RELEASE_TIME } from '../config/version';
 
 /** 钉钉应用 CorpId */
 const DINGTALK_CORP_ID = 'ding23d81d2ac92ee8c135c2f4657eb6378f';
@@ -139,9 +140,14 @@ export default function LoginPage() {
         )}
       </div>
 
-      <p className="text-center text-xs text-white/40 mt-6">
-        四川省固定资产盘点管理平台
-      </p>
+      <div className="text-center mt-6 space-y-1">
+        <p className="text-xs text-white/40">
+          四川省固定资产盘点管理平台
+        </p>
+        <p className="text-xs text-white/30">
+          版本：{APP_VERSION} | 发布：{RELEASE_TIME}
+        </p>
+      </div>
     </div>
   );
 }
