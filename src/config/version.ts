@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607151401';
+export const APP_VERSION = 'v202607151405';
 export const APP_NAME = '四川固定资产盘点系统';
-export const RELEASE_TIME = '2026-07-15 14:01';
-export const RELEASE_NOTES = '触发 GitHub Actions 重跑以验证 Pages 部署';
+export const RELEASE_TIME = '2026-07-15 14:05';
+export const RELEASE_NOTES = 'GitHub Pages 构建源已切换为 GitHub Actions，验证部署';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -20,6 +20,11 @@ export const VERSION_HISTORY: Array<{
     version: APP_VERSION,
     time: RELEASE_TIME,
     notes: RELEASE_NOTES,
+  },
+  {
+    version: 'v202607151401',
+    time: '2026-07-15 14:01',
+    notes: '触发 GitHub Actions 重跑以验证 Pages 部署',
   },
   {
     version: 'v202607151243',
