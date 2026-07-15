@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607151140';
+export const APP_VERSION = 'v202607151216';
 export const APP_NAME = '四川固定资产盘点系统';
-export const RELEASE_TIME = '2026-07-15 11:40';
-export const RELEASE_NOTES = '初始化项目：钉钉免登 + 水印相机 + 盘点任务';
+export const RELEASE_TIME = '2026-07-15 12:16';
+export const RELEASE_NOTES = '清理仓库：移除误提交的 node_modules/ 和 dist/ 构建产物';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -20,6 +20,11 @@ export const VERSION_HISTORY: Array<{
     version: APP_VERSION,
     time: RELEASE_TIME,
     notes: RELEASE_NOTES,
+  },
+  {
+    version: 'v202607151140',
+    time: '2026-07-15 11:40',
+    notes: '初始化项目：钉钉免登 + 水印相机 + 盘点任务',
   },
 ];
 
