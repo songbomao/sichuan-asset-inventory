@@ -6,27 +6,10 @@ import Alert from '@mui/material/Alert';
 import { dingtalkLogin } from '../api/auth';
 import { useAuth } from '../contexts/AuthContext';
 import { APP_VERSION, RELEASE_TIME } from '../config/version';
+import dd from 'dingtalk-jsapi';
 
 /** 钉钉应用 CorpId */
 const DINGTALK_CORP_ID = 'ding23d81d2ac92ee8c135c2f4657eb6378f';
-
-declare global {
-  interface Window {
-    dd?: {
-      ready: (cb: () => void) => void;
-      error: (cb: (err: { message: string }) => void) => void;
-      runtime?: {
-        permission?: {
-          requestAuthCode: (params: {
-            corpId: string;
-            onSuccess: (result: { code: string }) => void;
-            onFail: (err: { errorMessage: string }) => void;
-          }) => void;
-        };
-      };
-    };
-  }
-}
 
 type LoginState = 'loading' | 'non-dingtalk' | 'error';
 
@@ -57,29 +40,22 @@ export default function LoginPage() {
   );
 
   const startDingtalkAuth = useCallback(() => {
-    const dd = window.dd;
-    if (!dd) {
-      setState('non-dingtalk');
+    if (typeof dd?.runtime?.permission?.requestAuthCode !== 'function') {
+      setErrorMsg('钉钉 JSAPI 未就绪，请在钉钉客户端中打开');
+      setState('error');
       return;
     }
 
-    dd.ready(() => {
-      dd.runtime?.permission?.requestAuthCode({
-        corpId: DINGTALK_CORP_ID,
-        onSuccess: (result) => {
-          performLogin(result.code);
-        },
-        onFail: (err) => {
-          setErrorMsg(err.errorMessage || '获取钉钉授权失败');
-          setState('error');
-        },
+    dd.runtime.permission
+      .requestAuthCode({ corpId: DINGTALK_CORP_ID })
+      .then((result: { code: string }) => {
+        performLogin(result.code);
+      })
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : '获取钉钉授权失败';
+        setErrorMsg(msg);
+        setState('error');
       });
-    });
-
-    dd.error((err) => {
-      setErrorMsg(err.message || '钉钉 JSAPI 初始化失败');
-      setState('error');
-    });
   }, [performLogin]);
 
   useEffect(() => {

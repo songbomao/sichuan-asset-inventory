@@ -1,4 +1,7 @@
-import 'dingtalk-jsapi';
+import dd from 'dingtalk-jsapi';
+if (typeof window !== 'undefined' && !(window as any).dd) {
+  (window as any).dd = dd;
+}
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
