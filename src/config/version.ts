@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607151655';
+export const APP_VERSION = 'v202607151739';
 export const APP_NAME = '四川固定资产盘点系统';
-export const RELEASE_TIME = '2026-07-15 16:55';
-export const RELEASE_NOTES = '修复钉钉免登：显式导入 dingtalk-jsapi 并挂载 window.dd';
+export const RELEASE_TIME = '2026-07-15 17:39';
+export const RELEASE_NOTES = '钉钉免登端到端修复：UniSaiAuth路由 + CORS + env.production API地址';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -20,6 +20,11 @@ export const VERSION_HISTORY: Array<{
     version: APP_VERSION,
     time: RELEASE_TIME,
     notes: RELEASE_NOTES,
+  },
+  {
+    version: 'v202607151655',
+    time: '2026-07-15 16:55',
+    notes: '修复钉钉免登：显式导入 dingtalk-jsapi 并挂载 window.dd',
   },
   {
     version: 'v202607151629',
