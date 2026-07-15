@@ -88,18 +88,8 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-br from-primary via-primary-dark to-[#4a148c]">
       <div className="mb-10 text-center">
-        <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/20">
-          <svg width="42" height="42" viewBox="0 0 64 64" fill="none">
-            <rect width="64" height="64" rx="14" fill="url(#loginGrad)" />
-            <path d="M20 40V24l12 8-12 8z" fill="#fff" />
-            <path d="M34 42V22l8 5-8 5v10" fill="#fff" opacity="0.7" />
-            <defs>
-              <linearGradient id="loginGrad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#1a237e" />
-                <stop offset="100%" stopColor="#7c4dff" />
-              </linearGradient>
-            </defs>
-          </svg>
+        <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/20 overflow-hidden">
+          <img src="/app-icon.png" alt="四川固定资产盘点系统" className="w-full h-full object-cover" />
         </div>
         <h1 className="text-2xl font-bold text-white tracking-wide">四川固定资产盘点系统</h1>
         <p className="text-white/60 text-sm mt-1">钉钉免登 · 安全高效</p>
