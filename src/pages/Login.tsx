@@ -6,8 +6,8 @@ import Alert from '@mui/material/Alert';
 import { dingtalkLogin } from '../api/auth';
 import { useAuth } from '../contexts/AuthContext';
 
-/** 钉钉应用 CorpId — 后续改从环境变量读取 */
-const DINGTALK_CORP_ID = '';
+/** 钉钉应用 CorpId */
+const DINGTALK_CORP_ID = 'ding23d81d2ac92ee8c135c2f4657eb6378f';
 
 declare global {
   interface Window {

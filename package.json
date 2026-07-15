@@ -1,7 +1,7 @@
 {
   "name": "sai-inventory-h5",
   "private": true,
-  "version": "2026.07.15.1405",
+  "version": "2026.07.15.1423",
   "type": "module",
   "scripts": {
     "dev": "vite",
