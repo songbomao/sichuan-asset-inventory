@@ -23,14 +23,14 @@ interface DingtalkLoginResponse {
 
 /**
  * 钉钉免登
- * POST /api/Account/UniGetToken
+ * POST /api/Account/DingtalkLogin
  */
 export async function dingtalkLogin(authCode: string): Promise<{
   access_token: string;
   user: DingtalkUserInfo;
 }> {
   const { data } = await client.post<DingtalkLoginResponse>(
-    '/api/Account/UniGetToken',
+    '/api/Account/DingtalkLogin',
     { authCode },
   );
   if (data.code === 0 || data.code === 200) {
