@@ -44,7 +44,7 @@ describe('Login Page', () => {
 
   it('should render login form with title', () => {
     renderLogin();
-    expect(screen.getByText('四川固定资产盘点系统')).toBeDefined();
+    expect(screen.getByText('蜀资点兵')).toBeDefined();
     expect(screen.getByText('账号登录')).toBeDefined();
     expect(screen.getByLabelText('用户名')).toBeDefined();
     expect(screen.getByLabelText('密码')).toBeDefined();

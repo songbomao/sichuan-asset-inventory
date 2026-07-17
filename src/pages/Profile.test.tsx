@@ -76,6 +76,6 @@ describe('Profile Page', () => {
 
   it('should display app version', () => {
     renderProfile();
-    expect(screen.getByText('四川固定资产盘点系统 v1.0.0')).toBeDefined();
+    expect(screen.getByText('v202607172330')).toBeDefined();
   });
 });
