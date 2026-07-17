@@ -18,6 +18,7 @@ import AddIcon from '@mui/icons-material/Add';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import Chip from '@mui/material/Chip';
+import Stack from '@mui/material/Stack';
 import {
   getAdminTaskList,
   createTask,
@@ -220,62 +221,63 @@ export default function AdminTasks() {
       <div className="h-4" />
 
       {/* ---- 新建任务 Dialog ---- */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} fullWidth maxWidth="sm">
-        <DialogTitle sx={{ fontWeight: 700, px: { xs: 2, sm: 3 } }}>新建盘点任务</DialogTitle>
-        <DialogContent dividers sx={{ px: { xs: 2, sm: 3 } }}>
-          <div className="space-y-4 pt-1">
+      <Dialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        fullWidth
+        maxWidth="xs"
+        sx={{ '& .MuiDialog-paper': { margin: { xs: 2, sm: 4 } } }}
+      >
+        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.1rem', pb: 1 }}>新建盘点任务</DialogTitle>
+        <DialogContent sx={{ pt: '8px !important' }}>
+          <Stack spacing={2}>
             <TextField
               label="任务名称"
-              fullWidth
               required
               size="small"
               value={form.TaskName}
               onChange={(e) => setForm((f) => ({ ...f, TaskName: e.target.value }))}
+              fullWidth
             />
-
             <TextField
               select
               label="盘点范围"
-              fullWidth
               size="small"
               value={form.ScopeType}
               onChange={(e) => setForm((f) => ({ ...f, ScopeType: e.target.value }))}
+              fullWidth
             >
               {scopeTypeOptions.map((o) => (
                 <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
               ))}
             </TextField>
-
             <TextField
               label="范围配置（JSON，可选）"
-              fullWidth
               size="small"
               multiline
               rows={2}
               placeholder='{"orgCodes":["001","002"]}'
               value={form.ScopeConfig}
               onChange={(e) => setForm((f) => ({ ...f, ScopeConfig: e.target.value }))}
+              fullWidth
             />
-
             <TextField
               label="截止日期"
               type="date"
-              fullWidth
               size="small"
               InputLabelProps={{ shrink: true }}
               value={form.Deadline}
               onChange={(e) => setForm((f) => ({ ...f, Deadline: e.target.value }))}
+              fullWidth
             />
-
             <TextField
               label="创建人"
-              fullWidth
               size="small"
               placeholder="请输入创建人姓名"
               value={form.CreatedBy}
               onChange={(e) => setForm((f) => ({ ...f, CreatedBy: e.target.value }))}
+              fullWidth
             />
-
             <FormControlLabel
               control={
                 <Checkbox
@@ -285,27 +287,25 @@ export default function AdminTasks() {
               }
               label="需要复盘"
             />
-
             {form.NeedReview && (
               <TextField
                 label="复盘比例 (0.1~1.0)"
                 type="number"
-                fullWidth
                 size="small"
                 inputProps={{ min: 0.1, max: 1, step: 0.1 }}
                 value={form.ReviewRatio}
                 onChange={(e) => setForm((f) => ({ ...f, ReviewRatio: Number(e.target.value) }))}
+                fullWidth
               />
             )}
-
             {feedback && (
               <Alert severity={feedback.type} sx={{ fontSize: '0.85rem' }}>
                 {feedback.msg}
               </Alert>
             )}
-          </div>
+          </Stack>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
+        <DialogActions sx={{ px: 2, pb: 2 }}>
           <Button onClick={() => setDialogOpen(false)} color="inherit" sx={{ textTransform: 'none' }}>
             取消
           </Button>

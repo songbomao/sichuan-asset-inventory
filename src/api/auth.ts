@@ -7,6 +7,7 @@ export interface DingtalkUserInfo {
   name: string;
   role: string;
   department: string;
+  mobile?: string;
   dingtalkUserId?: string;
   avatar?: string;
 }
