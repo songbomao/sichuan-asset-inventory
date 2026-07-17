@@ -10,6 +10,7 @@ export interface DingtalkUserInfo {
   mobile?: string;
   dingtalkUserId?: string;
   avatar?: string;
+  company?: string;
 }
 
 /** 钉钉免登响应（UniGetToken 返回 authCode 分支） */

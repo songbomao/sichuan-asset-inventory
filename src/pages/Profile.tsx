@@ -11,6 +11,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import PersonIcon from '@mui/icons-material/Person';
 import BadgeIcon from '@mui/icons-material/Badge';
 import BusinessIcon from '@mui/icons-material/Business';
+import CorporateFareIcon from '@mui/icons-material/CorporateFare';
 import PhoneIcon from '@mui/icons-material/Phone';
 import FingerprintIcon from '@mui/icons-material/Fingerprint';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -93,6 +94,7 @@ export default function ProfilePage() {
           {/* 详细信息 */}
           <Stack spacing={0.5}>
             <InfoRow icon={<BadgeIcon fontSize="small" />} label="ID" value={user?.id || '--'} />
+            <InfoRow icon={<CorporateFareIcon fontSize="small" />} label="公司" value={user?.company || '中通服供应链四川分公司'} />
             <InfoRow icon={<BusinessIcon fontSize="small" />} label="部门" value={user?.department || '--'} />
             <InfoRow icon={<PhoneIcon fontSize="small" />} label="手机" value={user?.mobile || '--'} />
             <InfoRow icon={<FingerprintIcon fontSize="small" />} label="钉钉" value={user?.dingtalkUserId || '--'} />
@@ -129,6 +131,9 @@ export default function ProfilePage() {
       </Typography>
       <Typography variant="caption" color="text.disabled" textAlign="center" display="block" sx={{ opacity: 0.6 }}>
         {RELEASE_NOTES}
+      </Typography>
+      <Typography variant="caption" color="text.disabled" textAlign="center" display="block" sx={{ mt: 1, opacity: 0.5 }}>
+        四川供应链 IT支撑研发中心
       </Typography>
 
       {/* 管理员配置弹窗 */}

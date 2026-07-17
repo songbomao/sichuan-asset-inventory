@@ -150,6 +150,9 @@ export default function LoginPage() {
         <p className="text-xs text-white/30">
           版本：{APP_VERSION} | 发布：{RELEASE_TIME}
         </p>
+        <p className="text-xs text-white/25 mt-1">
+          四川供应链 IT支撑研发中心
+        </p>
       </div>
     </div>
   );
