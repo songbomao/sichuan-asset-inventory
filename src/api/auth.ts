@@ -11,32 +11,32 @@ export interface DingtalkUserInfo {
   avatar?: string;
 }
 
-/** 钉钉免登响应 */
+/** 钉钉免登响应（UniGetToken 返回 authCode 分支） */
 interface DingtalkLoginResponse {
-  code: number;
-  data: {
-    access_token: string;
-    user: DingtalkUserInfo;
-  };
-  msg: string;
+  access_token: string;
+  user: DingtalkUserInfo;
 }
 
 /**
  * 钉钉免登
- * POST /api/Account/DingtalkLogin
+ * POST /api/Account/UniGetToken
+ * Body: { "authCode": "xxx" }
+ * 返回：{ access_token, user }
  */
 export async function dingtalkLogin(authCode: string): Promise<{
   access_token: string;
   user: DingtalkUserInfo;
 }> {
-  const { data } = await client.post<DingtalkLoginResponse>(
-    '/api/Account/DingtalkLogin',
+  const response = await client.post<object>(
+    '/api/Account/UniGetToken',
     { authCode },
   );
-  if (data.code === 0 || data.code === 200) {
-    return data.data;
-  }
-  throw new Error(data.msg || '钉钉免登失败');
+  // 后端返回的是直接对象 { access_token, user }
+  const data = response.data as DingtalkLoginResponse;
+  return {
+    access_token: data.access_token,
+    user: data.user,
+  };
 }
 
 /**
