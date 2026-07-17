@@ -51,28 +51,34 @@ export default function AdminConfigDialog({ open, onClose }: Props) {
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle sx={{ fontWeight: 700 }}>管理员配置</DialogTitle>
-      <DialogContent dividers>
-        <div className="space-y-3">
+      <DialogTitle sx={{ fontWeight: 700, px: { xs: 2, sm: 3 } }}>管理员配置</DialogTitle>
+      <DialogContent dividers sx={{ px: { xs: 2, sm: 3 } }}>
+        <div className="space-y-4">
           {/* 添加表单 */}
-          <div className="flex gap-2">
+          <div className="space-y-3">
             <TextField
               label="钉钉 UserID"
+              fullWidth
               size="small"
               value={newId}
               onChange={(e) => setNewId(e.target.value)}
               placeholder="例如 06123456789"
-              sx={{ flex: 1 }}
             />
             <TextField
               label="姓名"
+              fullWidth
               size="small"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="张三"
-              sx={{ width: 120 }}
             />
-            <Button variant="contained" size="small" onClick={handleAdd} sx={{ borderRadius: '10px', textTransform: 'none', minWidth: 60 }}>
+            <Button
+              variant="contained"
+              fullWidth
+              size="small"
+              onClick={handleAdd}
+              sx={{ borderRadius: '10px', textTransform: 'none' }}
+            >
               添加
             </Button>
           </div>
