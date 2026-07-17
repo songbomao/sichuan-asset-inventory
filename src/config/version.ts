@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607172330';
+export const APP_VERSION = 'v202607172357';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-17 23:30';
-export const RELEASE_NOTES = '品牌更名：蜀资点兵 + V2免登接口升级';
+export const RELEASE_TIME = '2026-07-17 23:57';
+export const RELEASE_NOTES = '移动端弹窗适配修复';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -20,6 +20,16 @@ export const VERSION_HISTORY: Array<{
     version: APP_VERSION,
     time: RELEASE_TIME,
     notes: RELEASE_NOTES,
+  },
+  {
+    version: 'v202607172340',
+    time: '2026-07-17 23:40',
+    notes: '新增管理员模块：管理员配置 + 任务下发',
+  },
+  {
+    version: 'v202607172330',
+    time: '2026-07-17 23:30',
+    notes: '品牌更名：蜀资点兵 + V2免登接口升级',
   },
   {
     version: 'v202607172200',
