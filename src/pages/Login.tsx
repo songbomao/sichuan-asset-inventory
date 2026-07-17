@@ -11,7 +11,7 @@ import dd from 'dingtalk-jsapi';
 /** 钉钉应用 CorpId */
 const DINGTALK_CORP_ID = 'ding23d81d2ac92ee8c135c2f4657eb6378f';
 
-type LoginState = 'loading' | 'non-dingtalk' | 'error';
+type LoginState = 'loading' | 'non-dingtalk' | 'error' | 'logged-out';
 
 /**
  * 钉钉免登页面
@@ -40,6 +40,9 @@ export default function LoginPage() {
   );
 
   const startDingtalkAuth = useCallback(() => {
+    // 用户主动点击登录，清除退出标记
+    localStorage.removeItem('logout_flag');
+
     if (typeof dd?.runtime?.permission?.requestAuthCode !== 'function') {
       setErrorMsg('钉钉 JSAPI 未就绪，请在钉钉客户端中打开');
       setState('error');
@@ -59,6 +62,12 @@ export default function LoginPage() {
   }, [performLogin]);
 
   useEffect(() => {
+    // 退出登录后不自动触发钉钉免登，显示手动登录按钮
+    const isLoggedOut = localStorage.getItem('logout_flag') === '1';
+    if (isLoggedOut) {
+      setState('logged-out');
+      return;
+    }
     startDingtalkAuth();
   }, [startDingtalkAuth]);
 
@@ -95,6 +104,24 @@ export default function LoginPage() {
               sx={{ borderRadius: '12px' }}
             >
               重新检测
+            </Button>
+          </div>
+        )}
+
+        {state === 'logged-out' && (
+          <div className="py-4">
+            <div className="text-4xl mb-3">👋</div>
+            <h2 className="text-lg font-semibold text-gray-800 mb-2">已退出登录</h2>
+            <p className="text-sm text-gray-500 mb-4">
+              点击下方按钮，重新通过钉钉身份进行登录。
+            </p>
+            <Button
+              variant="contained"
+              fullWidth
+              onClick={startDingtalkAuth}
+              sx={{ py: 1.2, borderRadius: '12px', textTransform: 'none' }}
+            >
+              重新登录
             </Button>
           </div>
         )}

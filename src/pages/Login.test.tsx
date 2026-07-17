@@ -40,6 +40,7 @@ describe('Login Page', () => {
     mockApiLogin.mockReset();
     mockLogin.mockReset();
     mockNavigate.mockReset();
+    localStorage.removeItem('logout_flag');
   });
 
   it('should render login form with title', () => {

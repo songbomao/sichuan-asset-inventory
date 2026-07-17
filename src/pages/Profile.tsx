@@ -41,6 +41,8 @@ export default function ProfilePage() {
   const [adminDialogOpen, setAdminDialogOpen] = useState(false);
 
   const handleLogout = () => {
+    // 设置退出标记，防止登录页自动触发钉钉免登
+    localStorage.setItem('logout_flag', '1');
     logout();
     navigate('/login', { replace: true });
   };

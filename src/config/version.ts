@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607180000';
+export const APP_VERSION = 'v202607180010';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-18 00:00';
-export const RELEASE_NOTES = '弹窗布局重写 + Profile 补全信息';
+export const RELEASE_TIME = '2026-07-18 00:10';
+export const RELEASE_NOTES = '修复退出登录后自动重登：加 logout_flag 拦截';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -20,6 +20,11 @@ export const VERSION_HISTORY: Array<{
     version: APP_VERSION,
     time: RELEASE_TIME,
     notes: RELEASE_NOTES,
+  },
+  {
+    version: 'v202607180000',
+    time: '2026-07-18 00:00',
+    notes: '弹窗布局重写 + Profile 补全信息',
   },
   {
     version: 'v202607172357',

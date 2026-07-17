@@ -76,6 +76,6 @@ describe('Profile Page', () => {
 
   it('should display app version', () => {
     renderProfile();
-    expect(screen.getByText('v202607172330')).toBeDefined();
+    expect(screen.getByText('v202607180010')).toBeDefined();
   });
 });
