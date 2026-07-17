@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
@@ -9,8 +10,10 @@ import BadgeIcon from '@mui/icons-material/Badge';
 import BusinessIcon from '@mui/icons-material/Business';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import FingerprintIcon from '@mui/icons-material/Fingerprint';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { useAuth } from '../contexts/AuthContext';
 import { APP_VERSION, RELEASE_NOTES } from '../config/version';
+import AdminConfigDialog from '../components/AdminConfigDialog';
 
 /**
  * 个人中心页面
@@ -18,6 +21,7 @@ import { APP_VERSION, RELEASE_NOTES } from '../config/version';
 export default function ProfilePage() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const [adminDialogOpen, setAdminDialogOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -82,6 +86,17 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
+      {/* 管理员设置 */}
+      <Button
+        variant="outlined"
+        fullWidth
+        startIcon={<SettingsIcon />}
+        onClick={() => setAdminDialogOpen(true)}
+        sx={{ py: 1.2, borderRadius: '12px', textTransform: 'none' }}
+      >
+        管理员设置
+      </Button>
+
       {/* 退出登录 */}
       <Button
         variant="outlined"
@@ -101,6 +116,9 @@ export default function ProfilePage() {
       <p className="text-center text-xs text-gray-300 px-2" style={{ lineHeight: 1.4 }}>
         {RELEASE_NOTES}
       </p>
+
+      {/* 管理员配置弹窗 */}
+      <AdminConfigDialog open={adminDialogOpen} onClose={() => setAdminDialogOpen(false)} />
     </div>
   );
 }

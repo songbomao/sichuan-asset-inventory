@@ -4,22 +4,30 @@ import BottomNavigationAction from '@mui/material/BottomNavigationAction';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import HistoryIcon from '@mui/icons-material/History';
 import PersonIcon from '@mui/icons-material/Person';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import Paper from '@mui/material/Paper';
+import { useAuth } from '../contexts/AuthContext';
+import { isAdmin } from '../api/admin';
 
-const tabs = [
+const baseTabs = [
   { path: '/tasks', label: '任务', icon: <AssignmentIcon /> },
   { path: '/records', label: '记录', icon: <HistoryIcon /> },
   { path: '/profile', label: '我的', icon: <PersonIcon /> },
 ];
 
+const adminTab = { path: '/admin', label: '管理', icon: <AdminPanelSettingsIcon /> };
+
 /**
  * 主布局组件：底部导航 + 内容区
+ * 管理员可见"管理"tab
  */
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
-  // 根据当前路径匹配底部导航选中项
+  const tabs = isAdmin(user?.dingtalkUserId) ? [...baseTabs, adminTab] : baseTabs;
+
   const currentTab = tabs.find((t) => location.pathname.startsWith(t.path))?.path ?? '/tasks';
 
   return (

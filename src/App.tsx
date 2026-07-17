@@ -6,6 +6,7 @@ import TaskList from './pages/TaskList';
 import Inventory from './pages/Inventory';
 import Records from './pages/Records';
 import Profile from './pages/Profile';
+import AdminTasks from './pages/AdminTasks';
 
 /** 受保护路由：未登录跳转登录页 */
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -49,6 +50,7 @@ export default function App() {
         <Route path="/tasks" element={<TaskList />} />
         <Route path="/records" element={<Records />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/admin" element={<AdminTasks />} />
       </Route>
 
       {/* 盘点页 — 独立页面，不带底部导航 */}
