@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607181655';
+export const APP_VERSION = 'v202607181700';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-18 16:55';
-export const RELEASE_NOTES = 'GET + query string 传参 — 完全无 body';
+export const RELEASE_TIME = '2026-07-18 17:00';
+export const RELEASE_NOTES = 'UniGetToken 支持 GET + POST — 405 修复';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
