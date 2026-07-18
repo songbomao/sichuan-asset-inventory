@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607181635';
+export const APP_VERSION = 'v202607181655';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-18 16:35';
-export const RELEASE_NOTES = '管理员 UserID 格式校验';
+export const RELEASE_TIME = '2026-07-18 16:55';
+export const RELEASE_NOTES = 'GET + query string 传参 — 完全无 body';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{

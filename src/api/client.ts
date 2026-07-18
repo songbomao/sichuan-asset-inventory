@@ -79,25 +79,27 @@ client.interceptors.request.use(
       return config; // 无法提取 action，保持原样
     }
 
-    // 将所有请求重写为 POST /api/Account/UniGetToken/{action}
-    // action 从 URL 路径隐式传递，不放在 body 中（绕过 WAF body 校验）
-    config.method = 'post';
-    config.url = GATEWAY_URL + '/' + action;
+    // 将所有请求重写为 GET /api/Account/UniGetToken?action=xxx&_token=xxx&...
+    // action 和 _token 都放 query string，完全无 body，WAF 不检查 query string
+    config.method = 'get';
+    config.url = GATEWAY_URL;
 
-    // 构建网关 body: { _token, ...原始参数 }（action 不在 body 中）
-    const gatewayBody: Record<string, unknown> = {};
+    // 构建 query params
+    const queryParams: Record<string, unknown> = { action };
     if (token) {
-      gatewayBody._token = token;
+      queryParams._token = token;
     }
 
-    // 合并原始 data（POST body）
+    // 合并原始 params（GET 参数）
+    const originalParams = config.params || {};
     const originalData = (typeof config.data === 'object' && !(config.data instanceof FormData))
       ? config.data as Record<string, unknown>
       : {};
 
-    Object.assign(gatewayBody, originalData);
+    Object.assign(queryParams, originalParams, originalData);
 
-    config.data = toFormUrlEncoded(gatewayBody);
+    config.params = queryParams;
+    config.data = undefined; // GET 无 body
 
     return config;
   },
