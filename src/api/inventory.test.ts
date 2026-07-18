@@ -28,6 +28,7 @@ describe('submitRecord', () => {
     longitude: '104.0657',
     latitude: '30.6599',
     location: '成都',
+    operatorName: '张三',
   };
 
   it('should return recordId on success', async () => {
@@ -36,7 +37,7 @@ describe('submitRecord', () => {
     });
     const result = await submitRecord(validParams);
     expect(result).toBe('r-123');
-    expect(mockPost).toHaveBeenCalledWith('/SaiApi/Task/SubmitRecord', validParams);
+    expect(mockPost).toHaveBeenCalledWith('/SaiApi/Task/Submit', validParams);
   });
 
   it('should work with code 200 as well', async () => {

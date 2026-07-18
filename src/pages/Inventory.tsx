@@ -216,6 +216,7 @@ export default function InventoryPage() {
         longitude: gpsCoords.longitude,
         latitude: gpsCoords.latitude,
         location: gpsLocation,
+        operatorName: user?.name || user?.username || 'unknown',
       });
       setSnackbar({ open: true, message: '✅ 盘点提交成功！', severity: 'success' });
 

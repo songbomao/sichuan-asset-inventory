@@ -27,7 +27,7 @@ describe('getTaskList', () => {
     });
     const result = await getTaskList();
     expect(result).toEqual(tasks);
-    expect(mockGet).toHaveBeenCalledWith('/SaiApi/Task/GetTaskList');
+    expect(mockGet).toHaveBeenCalledWith('/SaiApi/Task/GetList');
   });
 
   it('should return task list on success (code 200)', async () => {

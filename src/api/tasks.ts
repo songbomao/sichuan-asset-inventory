@@ -24,7 +24,7 @@ interface TaskListResponse {
  * GET /SaiApi/Task/GetTaskList
  */
 export async function getTaskList(): Promise<TaskItem[]> {
-  const { data } = await client.get<TaskListResponse>('/SaiApi/Task/GetTaskList');
+  const { data } = await client.get<TaskListResponse>('/SaiApi/Task/GetList');
   if (data.code === 0 || data.code === 200) {
     return data.data;
   }

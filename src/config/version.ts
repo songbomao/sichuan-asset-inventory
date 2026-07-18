@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607180020';
+export const APP_VERSION = 'v202607181220';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-18 00:20';
-export const RELEASE_NOTES = 'Profile 新增公司信息 + 登录&我的页底部开发者信息';
+export const RELEASE_TIME = '2026-07-18 12:20';
+export const RELEASE_NOTES = '对齐后端 API 路由 + 加 operatorName 参数';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{

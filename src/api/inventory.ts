@@ -10,6 +10,7 @@ export interface SubmitRecordParams {
   longitude: string;
   latitude: string;
   location: string;
+  operatorName: string;  // 盘点人姓名
 }
 
 /** 提交盘点响应 */
@@ -25,7 +26,7 @@ interface SubmitRecordResponse {
  */
 export async function submitRecord(params: SubmitRecordParams): Promise<string> {
   const { data } = await client.post<SubmitRecordResponse>(
-    '/SaiApi/Task/SubmitRecord',
+    '/SaiApi/Task/Submit',
     params,
   );
   if (data.code === 0 || data.code === 200) {
