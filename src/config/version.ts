@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607181605';
+export const APP_VERSION = 'v202607181610';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-18 16:05';
-export const RELEASE_NOTES = '全局 Token 缓存 — 避免 localStorage 同步延迟';
+export const RELEASE_TIME = '2026-07-18 16:10';
+export const RELEASE_NOTES = '_token 放 body（与登录请求格式一致）';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{

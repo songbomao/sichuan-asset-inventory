@@ -81,18 +81,15 @@ client.interceptors.request.use(
 
     // 将所有请求重写为 POST /api/Account/UniGetToken
     config.method = 'post';
+    config.url = GATEWAY_URL;
 
-    // Token 直接拼到 URL query string（不依赖 axios params，确保 POST 也生效）
+    // 构建网关 body: { action, _token, ...原始参数 }
+    const gatewayBody: Record<string, unknown> = { action };
     if (token) {
-      config.url = GATEWAY_URL + '?_token=' + encodeURIComponent(token);
-    } else {
-      config.url = GATEWAY_URL;
+      gatewayBody._token = token;
     }
 
-    // 构建网关 body: { action, ...原始参数 }（Token 不放 body）
-    const gatewayBody: Record<string, unknown> = { action };
-
-    // 合并原始 data（POST body），不合并 params（Token 在 params 里，应走 URL）
+    // 合并原始 data（POST body）
     const originalData = (typeof config.data === 'object' && !(config.data instanceof FormData))
       ? config.data as Record<string, unknown>
       : {};
@@ -100,7 +97,6 @@ client.interceptors.request.use(
     Object.assign(gatewayBody, originalData);
 
     config.data = toFormUrlEncoded(gatewayBody);
-    // params 保留（含 _token），axios 会拼到 URL query string
 
     return config;
   },
