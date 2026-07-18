@@ -34,10 +34,13 @@ export default function TaskListPage() {
     setError(null);
 
     try {
+      alert('开始请求 getTaskList...');
       const data = await getTaskList();
+      alert('getTaskList 成功！data.length=' + data.length);
       setTasks(data);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : '加载任务列表失败';
+      alert('getTaskList 失败: ' + msg);
       setError(msg);
     } finally {
       setLoading(false);
