@@ -27,7 +27,7 @@ export async function createTask(params: CreateTaskParams): Promise<{ Id: number
   if (data.code === 0 || data.code === 200) {
     return data.data;
   }
-  throw new Error(data.message || '创建任务失败');
+  throw new Error(data.msg || data.message || '创建任务失败');
 }
 
 /** 启动任务响应 */
@@ -44,7 +44,7 @@ interface StartTaskResponse {
 export async function startTask(taskId: number): Promise<void> {
   const { data } = await client.post<StartTaskResponse>('/api/Account/Task/StartTask', { taskId });
   if (data.code !== 0 && data.code !== 200) {
-    throw new Error(data.message || '启动任务失败');
+    throw new Error(data.msg || data.message || '启动任务失败');
   }
 }
 
@@ -80,7 +80,7 @@ export async function getAdminTaskList(status?: string): Promise<AdminTaskItem[]
   if (data.code === 0 || data.code === 200) {
     return data.data.list;
   }
-  throw new Error(data.message || '获取任务列表失败');
+  throw new Error(data.msg || data.message || '获取任务列表失败');
 }
 
 /* ---- 管理员列表管理（localStorage） ---- */

@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607181730';
+export const APP_VERSION = 'v202607181800';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-18 17:30';
-export const RELEASE_NOTES = '修复 API 路径与后端 action 名称不匹配问题';
+export const RELEASE_TIME = '2026-07-18 18:00';
+export const RELEASE_NOTES = '修复后端 ReslutJson.msg 字段不匹配导致的错误提示';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{

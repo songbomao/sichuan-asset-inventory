@@ -28,7 +28,7 @@ export async function getTaskList(): Promise<TaskItem[]> {
   if (data.code === 0 || data.code === 200) {
     return data.data;
   }
-  throw new Error(data.message || '获取任务列表失败');
+  throw new Error(data.msg || data.message || '获取任务列表失败');
 }
 
 /** 任务详情中的资产项 */
@@ -70,7 +70,7 @@ export async function getTaskDetail(taskId: string): Promise<{
   if (data.code === 0 || data.code === 200) {
     return data.data;
   }
-  throw new Error(data.message || '获取任务详情失败');
+  throw new Error(data.msg || data.message || '获取任务详情失败');
 }
 
 /** 盘点进度响应 */
@@ -99,5 +99,5 @@ export async function getProgress(taskId: string): Promise<{
   if (data.code === 0 || data.code === 200) {
     return data.data;
   }
-  throw new Error(data.message || '获取进度失败');
+  throw new Error(data.msg || data.message || '获取进度失败');
 }

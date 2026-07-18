@@ -32,7 +32,7 @@ export async function submitRecord(params: SubmitRecordParams): Promise<string> 
   if (data.code === 0 || data.code === 200) {
     return data.data.recordId;
   }
-  throw new Error(data.message || '提交盘点记录失败');
+  throw new Error(data.msg || data.message || '提交盘点记录失败');
 }
 
 /** 资产查询（按编码） */
@@ -60,7 +60,7 @@ export async function getAssetByCode(assetCode: string) {
   if (data.code === 0 || data.code === 200) {
     return data.data;
   }
-  throw new Error(data.message || '查询资产失败');
+  throw new Error(data.msg || data.message || '查询资产失败');
 }
 
 /** 盘点记录项 */
@@ -93,5 +93,5 @@ export async function getMyRecords(): Promise<RecordItem[]> {
   if (data.code === 0 || data.code === 200) {
     return data.data;
   }
-  throw new Error(data.message || '获取盘点记录失败');
+  throw new Error(data.msg || data.message || '获取盘点记录失败');
 }
