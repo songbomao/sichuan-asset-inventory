@@ -68,13 +68,12 @@ client.interceptors.request.use(
 
     // 将所有请求重写为 POST /api/Account/UniGetToken
     config.method = 'post';
-    config.url = GATEWAY_URL;
 
-    // Token 放 URL query string（避免 WAF 对 POST body 长度/参数校验拦截）
+    // Token 直接拼到 URL query string（不依赖 axios params，确保 POST 也生效）
     if (token) {
-      config.params = { _token: token };
+      config.url = GATEWAY_URL + '?_token=' + encodeURIComponent(token);
     } else {
-      config.params = {};
+      config.url = GATEWAY_URL;
     }
 
     // 构建网关 body: { action, ...原始参数 }（Token 不放 body）

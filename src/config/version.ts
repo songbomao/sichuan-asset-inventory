@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607181505';
+export const APP_VERSION = 'v202607181525';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-18 15:05';
-export const RELEASE_NOTES = 'Token 改走 URL query string 绕过 WAF body 拦截';
+export const RELEASE_TIME = '2026-07-18 15:25';
+export const RELEASE_NOTES = 'Token 直接拼 URL — 修复 axios POST params 不生效';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -20,6 +20,11 @@ export const VERSION_HISTORY: Array<{
     version: APP_VERSION,
     time: RELEASE_TIME,
     notes: RELEASE_NOTES,
+  },
+  {
+    version: 'v202607181505',
+    time: '2026-07-18 15:05',
+    notes: 'Token 改走 URL query string 绕过 WAF body 拦截',
   },
   {
     version: 'v202607181440',
