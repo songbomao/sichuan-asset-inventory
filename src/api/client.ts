@@ -34,6 +34,14 @@ function extractAction(url: string): string | null {
   return match ? match[1] : null;
 }
 
+/** 全局 Token 缓存（避免 localStorage 同步延迟） */
+let _globalToken = '';
+
+/** 同步更新 Token 缓存（由 auth.ts 的 saveAuth 调用） */
+export function setGlobalToken(token: string): void {
+  _globalToken = token;
+}
+
 /** 创建 Axios 实例 — 使用简单请求模式绕过 WAF OPTIONS 拦截 */
 const client = axios.create({
   baseURL: BASE_URL,
@@ -47,10 +55,9 @@ const client = axios.create({
 client.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const url = config.url || '';
-    // 从 localStorage 或 URL query string 获取 Token
-    let token = localStorage.getItem('auth_token');
+    // 从全局缓存、localStorage 或 URL query string 获取 Token
+    let token = _globalToken || localStorage.getItem('auth_token') || '';
     if (!token) {
-      // fallback: 从当前页面 URL 的 _token 参数读取（钉钉 WebView 可能用 URL 传参）
       const urlParams = new URLSearchParams(window.location.search);
       token = urlParams.get('_token') || '';
     }

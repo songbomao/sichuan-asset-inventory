@@ -1,4 +1,4 @@
-import client from './client';
+import client, { setGlobalToken } from './client';
 
 /** 钉钉免登返回的用户信息 */
 export interface DingtalkUserInfo {
@@ -66,6 +66,7 @@ export function parseToken(token: string): Partial<DingtalkUserInfo> | null {
  */
 export function saveAuth(token: string, user?: DingtalkUserInfo): void {
   localStorage.setItem('auth_token', token);
+  setGlobalToken(token); // 同步到全局缓存，避免 localStorage 延迟
   if (user) {
     localStorage.setItem('auth_user', JSON.stringify(user));
   }
