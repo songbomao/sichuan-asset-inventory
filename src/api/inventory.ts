@@ -26,7 +26,7 @@ interface SubmitRecordResponse {
  */
 export async function submitRecord(params: SubmitRecordParams): Promise<string> {
   const { data } = await client.post<SubmitRecordResponse>(
-    '/api/Account/Task/Submit',
+    '/api/Account/Task/SubmitRecord',
     params,
   );
   if (data.code === 0 || data.code === 200) {
@@ -54,7 +54,7 @@ interface AssetQueryResponse {
  * GET /api/Account/Asset/GetByCode?assetCode={code}
  */
 export async function getAssetByCode(assetCode: string) {
-  const { data } = await client.get<AssetQueryResponse>('/api/Account/Asset/GetByCode', {
+  const { data } = await client.get<AssetQueryResponse>('/api/Account/Asset/GetAssetByCode', {
     params: { assetCode },
   });
   if (data.code === 0 || data.code === 200) {

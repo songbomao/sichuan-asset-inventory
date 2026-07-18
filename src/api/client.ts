@@ -29,8 +29,10 @@ function toFormUrlEncoded(data: Record<string, unknown>): string {
 
 /** 从 URL 路径中提取 action 名称 */
 function extractAction(url: string): string | null {
-  // 匹配 /api/Account/Task/GetList → GetList
-  const match = url.match(/\/api\/Account\/(?:Task|Asset|Review|Version)\/(\w+)/);
+  // 匹配 /api/Account/Task/GetTaskList → GetTaskList
+  // 匹配 /api/Account/Task/GetProgress → GetProgress
+  // 匹配 /api/Account/Asset/GetAssetByCode → GetAssetByCode
+  const match = url.match(/\/api\/Account\/(?:Task|Asset|Review)\/(\w+)$/);
   return match ? match[1] : null;
 }
 

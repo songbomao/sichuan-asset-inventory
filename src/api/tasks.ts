@@ -24,7 +24,7 @@ interface TaskListResponse {
  * GET /api/Account/Task/GetList
  */
 export async function getTaskList(): Promise<TaskItem[]> {
-  const { data } = await client.get<TaskListResponse>('/api/Account/Task/GetList');
+  const { data } = await client.get<TaskListResponse>('/api/Account/Task/GetTaskList');
   if (data.code === 0 || data.code === 200) {
     return data.data;
   }

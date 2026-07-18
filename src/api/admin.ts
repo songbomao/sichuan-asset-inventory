@@ -23,7 +23,7 @@ interface CreateTaskResponse {
  * POST /api/Account/Task/Create
  */
 export async function createTask(params: CreateTaskParams): Promise<{ Id: number; TaskName: string; Status: string }> {
-  const { data } = await client.post<CreateTaskResponse>('/api/Account/Task/Create', params);
+  const { data } = await client.post<CreateTaskResponse>('/api/Account/Task/CreateTask', params);
   if (data.code === 0 || data.code === 200) {
     return data.data;
   }
@@ -42,7 +42,7 @@ interface StartTaskResponse {
  * POST /api/Account/Task/Start
  */
 export async function startTask(taskId: number): Promise<void> {
-  const { data } = await client.post<StartTaskResponse>('/api/Account/Task/Start', { taskId });
+  const { data } = await client.post<StartTaskResponse>('/api/Account/Task/StartTask', { taskId });
   if (data.code !== 0 && data.code !== 200) {
     throw new Error(data.message || '启动任务失败');
   }
@@ -74,7 +74,7 @@ interface AdminTaskListResponse {
  * GET /api/Account/Task/GetList?status=&page=1&pageSize=50
  */
 export async function getAdminTaskList(status?: string): Promise<AdminTaskItem[]> {
-  const { data } = await client.get<AdminTaskListResponse>('/api/Account/Task/GetList', {
+  const { data } = await client.get<AdminTaskListResponse>('/api/Account/Task/GetTaskList', {
     params: { status: status ?? '', page: 1, pageSize: 50 },
   });
   if (data.code === 0 || data.code === 200) {
