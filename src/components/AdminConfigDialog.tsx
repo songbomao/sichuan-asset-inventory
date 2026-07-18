@@ -31,6 +31,12 @@ export default function AdminConfigDialog({ open, onClose }: Props) {
       setMsg({ type: 'error', text: '钉钉 UserID 和姓名不能为空' });
       return;
     }
+    // 钉钉 userid 格式校验：纯数字 或 manager\d+
+    const validId = /^(\d+|manager\d+)$/;
+    if (!validId.test(id)) {
+      setMsg({ type: 'error', text: '钉钉 UserID 格式错误（应纯数字或 manager+数字）' });
+      return;
+    }
     if (users.some((u) => u.dingtalkUserId === id)) {
       setMsg({ type: 'error', text: '该管理员已存在' });
       return;
