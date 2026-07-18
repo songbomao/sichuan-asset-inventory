@@ -19,6 +19,10 @@ import ProgressBar from '../components/ProgressBar';
 export default function TaskListPage() {
   const navigate = useNavigate();
 
+  useEffect(() => {
+    alert('TaskList mounted!');
+  }, []);
+
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);

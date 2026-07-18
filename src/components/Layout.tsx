@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import BottomNavigation from '@mui/material/BottomNavigation';
 import BottomNavigationAction from '@mui/material/BottomNavigationAction';
@@ -24,7 +25,11 @@ const adminTab = { path: '/admin', label: '管理', icon: <AdminPanelSettingsIco
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
+
+  useEffect(() => {
+    alert('Layout mounted! user: ' + (user?.name || 'null') + ' token: ' + (token ? 'yes' : 'no'));
+  }, []);
 
   const tabs = isAdmin(user?.dingtalkUserId) ? [...baseTabs, adminTab] : baseTabs;
 

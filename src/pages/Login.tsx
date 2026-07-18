@@ -27,8 +27,12 @@ export default function LoginPage() {
   const performLogin = useCallback(
     async (authCode: string) => {
       try {
+        setState('loading');
         const result = await dingtalkLogin(authCode);
+        // 调试：确认免登成功
+        alert('免登成功！token: ' + result.access_token.substring(0, 20) + '...');
         auth.login(result.access_token, result.user);
+        alert('login 完成，即将跳转');
         navigate('/tasks', { replace: true });
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : '免登失败，请重试';
