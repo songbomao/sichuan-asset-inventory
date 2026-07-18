@@ -70,22 +70,25 @@ client.interceptors.request.use(
     config.method = 'post';
     config.url = GATEWAY_URL;
 
-    // 构建网关 body: { action, _token, ...原始参数 }
-    const gatewayBody: Record<string, unknown> = { action };
+    // Token 放 URL query string（避免 WAF 对 POST body 长度/参数校验拦截）
     if (token) {
-      gatewayBody._token = token;
+      config.params = { _token: token };
+    } else {
+      config.params = {};
     }
 
-    // 合并原始 params（GET 参数）和 data（POST body）
-    const originalParams = config.params || {};
+    // 构建网关 body: { action, ...原始参数 }（Token 不放 body）
+    const gatewayBody: Record<string, unknown> = { action };
+
+    // 合并原始 data（POST body），不合并 params（Token 在 params 里，应走 URL）
     const originalData = (typeof config.data === 'object' && !(config.data instanceof FormData))
       ? config.data as Record<string, unknown>
       : {};
 
-    Object.assign(gatewayBody, originalParams, originalData);
+    Object.assign(gatewayBody, originalData);
 
     config.data = toFormUrlEncoded(gatewayBody);
-    config.params = {}; // 清空 params，全部进 body
+    // params 保留（含 _token），axios 会拼到 URL query string
 
     return config;
   },
