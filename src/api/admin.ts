@@ -20,10 +20,10 @@ interface CreateTaskResponse {
 
 /**
  * 创建盘点任务
- * POST /SaiApi/Task/Create
+ * POST /api/Account/Task/Create
  */
 export async function createTask(params: CreateTaskParams): Promise<{ Id: number; TaskName: string; Status: string }> {
-  const { data } = await client.post<CreateTaskResponse>('/SaiApi/Task/Create', params);
+  const { data } = await client.post<CreateTaskResponse>('/api/Account/Task/Create', params);
   if (data.code === 0 || data.code === 200) {
     return data.data;
   }
@@ -39,10 +39,10 @@ interface StartTaskResponse {
 
 /**
  * 启动盘点任务
- * POST /SaiApi/Task/Start
+ * POST /api/Account/Task/Start
  */
 export async function startTask(taskId: number): Promise<void> {
-  const { data } = await client.post<StartTaskResponse>('/SaiApi/Task/Start', { taskId });
+  const { data } = await client.post<StartTaskResponse>('/api/Account/Task/Start', { taskId });
   if (data.code !== 0 && data.code !== 200) {
     throw new Error(data.message || '启动任务失败');
   }
@@ -71,10 +71,10 @@ interface AdminTaskListResponse {
 
 /**
  * 获取全部任务列表（管理员视图）
- * GET /SaiApi/Task/GetList?status=&page=1&pageSize=50
+ * GET /api/Account/Task/GetList?status=&page=1&pageSize=50
  */
 export async function getAdminTaskList(status?: string): Promise<AdminTaskItem[]> {
-  const { data } = await client.get<AdminTaskListResponse>('/SaiApi/Task/GetList', {
+  const { data } = await client.get<AdminTaskListResponse>('/api/Account/Task/GetList', {
     params: { status: status ?? '', page: 1, pageSize: 50 },
   });
   if (data.code === 0 || data.code === 200) {

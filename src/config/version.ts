@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607181220';
+export const APP_VERSION = 'v202607181410';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-18 12:20';
-export const RELEASE_NOTES = '对齐后端 API 路由 + 加 operatorName 参数';
+export const RELEASE_TIME = '2026-07-18 14:10';
+export const RELEASE_NOTES = 'WAF 绕过：路由前缀 SaiApi → api/Account';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{

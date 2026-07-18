@@ -21,10 +21,10 @@ interface TaskListResponse {
 
 /**
  * 获取盘点任务列表
- * GET /SaiApi/Task/GetTaskList
+ * GET /api/Account/Task/GetList
  */
 export async function getTaskList(): Promise<TaskItem[]> {
-  const { data } = await client.get<TaskListResponse>('/SaiApi/Task/GetList');
+  const { data } = await client.get<TaskListResponse>('/api/Account/Task/GetList');
   if (data.code === 0 || data.code === 200) {
     return data.data;
   }
@@ -56,7 +56,7 @@ interface TaskDetailResponse {
 
 /**
  * 获取任务详情（含资产列表）
- * GET /SaiApi/Task/GetTaskDetail?taskId={id}
+ * GET /api/Account/Task/GetTaskDetail?taskId={id}
  */
 export async function getTaskDetail(taskId: string): Promise<{
   taskId: string;
@@ -64,7 +64,7 @@ export async function getTaskDetail(taskId: string): Promise<{
   assets: AssetInfo[];
   completedCodes: string[];
 }> {
-  const { data } = await client.get<TaskDetailResponse>('/SaiApi/Task/GetTaskDetail', {
+  const { data } = await client.get<TaskDetailResponse>('/api/Account/Task/GetTaskDetail', {
     params: { taskId },
   });
   if (data.code === 0 || data.code === 200) {
@@ -86,14 +86,14 @@ interface ProgressResponse {
 
 /**
  * 获取盘点进度
- * GET /SaiApi/Task/GetProgress?taskId={id}
+ * GET /api/Account/Task/GetProgress?taskId={id}
  */
 export async function getProgress(taskId: string): Promise<{
   total: number;
   completed: number;
   percentage: number;
 }> {
-  const { data } = await client.get<ProgressResponse>('/SaiApi/Task/GetProgress', {
+  const { data } = await client.get<ProgressResponse>('/api/Account/Task/GetProgress', {
     params: { taskId },
   });
   if (data.code === 0 || data.code === 200) {

@@ -22,11 +22,11 @@ interface SubmitRecordResponse {
 
 /**
  * 提交盘点记录
- * POST /SaiApi/Task/SubmitRecord
+ * POST /api/Account/Task/Submit
  */
 export async function submitRecord(params: SubmitRecordParams): Promise<string> {
   const { data } = await client.post<SubmitRecordResponse>(
-    '/SaiApi/Task/Submit',
+    '/api/Account/Task/Submit',
     params,
   );
   if (data.code === 0 || data.code === 200) {
@@ -51,10 +51,10 @@ interface AssetQueryResponse {
 
 /**
  * 按资产编码查询资产
- * GET /SaiApi/Asset/GetByCode?assetCode={code}
+ * GET /api/Account/Asset/GetByCode?assetCode={code}
  */
 export async function getAssetByCode(assetCode: string) {
-  const { data } = await client.get<AssetQueryResponse>('/SaiApi/Asset/GetByCode', {
+  const { data } = await client.get<AssetQueryResponse>('/api/Account/Asset/GetByCode', {
     params: { assetCode },
   });
   if (data.code === 0 || data.code === 200) {
@@ -86,10 +86,10 @@ interface MyRecordsResponse {
 
 /**
  * 获取我的盘点记录
- * GET /SaiApi/Task/GetMyItems
+ * GET /api/Account/Task/GetMyItems
  */
 export async function getMyRecords(): Promise<RecordItem[]> {
-  const { data } = await client.get<MyRecordsResponse>('/SaiApi/Task/GetMyItems');
+  const { data } = await client.get<MyRecordsResponse>('/api/Account/Task/GetMyItems');
   if (data.code === 0 || data.code === 200) {
     return data.data;
   }

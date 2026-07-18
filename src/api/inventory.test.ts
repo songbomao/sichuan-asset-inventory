@@ -37,7 +37,7 @@ describe('submitRecord', () => {
     });
     const result = await submitRecord(validParams);
     expect(result).toBe('r-123');
-    expect(mockPost).toHaveBeenCalledWith('/SaiApi/Task/Submit', validParams);
+    expect(mockPost).toHaveBeenCalledWith('/api/Account/Task/Submit', validParams);
   });
 
   it('should work with code 200 as well', async () => {
@@ -82,7 +82,7 @@ describe('getAssetByCode', () => {
     });
     const result = await getAssetByCode('ZC-001');
     expect(result).toEqual(asset);
-    expect(mockGet).toHaveBeenCalledWith('/SaiApi/Asset/GetByCode', { params: { assetCode: 'ZC-001' } });
+    expect(mockGet).toHaveBeenCalledWith('/api/Account/Asset/GetByCode', { params: { assetCode: 'ZC-001' } });
   });
 
   it('should throw error on failure', async () => {

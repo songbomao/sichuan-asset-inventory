@@ -27,7 +27,7 @@ describe('getTaskList', () => {
     });
     const result = await getTaskList();
     expect(result).toEqual(tasks);
-    expect(mockGet).toHaveBeenCalledWith('/SaiApi/Task/GetList');
+    expect(mockGet).toHaveBeenCalledWith('/api/Account/Task/GetList');
   });
 
   it('should return task list on success (code 200)', async () => {
@@ -76,7 +76,7 @@ describe('getTaskDetail', () => {
     });
     const result = await getTaskDetail('1');
     expect(result).toEqual(detail);
-    expect(mockGet).toHaveBeenCalledWith('/SaiApi/Task/GetTaskDetail', { params: { taskId: '1' } });
+    expect(mockGet).toHaveBeenCalledWith('/api/Account/Task/GetTaskDetail', { params: { taskId: '1' } });
   });
 
   it('should throw error on failure', async () => {
@@ -99,7 +99,7 @@ describe('getProgress', () => {
     });
     const result = await getProgress('1');
     expect(result).toEqual(progress);
-    expect(mockGet).toHaveBeenCalledWith('/SaiApi/Task/GetProgress', { params: { taskId: '1' } });
+    expect(mockGet).toHaveBeenCalledWith('/api/Account/Task/GetProgress', { params: { taskId: '1' } });
   });
 
   it('should throw error on failure', async () => {
