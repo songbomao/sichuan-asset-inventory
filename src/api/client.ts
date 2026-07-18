@@ -39,7 +39,7 @@ const client = axios.create({
   baseURL: BASE_URL,
   timeout: 15000,
   headers: {
-    'Content-Type': 'text/plain',
+    'Content-Type': 'application/x-www-form-urlencoded',
   },
 });
 
@@ -47,7 +47,13 @@ const client = axios.create({
 client.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const url = config.url || '';
-    const token = localStorage.getItem('auth_token');
+    // 从 localStorage 或 URL query string 获取 Token
+    let token = localStorage.getItem('auth_token');
+    if (!token) {
+      // fallback: 从当前页面 URL 的 _token 参数读取（钉钉 WebView 可能用 URL 传参）
+      const urlParams = new URLSearchParams(window.location.search);
+      token = urlParams.get('_token') || '';
+    }
 
     // 登录接口本身不经过网关
     if (BYPASS_GATEWAY.some((p) => url.startsWith(p))) {
