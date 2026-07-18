@@ -39,7 +39,7 @@ const client = axios.create({
   baseURL: BASE_URL,
   timeout: 15000,
   headers: {
-    'Content-Type': 'application/x-www-form-urlencoded',
+    'Content-Type': 'text/plain',
   },
 });
 
