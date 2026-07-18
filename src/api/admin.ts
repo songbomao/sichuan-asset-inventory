@@ -16,6 +16,7 @@ interface CreateTaskResponse {
   code: number;
   data: { Id: number; TaskName: string; Status: string };
   message: string;
+  msg?: string;
 }
 
 /**
@@ -35,6 +36,7 @@ interface StartTaskResponse {
   code: number;
   data: unknown;
   message: string;
+  msg?: string;
 }
 
 /**
@@ -67,6 +69,7 @@ interface AdminTaskListResponse {
   code: number;
   data: { total: number; page: number; pageSize: number; list: AdminTaskItem[] };
   message: string;
+  msg?: string;
 }
 
 /**

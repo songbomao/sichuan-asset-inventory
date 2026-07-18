@@ -17,6 +17,7 @@ interface TaskListResponse {
   code: number;
   data: TaskItem[];
   message: string;
+  msg?: string;
 }
 
 /**
@@ -52,6 +53,7 @@ interface TaskDetailResponse {
     completedCodes: string[];
   };
   message: string;
+  msg?: string;
 }
 
 /**
@@ -82,6 +84,7 @@ interface ProgressResponse {
     percentage: number;
   };
   message: string;
+  msg?: string;
 }
 
 /**

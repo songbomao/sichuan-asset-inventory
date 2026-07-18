@@ -18,6 +18,7 @@ interface SubmitRecordResponse {
   code: number;
   data: { recordId: string };
   message: string;
+  msg?: string;
 }
 
 /**
@@ -47,6 +48,7 @@ interface AssetQueryResponse {
     status: string;
   };
   message: string;
+  msg?: string;
 }
 
 /**
@@ -82,6 +84,7 @@ interface MyRecordsResponse {
   code: number;
   data: RecordItem[];
   message: string;
+  msg?: string;
 }
 
 /**

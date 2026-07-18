@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607182240';
+export const APP_VERSION = 'v202607182330';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-18 22:40';
-export const RELEASE_NOTES = '确认部署 — 修复后端ReslutJson.msg与前端data.message不匹配';
+export const RELEASE_TIME = '2026-07-18 23:30';
+export const RELEASE_NOTES = '修复 TS 编译：API 响应接口补齐 msg 字段';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -20,6 +20,11 @@ export const VERSION_HISTORY: Array<{
     version: APP_VERSION,
     time: RELEASE_TIME,
     notes: RELEASE_NOTES,
+  },
+  {
+    version: 'v202607182240',
+    time: '2026-07-18 22:40',
+    notes: '确认部署 — 修复后端ReslutJson.msg与前端data.message不匹配',
   },
   {
     version: 'v202607181700',
