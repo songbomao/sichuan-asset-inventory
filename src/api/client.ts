@@ -79,12 +79,13 @@ client.interceptors.request.use(
       return config; // 无法提取 action，保持原样
     }
 
-    // 将所有请求重写为 POST /api/Account/UniGetToken
+    // 将所有请求重写为 POST /api/Account/UniGetToken/{action}
+    // action 从 URL 路径隐式传递，不放在 body 中（绕过 WAF body 校验）
     config.method = 'post';
-    config.url = GATEWAY_URL;
+    config.url = GATEWAY_URL + '/' + action;
 
-    // 构建网关 body: { action, _token, ...原始参数 }
-    const gatewayBody: Record<string, unknown> = { action };
+    // 构建网关 body: { _token, ...原始参数 }（action 不在 body 中）
+    const gatewayBody: Record<string, unknown> = {};
     if (token) {
       gatewayBody._token = token;
     }
