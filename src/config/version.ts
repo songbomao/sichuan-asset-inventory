@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607181430';
+export const APP_VERSION = 'v202607181440';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-18 14:30';
-export const RELEASE_NOTES = 'WAF 绕过：统一走 UniGetToken 网关 + action 路由转发';
+export const RELEASE_TIME = '2026-07-18 14:40';
+export const RELEASE_NOTES = '修复网关 SubmitRecord 字段映射编译错误';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -20,6 +20,11 @@ export const VERSION_HISTORY: Array<{
     version: APP_VERSION,
     time: RELEASE_TIME,
     notes: RELEASE_NOTES,
+  },
+  {
+    version: 'v202607181430',
+    time: '2026-07-18 14:30',
+    notes: 'WAF 绕过：统一走 UniGetToken 网关 + action 路由转发',
   },
   {
     version: 'v202607180010',
