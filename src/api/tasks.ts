@@ -15,7 +15,7 @@ export interface TaskItem {
 /** 任务列表响应 */
 interface TaskListResponse {
   code: number;
-  data: TaskItem[];
+  data: TaskItem[] | { total: number; page: number; pageSize: number; list: TaskItem[] };
   message: string;
   msg?: string;
 }
@@ -27,7 +27,8 @@ interface TaskListResponse {
 export async function getTaskList(): Promise<TaskItem[]> {
   const { data } = await client.get<TaskListResponse>('/api/Account/Task/GetTaskList');
   if (data.code === 0 || data.code === 200) {
-    return data.data;
+    // 后端返回 { total, page, pageSize, list }，取 list 数组
+    return Array.isArray(data.data) ? data.data : (data.data?.list ?? []);
   }
   throw new Error(data.msg || data.message || '获取任务列表失败');
 }

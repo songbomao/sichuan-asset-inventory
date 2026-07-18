@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607190120';
+export const APP_VERSION = 'v202607190130';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-19 01:20';
-export const RELEASE_NOTES = '调试版：getTaskList 接口alert定位';
+export const RELEASE_TIME = '2026-07-19 01:30';
+export const RELEASE_NOTES = '修复任务列表：后端返回 { total, list }，前端取 list 数组';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
