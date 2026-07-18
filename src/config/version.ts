@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607182330';
+export const APP_VERSION = 'v202607190050';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-18 23:30';
-export const RELEASE_NOTES = '修复 TS 编译：API 响应接口补齐 msg 字段';
+export const RELEASE_TIME = '2026-07-19 00:50';
+export const RELEASE_NOTES = '修复 GitHub Pages 刷新 404：改用 HashRouter';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -20,6 +20,11 @@ export const VERSION_HISTORY: Array<{
     version: APP_VERSION,
     time: RELEASE_TIME,
     notes: RELEASE_NOTES,
+  },
+  {
+    version: 'v202607182330',
+    time: '2026-07-18 23:30',
+    notes: '修复 TS 编译：API 响应接口补齐 msg 字段',
   },
   {
     version: 'v202607182240',
