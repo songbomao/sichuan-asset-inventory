@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607191933';
+export const APP_VERSION = 'v202607191943';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-19 19:33';
-export const RELEASE_NOTES = '修复：1) 水印地址改为钉钉定位带逆地理编码；2) 记录详情展示照片；3) 任务管理卡片字段对齐；4) 管理员配置支持钉钉组织架构选择（带部门名）；5) 盘点重复提交按操作人判定';
+export const RELEASE_TIME = '2026-07-19 19:43';
+export const RELEASE_NOTES = '修复：1) 钉钉JSAPI鉴权+定位逆地理编码，彻底修复水印经纬度；2) 记录详情展示照片；3) 任务管理卡片字段对齐；4) 管理员配置支持钉钉组织架构选择（带部门名）；5) 盘点重复提交按操作人判定';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{

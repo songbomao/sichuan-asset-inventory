@@ -15,6 +15,7 @@ import Chip from '@mui/material/Chip';
 import InputAdornment from '@mui/material/InputAdornment';
 import SearchIcon from '@mui/icons-material/Search';
 import dd from 'dingtalk-jsapi';
+import { ensureDingtalkConfig } from '../utils/ddConfig';
 import { getAdminUsers, setAdminUsers, type AdminUser } from '../api/admin';
 
 interface Props {
@@ -40,6 +41,13 @@ export default function AdminConfigDialog({ open, onClose }: Props) {
     setPicking(true);
     setMsg(null);
     try {
+      const configOk = await ensureDingtalkConfig();
+      if (!configOk) {
+        setMsg({ type: 'error', text: '钉钉 JSAPI 鉴权失败，无法打开选人' });
+        setPicking(false);
+        return;
+      }
+
       const result = await (dd as any).biz.contact.complexPicker({
         title: '选择管理员',
         multiple: false,
