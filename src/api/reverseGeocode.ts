@@ -16,8 +16,10 @@ export async function reverseGeocode(
   longitude: number,
 ): Promise<string> {
   try {
-    // 走网关路由：拦截器会提取 action=ReverseGeocode 并路由到后端
-    const resp = await client.post('/api/Account/Map/ReverseGeocode', {
+    // 走登录网关（与 tasks.ts 一致）：路径命中 BYPASS_GATEWAY，
+    // 拦截器会自动补 _token 并保留 action 字段，后端 switch 能正确识别
+    const resp = await client.post('/api/Account/UniGetToken', {
+      action: 'ReverseGeocode',
       longitude,
       latitude,
     });
