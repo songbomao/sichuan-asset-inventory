@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607191802';
+export const APP_VERSION = 'v202607191913';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-19 18:02';
-export const RELEASE_NOTES = '修复：盘点页布局优化（底部操作区固定，无需手动下滑）；误报重复提交；记录页空卡片/详情无数据；新增 Location 字段存储盘点地址';
+export const RELEASE_TIME = '2026-07-19 19:13';
+export const RELEASE_NOTES = '逆地理编码改为前端直连高德(JSONP)：97内网无公网导致后端调高德永远失败，改为手机端直连，彻底修复水印只显示经纬度';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
