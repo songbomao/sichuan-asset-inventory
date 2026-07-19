@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607191130';
+export const APP_VERSION = 'v202607191200';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-19 11:30';
-export const RELEASE_NOTES = '修复任务列表/详情/进度返回格式：统一转 camelCase 字段，与前端接口对齐';
+export const RELEASE_TIME = '2026-07-19 12:00';
+export const RELEASE_NOTES = '批量补齐：复盘流程+钉钉推送+进度看板+盘点报告+资产全生命周期';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{

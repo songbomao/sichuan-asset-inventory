@@ -7,6 +7,11 @@ import Inventory from './pages/Inventory';
 import Records from './pages/Records';
 import Profile from './pages/Profile';
 import AdminTasks from './pages/AdminTasks';
+import Review from './pages/Review';
+import Dashboard from './pages/Dashboard';
+import Report from './pages/Report';
+import AssetLifecycle from './pages/AssetLifecycle';
+import TaskDetail from './pages/TaskDetail';
 
 /** 受保护路由：未登录跳转登录页 */
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -59,6 +64,56 @@ export default function App() {
         element={
           <ProtectedRoute>
             <Inventory />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* 任务详情入口页 */}
+      <Route
+        path="/tasks/:taskId"
+        element={
+          <ProtectedRoute>
+            <TaskDetail />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* 复盘页 — 独立页面 */}
+      <Route
+        path="/tasks/:taskId/review"
+        element={
+          <ProtectedRoute>
+            <Review />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* 进度看板 — 独立页面 */}
+      <Route
+        path="/tasks/:taskId/dashboard"
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* 盘点报告 — 独立页面 */}
+      <Route
+        path="/tasks/:taskId/report"
+        element={
+          <ProtectedRoute>
+            <Report />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* 资产全生命周期 — 独立页面 */}
+      <Route
+        path="/asset-lifecycle"
+        element={
+          <ProtectedRoute>
+            <AssetLifecycle />
           </ProtectedRoute>
         }
       />

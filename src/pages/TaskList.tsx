@@ -123,7 +123,7 @@ export default function TaskListPage() {
       {!loading &&
         tasks.map((task) => (
           <Card key={task.taskId} className="glow-border hover:shadow-glow transition-shadow">
-            <CardActionArea onClick={() => navigate(`/tasks/${task.taskId}/inventory`)}>
+            <CardActionArea onClick={() => navigate(`/tasks/${task.taskId}`)}>
               <CardContent>
                 <div className="flex items-start justify-between mb-2">
                   <Typography
