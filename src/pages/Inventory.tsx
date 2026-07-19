@@ -18,7 +18,7 @@ import DialogActions from '@mui/material/DialogActions';
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
 import { getTaskDetail, getProgress, type AssetInfo } from '../api/tasks';
 import { submitRecord, getAssetByCode } from '../api/inventory';
-import { reverseGeocode } from '../api/dingtalk';
+import { reverseGeocode } from '../api/reverseGeocode';
 import { useAuth } from '../contexts/AuthContext';
 import CameraCapture from '../components/CameraCapture';
 import ProgressBar from '../components/ProgressBar';
