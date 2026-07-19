@@ -17,6 +17,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
 import DeleteIcon from '@mui/icons-material/Delete';
+import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import { getTaskDetail, getProgress, type AssetInfo } from '../api/tasks';
 import { submitRecord, getAssetByCode } from '../api/inventory';
 import { getCurrentLocation } from '../api/reverseGeocode';
@@ -361,12 +362,12 @@ export default function InventoryPage() {
 
   return (
     <div
-      className="h-screen bg-gray-50 flex flex-col"
+      className="h-dvh bg-gray-50 flex flex-col overflow-hidden"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
       {/* 顶部导航栏 */}
-      <header className="sticky top-0 z-10 bg-gradient-to-r from-primary to-[#4a148c] text-white px-4 py-3 flex items-center gap-3 shadow-lg shrink-0">
+      <header className="sticky top-0 z-10 bg-gradient-to-r from-primary to-[#4a148c] text-white px-3 py-2.5 flex items-center gap-2 shadow-lg shrink-0">
         <IconButton color="inherit" size="small" onClick={() => navigate('/tasks')}>
           <ArrowBackIosNewIcon fontSize="small" />
         </IconButton>
@@ -382,38 +383,37 @@ export default function InventoryPage() {
           color="inherit"
           onClick={() => setScanDialogOpen(true)}
           startIcon={<QrCodeScannerIcon />}
-          sx={{ borderRadius: '20px', borderColor: 'rgba(255,255,255,0.5)', color: '#fff', fontSize: '0.75rem' }}
+          sx={{ borderRadius: '16px', borderColor: 'rgba(255,255,255,0.5)', color: '#fff', fontSize: '0.7rem', py: 0.4, px: 1 }}
         >
           AI识别
         </Button>
       </header>
 
       {/* 进度条 */}
-      <div className="px-4 py-2 bg-white border-b border-gray-100 shrink-0">
+      <div className="px-3 py-1.5 bg-white border-b border-gray-100 shrink-0">
         <ProgressBar
           current={completedCodes.length + (isCompleted ? 0 : 0)}
           total={assets.length}
         />
       </div>
 
-      {/* 主内容区 - 可滚动 */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+      <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2 space-y-2">
         {/* 已盘点提示 */}
         {isCompleted && (
-          <Alert severity="success" sx={{ fontSize: '0.85rem' }}>
+          <Alert severity="success" sx={{ fontSize: '0.8rem', py: 0.5 }}>
             该资产已盘点完成 ✅
           </Alert>
         )}
 
-        {/* 资产基本信息卡片（精简） */}
-        <div className="bg-white rounded-card p-3 shadow-card glow-border">
-          <div className="flex items-center justify-between mb-1">
-            <h3 className="font-semibold text-gray-900 text-base truncate pr-2">
+        {/* 资产基本信息卡片（超紧凑） */}
+        <div className="bg-white rounded-xl p-2.5 shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between mb-0.5">
+            <h3 className="font-semibold text-gray-900 text-sm truncate pr-2">
               {currentAsset.assetName}
             </h3>
             <StatusBadge status={isCompleted ? '正常' : 'pending'} />
           </div>
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+          <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-gray-500">
             <span>编码：<span className="font-mono text-gray-700">{currentAsset.assetCode}</span></span>
             {currentAsset.category && <span>分类：{currentAsset.category}</span>}
             {currentAsset.location && <span>地点：{currentAsset.location}</span>}
@@ -421,31 +421,33 @@ export default function InventoryPage() {
         </div>
 
         {/* 水印照片卡片 */}
-        <div className="bg-white rounded-card p-3 shadow-card glow-border space-y-3">
+        <div className="bg-white rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-2">
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-gray-900">水印照片</h3>
+            <h3 className="font-semibold text-gray-900 text-sm">水印照片</h3>
             <span className="text-xs text-gray-400">至少 2 张</span>
           </div>
 
-          {/* 照片缩略图网格 */}
-          {photos.length > 0 && (
-            <div className="grid grid-cols-4 gap-2">
+          {/* 照片缩略图网格 / 空占位 */}
+          {photos.length > 0 ? (
+            <div className="grid grid-cols-5 gap-1.5">
               {photos.map((url, idx) => (
                 <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border border-gray-100">
                   <img src={url} alt={`照片${idx + 1}`} className="w-full h-full object-cover" />
                   {!isCompleted && (
                     <button
                       onClick={() => handleRemovePhoto(idx)}
-                      className="absolute top-0.5 right-0.5 bg-red-500 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs"
+                      className="absolute top-0.5 right-0.5 bg-red-500 text-white w-4 h-4 rounded-full flex items-center justify-center text-[10px]"
                     >
                       <DeleteIcon fontSize="inherit" />
                     </button>
                   )}
-                  <span className="absolute bottom-0.5 left-0.5 bg-black/50 text-white text-[10px] px-1 rounded">
-                    {idx + 1}
-                  </span>
                 </div>
               ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-1 py-5 rounded-xl border-2 border-dashed border-gray-200 text-gray-300">
+              <CameraAltIcon sx={{ fontSize: 28 }} />
+              <span className="text-xs">尚未拍照，点击下方按钮拍摄（至少 2 张）</span>
             </div>
           )}
 
@@ -467,7 +469,7 @@ export default function InventoryPage() {
 
         {/* 盘点状态选择 */}
         <div>
-          <p className="text-sm font-medium text-gray-700 mb-2">盘点状态</p>
+          <p className="text-xs font-medium text-gray-700 mb-1.5">盘点状态</p>
           <ToggleButtonGroup
             value={assetStatus}
             exclusive
@@ -475,17 +477,17 @@ export default function InventoryPage() {
             size="small"
             fullWidth
             disabled={isCompleted}
-            sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}
+            sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.75 }}
           >
             {STATUS_OPTIONS.map((opt) => (
               <ToggleButton
                 key={opt.value}
                 value={opt.value}
                 sx={{
-                  borderRadius: '8px !important',
+                  borderRadius: '6px !important',
                   border: '1px solid rgba(0,0,0,0.12) !important',
-                  fontSize: '0.8rem',
-                  py: 1,
+                  fontSize: '0.75rem',
+                  py: 0.75,
                   '&.Mui-selected': {
                     bgcolor: 'rgba(26, 35, 126, 0.08)',
                     borderColor: '#1a237e !important',
@@ -502,18 +504,17 @@ export default function InventoryPage() {
         <TextField
           fullWidth
           label="备注"
-          multiline
-          rows={1}
+          size="small"
           value={remark}
           onChange={(e) => setRemark(e.target.value)}
           placeholder="填写盘点备注..."
           disabled={isCompleted}
-          size="small"
+          sx={{ '& .MuiInputBase-root': { fontSize: '0.85rem' } }}
         />
       </div>
 
       {/* 底部操作区 - 始终可见 */}
-      <div className="px-4 py-3 bg-white border-t border-gray-100 shrink-0 space-y-3">
+      <div className="px-3 py-2 bg-white border-t border-gray-100 shrink-0 space-y-2">
         {/* 导航按钮 */}
         <div className="flex items-center justify-between gap-2">
           <Button
@@ -522,7 +523,7 @@ export default function InventoryPage() {
             onClick={goPrev}
             disabled={currentIndex === 0}
             size="small"
-            sx={{ flex: 1 }}
+            sx={{ flex: 1, py: 0.75, fontSize: '0.8rem' }}
           >
             上一个
           </Button>
@@ -535,7 +536,7 @@ export default function InventoryPage() {
             onClick={goNext}
             disabled={currentIndex >= assets.length - 1}
             size="small"
-            sx={{ flex: 1 }}
+            sx={{ flex: 1, py: 0.75, fontSize: '0.8rem' }}
           >
             下一个
           </Button>
@@ -545,17 +546,17 @@ export default function InventoryPage() {
         <Button
           variant="contained"
           fullWidth
-          size="large"
+          size="medium"
           onClick={handleSubmit}
           disabled={submitting || isCompleted}
-          sx={{ py: 1.5, fontWeight: 700, fontSize: '1rem' }}
+          sx={{ py: 1.2, fontWeight: 700, fontSize: '0.95rem' }}
         >
           {submitting ? (
-            <CircularProgress size={24} color="inherit" />
+            <CircularProgress size={22} color="inherit" />
           ) : isCompleted ? (
-            '✅ 已完成盘点'
+            '已完成盘点'
           ) : (
-            '📤 提交盘点记录'
+            '提交盘点记录'
           )}
         </Button>
       </div>
