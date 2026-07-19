@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607192245';
+export const APP_VERSION = 'v202607192250';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-19 22:45';
-export const RELEASE_NOTES = '精确修复：后端 GetMyItems 改 .ToList()+内存分页(避开 ToPageList+LeftJoin 异常)，前端保留 v202607192200 所有好改动(盘点一屏布局/分页加载更多/管理员错误换行)。';
+export const RELEASE_TIME = '2026-07-19 22:52';
+export const RELEASE_NOTES = '关键修复：getMyRecords/getRecordDetail 改为 POST /api/Account/UniGetToken body 调用（与 getTaskList 完全一致），彻底解决钉钉 WebView 中 GET 请求触发的 network error。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
