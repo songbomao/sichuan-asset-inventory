@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607190130';
+export const APP_VERSION = 'v202607191130';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-19 01:30';
-export const RELEASE_NOTES = '修复任务列表：后端返回 { total, list }，前端取 list 数组';
+export const RELEASE_TIME = '2026-07-19 11:30';
+export const RELEASE_NOTES = '修复任务列表/详情/进度返回格式：统一转 camelCase 字段，与前端接口对齐';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -22,9 +22,9 @@ export const VERSION_HISTORY: Array<{
     notes: RELEASE_NOTES,
   },
   {
-    version: 'v202607182330',
-    time: '2026-07-18 23:30',
-    notes: '修复 TS 编译：API 响应接口补齐 msg 字段',
+    version: 'v202607190130',
+    time: '2026-07-19 01:30',
+    notes: '修复任务列表：后端返回 { total, list }，前端取 list 数组',
   },
   {
     version: 'v202607182240',

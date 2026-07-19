@@ -14,6 +14,10 @@ const STATUS_MAP: Record<string, { label: string; color: 'success' | 'warning' |
   'pending': { label: '待盘点', color: 'warning' },
   'completed': { label: '已完成', color: 'success' },
   'in_progress': { label: '进行中', color: 'warning' },
+  // 任务状态
+  'draft': { label: '待启动', color: 'default' },
+  'running': { label: '进行中', color: 'warning' },
+  'cancelled': { label: '已取消', color: 'error' },
 };
 
 /**
