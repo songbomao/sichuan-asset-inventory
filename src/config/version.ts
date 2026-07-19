@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607191658';
+export const APP_VERSION = 'v202607191714';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-19 16:58';
-export const RELEASE_NOTES = '修复逆地理编码：reverseGeocode 改走网关路由 /api/Account/Map/ReverseGeocode';
+export const RELEASE_TIME = '2026-07-19 17:14';
+export const RELEASE_NOTES = '修复：CameraCapture.tsx addWatermark 声明顺序（修复 GitHub Actions build 失败 TS2448/2454）';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
