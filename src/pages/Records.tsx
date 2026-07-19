@@ -189,6 +189,17 @@ export default function RecordsPage() {
         <DialogContent>
           {selectedRecord && (
             <div className="space-y-3 text-sm">
+              {/* 水印照片 */}
+              {selectedRecord.photoUrl && (
+                <div className="rounded-lg overflow-hidden border border-gray-100">
+                  <img
+                    src={selectedRecord.photoUrl}
+                    alt="盘点照片"
+                    className="w-full object-contain max-h-60 bg-gray-50"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  />
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-gray-500">资产名称</span>
                 <span className="font-medium">{selectedRecord.assetName}</span>
@@ -212,7 +223,7 @@ export default function RecordsPage() {
               {selectedRecord.location && (
                 <div className="flex justify-between">
                   <span className="text-gray-500">位置</span>
-                  <span>{selectedRecord.location}</span>
+                  <span className="text-right max-w-[60%]">{selectedRecord.location}</span>
                 </div>
               )}
               {selectedRecord.remark && (

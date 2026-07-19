@@ -184,9 +184,12 @@ export default function CameraCapture({
       return;
     }
 
-    // 如果水印地址还是经纬度（逗号分隔），等 1.5 秒让逆地理编码完成
-    if (watermark.location && /^\d+\.\d+, ?\d+\.\d+$/.test(watermark.location)) {
-      await new Promise((r) => setTimeout(r, 1500));
+    // 如果水印地址还是经纬度，最多等待 3 秒让逆地理编码完成
+    const isCoordLike = (loc?: string) => !!loc && /^\d+\.\d+,\s*\d+\.\d+$/.test(loc);
+    let waited = 0;
+    while (isCoordLike(watermark.location) && waited < 3000) {
+      await new Promise((r) => setTimeout(r, 300));
+      waited += 300;
     }
 
     const ctx = canvas.getContext('2d');

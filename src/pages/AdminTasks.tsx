@@ -181,31 +181,31 @@ export default function AdminTasks() {
       {/* 任务卡片列表 */}
       {!loading &&
         tasks.map((task) => {
-          const st = statusMap[task.Status] ?? { label: task.Status, color: 'default' as const };
+          const st = statusMap[task.status] ?? { label: task.status, color: 'default' as const };
           return (
-            <Card key={task.Id}>
+            <Card key={task.id}>
               <CardContent>
                 <div className="flex items-start justify-between mb-2">
                   <Typography variant="subtitle1" component="h3" className="font-semibold text-gray-900" sx={{ flex: 1, mr: 1 }}>
-                    {task.TaskName}
+                    {task.taskName}
                   </Typography>
                   <Chip label={st.label} color={st.color} size="small" />
                 </div>
 
                 <div className="flex items-center gap-4 text-sm text-gray-500 mb-3 flex-wrap">
-                  <span>范围：{scopeTypeOptions.find((o) => o.value === task.ScopeType)?.label ?? task.ScopeType}</span>
-                  {task.Deadline && <span>截止：{new Date(task.Deadline).toLocaleDateString('zh-CN')}</span>}
-                  {task.NeedReview && <span>复盘 {(task.ReviewRatio ?? 0.3) * 100}%</span>}
+                  <span>范围：{scopeTypeOptions.find((o) => o.value === task.scopeType)?.label ?? task.scopeType}</span>
+                  {task.deadline && <span>截止：{new Date(task.deadline).toLocaleDateString('zh-CN')}</span>}
+                  {task.needReview && <span>复盘 {(task.reviewRatio ?? 0.3) * 100}%</span>}
                 </div>
 
                 <div className="flex items-center justify-between text-xs text-gray-400">
-                  <span>创建人：{task.CreatedBy || '--'} · {new Date(task.CreatedAt).toLocaleDateString('zh-CN')}</span>
-                  {task.Status === 'draft' && (
+                  <span>创建人：{task.createdBy || '--'} · {new Date(task.createdAt).toLocaleDateString('zh-CN')}</span>
+                  {task.status === 'draft' && (
                     <Button
                       size="small"
                       variant="outlined"
                       startIcon={<PlayArrowIcon />}
-                      onClick={() => handleStart(task.Id)}
+                      onClick={() => handleStart(task.id)}
                       sx={{ borderRadius: '8px', textTransform: 'none' }}
                     >
                       启动

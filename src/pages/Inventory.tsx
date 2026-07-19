@@ -18,7 +18,7 @@ import DialogActions from '@mui/material/DialogActions';
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
 import { getTaskDetail, getProgress, type AssetInfo } from '../api/tasks';
 import { submitRecord, getAssetByCode } from '../api/inventory';
-import { reverseGeocode } from '../api/reverseGeocode';
+import { reverseGeocode, getCurrentLocation } from '../api/reverseGeocode';
 import { useAuth } from '../contexts/AuthContext';
 import CameraCapture from '../components/CameraCapture';
 import ProgressBar from '../components/ProgressBar';
@@ -65,9 +65,10 @@ export default function InventoryPage() {
   // 进度
   const [progress, setProgress] = useState({ total: 0, completed: 0, percentage: 0 });
 
-  // GPS 位置
+  // GPS 位置与解析状态
   const [gpsLocation, setGpsLocation] = useState('定位中...');
   const [gpsCoords, setGpsCoords] = useState({ longitude: '', latitude: '' });
+  const [locationReady, setLocationReady] = useState(false);
 
   // 水印时间
   const [watermarkTime, setWatermarkTime] = useState('');
@@ -98,34 +99,20 @@ export default function InventoryPage() {
     );
   }, []);
 
-  /** 获取 GPS 位置（并逆地理编码为具体地址） */
+  /** 获取 GPS 位置（优先钉钉带地址，否则浏览器定位+逆地理编码） */
   const getGPS = useCallback(async () => {
-    if (!navigator.geolocation) {
-      setGpsLocation('设备不支持定位');
-      return;
+    try {
+      const { longitude, latitude, address } = await getCurrentLocation();
+      setGpsCoords({
+        longitude: longitude ? longitude.toFixed(6) : '',
+        latitude: latitude ? latitude.toFixed(6) : '',
+      });
+      setGpsLocation(address || '定位失败');
+      setLocationReady(true);
+    } catch {
+      setGpsLocation('定位失败');
+      setLocationReady(true);
     }
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude, longitude } = pos.coords;
-        setGpsCoords({
-          latitude: latitude.toFixed(6),
-          longitude: longitude.toFixed(6),
-        });
-        // 先显示经纬度，逆地理编码失败也有兜底
-        setGpsLocation(`${longitude.toFixed(4)}, ${latitude.toFixed(4)}`);
-        // 逆地理编码：经纬度 → 具体地址（钉钉 JSAPI）
-        try {
-          const addr = await reverseGeocode(latitude, longitude);
-          setGpsLocation(addr);
-        } catch {
-          // 失败保留经纬度
-        }
-      },
-      () => {
-        setGpsLocation('定位失败');
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 },
-    );
   }, []);
 
   /** 加载任务详情 */

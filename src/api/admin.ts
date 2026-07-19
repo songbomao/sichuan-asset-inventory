@@ -50,18 +50,18 @@ export async function startTask(taskId: number): Promise<void> {
   }
 }
 
-/** 后端任务列表返回的原始字段 */
+/** 后端任务列表返回的原始字段（camelCase） */
 export interface AdminTaskItem {
-  Id: number;
-  TaskName: string;
-  ScopeType: string;
-  ScopeConfig: string;
-  NeedReview: boolean;
-  ReviewRatio: number | null;
-  Deadline: string | null;
-  Status: string;
-  CreatedBy: string;
-  CreatedAt: string;
+  id: number;
+  taskName: string;
+  scopeType: string;
+  scopeConfig: string;
+  needReview: boolean;
+  reviewRatio: number | null;
+  deadline: string | null;
+  status: string;
+  createdBy: string;
+  createdAt: string;
 }
 
 /** 任务列表响应 */

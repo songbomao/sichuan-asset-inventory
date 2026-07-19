@@ -7,10 +7,14 @@ import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import IconButton from '@mui/material/IconButton';
 import DeleteIcon from '@mui/icons-material/Delete';
+import AddIcon from '@mui/icons-material/Add';
 import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import Chip from '@mui/material/Chip';
+import InputAdornment from '@mui/material/InputAdornment';
+import SearchIcon from '@mui/icons-material/Search';
+import dd from 'dingtalk-jsapi';
 import { getAdminUsers, setAdminUsers, type AdminUser } from '../api/admin';
 
 interface Props {
@@ -18,35 +22,76 @@ interface Props {
   onClose: () => void;
 }
 
+interface PickedUser {
+  name: string;
+  emplId: string;
+  selectDeptName?: string;
+}
+
 export default function AdminConfigDialog({ open, onClose }: Props) {
   const [users, setUsers] = useState<AdminUser[]>(getAdminUsers());
-  const [newId, setNewId] = useState('');
-  const [newName, setNewName] = useState('');
+  const [keyword, setKeyword] = useState('');
+  const [candidates, setCandidates] = useState<PickedUser[]>([]);
   const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [picking, setPicking] = useState(false);
 
-  const handleAdd = () => {
-    const id = newId.trim();
-    const name = newName.trim();
-    if (!id || !name) {
-      setMsg({ type: 'error', text: '钉钉 UserID 和姓名不能为空' });
+  /** 调起钉钉组织架构选人 */
+  const handleOpenPicker = async () => {
+    setPicking(true);
+    setMsg(null);
+    try {
+      const result = await (dd as any).biz.contact.complexPicker({
+        title: '选择管理员',
+        multiple: false,
+        responseUserOnly: true,
+        startWithDepartmentId: 0,
+      }) as { users?: PickedUser[] };
+      if (result?.users && result.users.length > 0) {
+        const u = result.users[0];
+        if (users.some((x) => x.dingtalkUserId === u.emplId)) {
+          setMsg({ type: 'error', text: '该管理员已存在' });
+        } else {
+          const next = [...users, { dingtalkUserId: u.emplId, name: u.name }];
+          setUsers(next);
+          setAdminUsers(next);
+          setMsg({ type: 'success', text: `已添加：${u.name}（${u.selectDeptName || '未知部门'}）` });
+          setKeyword('');
+          setCandidates([]);
+        }
+      }
+    } catch (e) {
+      console.warn('钉钉选人失败:', e);
+      setMsg({ type: 'error', text: '钉钉选人失败，请重试' });
+    } finally {
+      setPicking(false);
+    }
+  };
+
+  /** 按输入框关键字手动搜索（备用：仅展示已有列表过滤） */
+  const handleSearch = () => {
+    const k = keyword.trim();
+    if (!k) {
+      setCandidates([]);
       return;
     }
-    // 钉钉 userid 格式校验：纯数字 或 manager\d+
-    const validId = /^(\d+|manager\d+)$/;
-    if (!validId.test(id)) {
-      setMsg({ type: 'error', text: '钉钉 UserID 格式错误（应纯数字或 manager+数字）' });
-      return;
-    }
-    if (users.some((u) => u.dingtalkUserId === id)) {
+    // 本地过滤：若已选列表中存在匹配项，方便快速删除
+    const found = users
+      .filter((u) => u.name.includes(k) || u.dingtalkUserId.includes(k))
+      .map((u) => ({ name: u.name, emplId: u.dingtalkUserId }));
+    setCandidates(found);
+  };
+
+  const handleAddFromCandidate = (u: PickedUser) => {
+    if (users.some((x) => x.dingtalkUserId === u.emplId)) {
       setMsg({ type: 'error', text: '该管理员已存在' });
       return;
     }
-    const next = [...users, { dingtalkUserId: id, name }];
+    const next = [...users, { dingtalkUserId: u.emplId, name: u.name }];
     setUsers(next);
     setAdminUsers(next);
-    setNewId('');
-    setNewName('');
-    setMsg({ type: 'success', text: `已添加管理员：${name}` });
+    setMsg({ type: 'success', text: `已添加：${u.name}` });
+    setKeyword('');
+    setCandidates([]);
   };
 
   const handleDelete = (dingtalkUserId: string) => {
@@ -66,29 +111,33 @@ export default function AdminConfigDialog({ open, onClose }: Props) {
       <DialogTitle sx={{ fontWeight: 700, fontSize: '1.1rem', pb: 1 }}>管理员配置</DialogTitle>
       <DialogContent sx={{ pt: '8px !important' }}>
         <Stack spacing={2}>
-          {/* 添加表单 */}
+          {/* 搜索 / 选人入口 */}
           <TextField
-            label="钉钉 UserID"
+            label="搜索姓名或选择"
             size="small"
-            value={newId}
-            onChange={(e) => setNewId(e.target.value)}
-            placeholder="例如 06123456789"
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            placeholder="点击右侧按钮从钉钉组织架构选择"
             fullWidth
-          />
-          <TextField
-            label="姓名"
-            size="small"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            placeholder="张三"
-            fullWidth
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton size="small" onClick={handleSearch} disabled={picking}>
+                    <SearchIcon fontSize="small" />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
           />
           <Button
             variant="contained"
-            onClick={handleAdd}
+            onClick={handleOpenPicker}
+            disabled={picking}
+            startIcon={<AddIcon />}
             sx={{ borderRadius: '10px', textTransform: 'none', py: 1 }}
           >
-            添加
+            {picking ? '选择中...' : '从钉钉组织架构选择'}
           </Button>
 
           {msg && (
@@ -97,10 +146,31 @@ export default function AdminConfigDialog({ open, onClose }: Props) {
             </Alert>
           )}
 
+          {/* 候选结果（本地过滤或选人回调） */}
+          {candidates.length > 0 && (
+            <Stack spacing={1}>
+              <Typography variant="caption" color="text.secondary">搜索结果</Typography>
+              {candidates.map((u) => (
+                <Button
+                  key={u.emplId}
+                  variant="outlined"
+                  size="small"
+                  onClick={() => handleAddFromCandidate(u)}
+                  sx={{ justifyContent: 'flex-start', textTransform: 'none', borderRadius: '8px' }}
+                >
+                  {u.name} · {u.emplId}
+                </Button>
+              ))}
+            </Stack>
+          )}
+
           {/* 管理员列表 */}
+          <Typography variant="subtitle2" fontWeight={600}>
+            已选管理员
+          </Typography>
           {users.length === 0 ? (
             <Typography color="text.secondary" textAlign="center" sx={{ py: 2 }}>
-              暂无管理员，请添加
+              暂无管理员，请从钉钉组织架构选择
             </Typography>
           ) : (
             <Stack spacing={1}>
@@ -110,7 +180,7 @@ export default function AdminConfigDialog({ open, onClose }: Props) {
                   direction="row"
                   alignItems="center"
                   justifyContent="space-between"
-                  sx={{ px: 1, py: 0.5, bgcolor: 'grey.50', borderRadius: 1 }}
+                  sx={{ px: 1, py: 0.75, bgcolor: 'grey.50', borderRadius: 1 }}
                 >
                   <Stack spacing={0.25}>
                     <Typography variant="body2" fontWeight={600}>{u.name}</Typography>
