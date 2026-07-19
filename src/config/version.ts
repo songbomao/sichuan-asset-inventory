@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607191240';
+export const APP_VERSION = 'v202607191350';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-19 12:40';
-export const RELEASE_NOTES = '修复：钉钉用户信息补全（部门/手机/头像）+ 拍照组件视频流绑定';
+export const RELEASE_TIME = '2026-07-19 13:50';
+export const RELEASE_NOTES = '修复：盘点提交 POST 大 body 改走 form-urlencoded，避免 URL 超长导致 Network Error';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{

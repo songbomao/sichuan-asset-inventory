@@ -44,10 +44,14 @@ export function setGlobalToken(token: string): void {
   _globalToken = token;
 }
 
-/** 创建 Axios 实例 — 使用简单请求模式绕过 WAF OPTIONS 拦截 */
+/**
+ * 创建 Axios 实例 — 使用简单请求模式绕过 WAF OPTIONS 拦截
+ * - 小参数 GET 请求：action 和参数放 URL query string
+ * - 大 body POST 请求（如提交盘点记录带 photoBase64）：保持 POST，body 用 form-urlencoded，避免 URL 超长
+ */
 const client = axios.create({
   baseURL: BASE_URL,
-  timeout: 15000,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/x-www-form-urlencoded',
   },
@@ -64,8 +68,8 @@ client.interceptors.request.use(
       token = urlParams.get('_token') || '';
     }
 
-    // 登录接口本身不经过网关
-    if (BYPASS_GATEWAY.some((p) => url.startsWith(p))) {
+    // 登录接口本身不经过网关（UniGetToken 入口直接调用）
+    if (BYPASS_GATEWAY.some((p) => url === p)) {
       if (token && config.method?.toLowerCase() !== 'get') {
         const body: Record<string, unknown> = config.data || {};
         if (typeof body === 'object' && !(body instanceof FormData)) {
@@ -81,22 +85,36 @@ client.interceptors.request.use(
       return config; // 无法提取 action，保持原样
     }
 
-    // 将所有请求重写为 GET /api/Account/UniGetToken?action=xxx&_token=xxx&...
-    // action 和 _token 都放 query string，完全无 body，WAF 不检查 query string
+    // POST 大 body 请求保持 POST，用 form body 承载，避免 URL 超长（如水印照片 Base64）
+    if (config.method?.toLowerCase() === 'post') {
+      config.url = GATEWAY_URL;
+      const body: Record<string, unknown> = { action };
+      if (token) {
+        body._token = token;
+      }
+      const originalData =
+        typeof config.data === 'object' && !(config.data instanceof FormData)
+          ? (config.data as Record<string, unknown>)
+          : {};
+      Object.assign(body, originalData);
+      config.data = toFormUrlEncoded(body);
+      return config;
+    }
+
+    // GET 小参数请求：action 和参数都放 URL query string，WAF 不检查 query string
     config.method = 'get';
     config.url = GATEWAY_URL;
 
-    // 构建 query params
     const queryParams: Record<string, unknown> = { action };
     if (token) {
       queryParams._token = token;
     }
 
-    // 合并原始 params（GET 参数）
     const originalParams = config.params || {};
-    const originalData = (typeof config.data === 'object' && !(config.data instanceof FormData))
-      ? config.data as Record<string, unknown>
-      : {};
+    const originalData =
+      typeof config.data === 'object' && !(config.data instanceof FormData)
+        ? (config.data as Record<string, unknown>)
+        : {};
 
     Object.assign(queryParams, originalParams, originalData);
 
