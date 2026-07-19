@@ -16,9 +16,9 @@ export async function reverseGeocode(
   longitude: number,
 ): Promise<string> {
   try {
-    const resp = await client.post('/api/Account/UniGetToken', {
-      action: 'ReverseGeocode',
-      longitude,  // 注意：高德 API 要求 location=经度，纬度
+    // 走网关路由：拦截器会提取 action=ReverseGeocode 并路由到后端
+    const resp = await client.post('/api/Account/Map/ReverseGeocode', {
+      longitude,
       latitude,
     });
     const data = (resp.data as { code?: number; msg?: string; data?: { address?: string } }).data;
