@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607191429';
+export const APP_VERSION = 'v202607191431';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-19 15:01';
-export const RELEASE_NOTES = '对齐后端 v202607191429：盘点位置逆地理编码显示具体地址';
+export const RELEASE_TIME = '2026-07-19 15:31';
+export const RELEASE_NOTES = '修复：任务管理页字段映射，后端返回 PascalCase 字段名';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -20,6 +20,11 @@ export const VERSION_HISTORY: Array<{
     version: APP_VERSION,
     time: RELEASE_TIME,
     notes: RELEASE_NOTES,
+  },
+  {
+    version: 'v202607191429',
+    time: '2026-07-19 15:01',
+    notes: '对齐后端 v202607191429：盘点位置逆地理编码显示具体地址',
   },
   {
     version: 'v202607191350',
