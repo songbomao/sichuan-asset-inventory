@@ -43,8 +43,13 @@ export default function RecordsPage() {
   const [records, setRecords] = useState<RecordItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState('all');
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(50);
+  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
 
   // 详情弹窗
   const [detailOpen, setDetailOpen] = useState(false);
@@ -54,26 +59,34 @@ export default function RecordsPage() {
   const [showPhoto, setShowPhoto] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
 
-  const fetchRecords = useCallback(async (isRefresh = false) => {
+  const fetchRecords = useCallback(async (isRefresh = false, isLoadMore = false) => {
     if (isRefresh) setRefreshing(true);
+    else if (isLoadMore) setLoadingMore(true);
     else setLoading(true);
     setError(null);
 
     try {
-      const data = await getMyRecords();
-      setRecords(data);
+      const currentPage = isLoadMore ? page + 1 : 1;
+      const { list, total: t } = await getMyRecords(currentPage, pageSize);
+      setTotal(t);
+      setHasMore(currentPage * pageSize < t);
+      setPage(currentPage);
+      setRecords((prev) => (isLoadMore ? [...prev, ...list] : list));
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : '加载盘点记录失败';
       setError(msg);
     } finally {
       setLoading(false);
       setRefreshing(false);
+      setLoadingMore(false);
     }
-  }, []);
+  }, [page, pageSize]);
+
+  const loadMore = () => fetchRecords(false, true);
 
   useEffect(() => {
     fetchRecords();
-  }, [fetchRecords]);
+  }, []);
 
   /** 根据筛选条件过滤记录 */
   const filteredRecords = filter === 'all'
@@ -130,10 +143,10 @@ export default function RecordsPage() {
         <div>
           <h1 className="text-xl font-bold text-gray-900">盘点记录</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            {records.length > 0 ? `共 ${records.length} 条记录` : '暂无盘点记录'}
+            {records.length > 0 ? `共 ${records.length} 条记录${total > records.length ? ` / 总计 ${total} 条` : ''}` : '暂无盘点记录'}
           </p>
         </div>
-        <IconButton onClick={() => fetchRecords(true)} disabled={refreshing} color="primary">
+        <IconButton onClick={() => fetchRecords(true)} disabled={refreshing || loadingMore} color="primary">
           <RefreshIcon className={refreshing ? 'animate-spin-refresh' : ''} />
         </IconButton>
       </div>
@@ -236,6 +249,24 @@ export default function RecordsPage() {
             </CardContent>
           </Card>
         ))}
+
+      {/* 加载更多 */}
+      {!loading && !loadingMore && hasMore && (
+        <Button
+          variant="outlined"
+          fullWidth
+          onClick={loadMore}
+          sx={{ borderRadius: 2, textTransform: 'none', py: 1 }}
+        >
+          加载更多（已显示 {records.length} / {total} 条）
+        </Button>
+      )}
+      {loadingMore && (
+        <Box className="py-4 flex items-center justify-center text-gray-400 gap-2">
+          <CircularProgress size={20} />
+          <span className="text-sm">加载中…</span>
+        </Box>
+      )}
 
       {/* 详情弹窗 */}
       <Dialog

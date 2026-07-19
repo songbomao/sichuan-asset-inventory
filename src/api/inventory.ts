@@ -79,22 +79,34 @@ export interface RecordItem {
   location: string;
 }
 
-/** 我的记录响应 */
+/** 我的记录响应（支持分页） */
 interface MyRecordsResponse {
   code: number;
-  data: RecordItem[];
+  data: {
+    total: number;
+    page: number;
+    pageSize: number;
+    list: RecordItem[];
+  };
   message: string;
   msg?: string;
 }
 
 /**
  * 获取我的盘点记录
- * GET /api/Account/Task/GetMyItems
+ * GET /api/Account/Task/GetMyItems?page={page}&pageSize={pageSize}
  */
-export async function getMyRecords(): Promise<RecordItem[]> {
-  const { data } = await client.get<MyRecordsResponse>('/api/Account/Task/GetMyItems');
+export async function getMyRecords(page = 1, pageSize = 50): Promise<{ total: number; page: number; pageSize: number; list: RecordItem[] }> {
+  const { data } = await client.get<MyRecordsResponse>('/api/Account/Task/GetMyItems', {
+    params: { page, pageSize },
+  });
   if (data.code === 0 || data.code === 200) {
-    return data.data;
+    return {
+      total: data.data?.total ?? 0,
+      page: data.data?.page ?? page,
+      pageSize: data.data?.pageSize ?? pageSize,
+      list: data.data?.list ?? [],
+    };
   }
   throw new Error(data.msg || data.message || '获取盘点记录失败');
 }
