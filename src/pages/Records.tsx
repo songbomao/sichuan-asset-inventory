@@ -16,6 +16,7 @@ import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
+import CircularProgress from '@mui/material/CircularProgress';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import ScheduleIcon from '@mui/icons-material/Schedule';
@@ -23,7 +24,7 @@ import InventoryIcon from '@mui/icons-material/Inventory';
 import CategoryIcon from '@mui/icons-material/Category';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import NotesIcon from '@mui/icons-material/Notes';
-import { getMyRecords, type RecordItem } from '../api/inventory';
+import { getMyRecords, getRecordDetail, type RecordItem } from '../api/inventory';
 import StatusBadge from '../components/StatusBadge';
 
 /** 筛选选项 */
@@ -56,6 +57,8 @@ export default function RecordsPage() {
   // 详情弹窗
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<RecordItem | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState<string | null>(null);
   const [showPhoto, setShowPhoto] = useState(false);
 
   const fetchRecords = useCallback(async (isRefresh = false) => {
@@ -99,11 +102,23 @@ export default function RecordsPage() {
     }
   };
 
-  /** 打开详情弹窗 */
-  const openDetail = (record: RecordItem) => {
+  /** 打开详情弹窗（列表不带照片，单独拉详情） */
+  const openDetail = async (record: RecordItem) => {
     setSelectedRecord(record);
     setShowPhoto(false);
+    setDetailError(null);
+    setDetailLoading(true);
     setDetailOpen(true);
+
+    try {
+      const detail = await getRecordDetail(record.recordId);
+      setSelectedRecord(detail);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : '加载详情失败';
+      setDetailError(msg);
+    } finally {
+      setDetailLoading(false);
+    }
   };
 
   /** 关闭详情弹窗 */
@@ -239,7 +254,20 @@ export default function RecordsPage() {
           盘点详情
         </DialogTitle>
         <DialogContent sx={{ pt: '8px !important' }}>
-          {selectedRecord && (
+          {detailLoading && (
+            <Box className="py-8 flex flex-col items-center justify-center text-gray-400">
+              <CircularProgress size={32} sx={{ mb: 2 }} />
+              <span className="text-sm">正在加载照片…</span>
+            </Box>
+          )}
+
+          {detailError && (
+            <Alert severity="error" sx={{ mb: 2, fontSize: '0.85rem' }}>
+              {detailError}
+            </Alert>
+          )}
+
+          {!detailLoading && selectedRecord && (
             <Box className="space-y-3">
               {/* 照片预览区（默认不加载） */}
               {selectedRecord.photoUrl ? (

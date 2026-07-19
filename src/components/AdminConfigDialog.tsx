@@ -16,7 +16,7 @@ import InputAdornment from '@mui/material/InputAdornment';
 import SearchIcon from '@mui/icons-material/Search';
 import CircularProgress from '@mui/material/CircularProgress';
 import dd from 'dingtalk-jsapi';
-import { ensureDingtalkConfig } from '../utils/ddConfig';
+import { ensureDingtalkConfig, type DingtalkJsapiConfig } from '../utils/ddConfig';
 import { getAdminUsers, setAdminUsers, searchDingtalkUsers, type AdminUser, type DingtalkSearchUser } from '../api/admin';
 
 interface Props {
@@ -45,13 +45,18 @@ export default function AdminConfigDialog({ open, onClose }: Props) {
   const handleOpenPicker = async () => {
     setPicking(true);
     setMsg(null);
+    let cfg: DingtalkJsapiConfig | undefined;
     try {
-      const configOk = await ensureDingtalkConfig();
-      if (!configOk) {
-        setMsg({ type: 'error', text: '钉钉 JSAPI 鉴权失败，无法打开选人。请确认当前在钉钉内打开，或刷新后重试。' });
+      const configResult = await ensureDingtalkConfig();
+      if (!configResult.ok) {
+        setMsg({
+          type: 'error',
+          text: `钉钉 JSAPI 鉴权失败：${configResult.error || '未知错误'}。请确认当前在钉钉内打开，或刷新后重试。`,
+        });
         setPicking(false);
         return;
       }
+      cfg = configResult.config;
 
       (dd as any).biz.contact.complexPicker({
         title: '选择管理员',
@@ -73,7 +78,10 @@ export default function AdminConfigDialog({ open, onClose }: Props) {
         onFail: (err: { errorCode?: number; errorMessage?: string; message?: string }) => {
           console.warn('钉钉选人失败:', err);
           const detail = err?.errorMessage || err?.message || JSON.stringify(err);
-          setMsg({ type: 'error', text: `钉钉选人失败：${detail}` });
+          const configHint = cfg
+            ? `（corpId=${cfg.corpId}，agentId=${cfg.agentId}，请核对是否与钉钉后台一致）`
+            : '';
+          setMsg({ type: 'error', text: `钉钉选人失败：${detail}${configHint}` });
           setPicking(false);
         },
       });
@@ -129,6 +137,8 @@ export default function AdminConfigDialog({ open, onClose }: Props) {
         );
       } catch (e) {
         console.warn('搜索用户失败:', e);
+        const msg = e instanceof Error ? e.message : '搜索失败';
+        setMsg({ type: 'error', text: `搜索失败：${msg}` });
         setCandidates([]);
       } finally {
         setSearching(false);

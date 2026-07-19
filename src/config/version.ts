@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607192032';
+export const APP_VERSION = 'v202607192053';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-19 20:32';
-export const RELEASE_NOTES = '修复：连续盘点提交后照片/备注/状态未清空，导致上一个资产照片残留到下一个资产；在提交成功分支显式重置表单（照片、备注、状态、水印时间）。';
+export const RELEASE_TIME = '2026-07-19 20:53';
+export const RELEASE_NOTES = '修复：1) 盘点记录列表排除 PhotoUrl 大字段，新增 GetRecordDetail 详情接口，解决列表 30s 超时；2) 管理员搜索限制部门/用户范围加速返回，并显示搜索错误；3) dd.config 返回配置信息，组织架构选人失败时展示 corpId/agentId 便于核对。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{

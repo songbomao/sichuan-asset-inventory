@@ -98,3 +98,18 @@ export async function getMyRecords(): Promise<RecordItem[]> {
   }
   throw new Error(data.msg || data.message || '获取盘点记录失败');
 }
+
+/**
+ * 获取单条盘点记录详情（含照片）
+ * GET /api/Account/Task/GetRecordDetail?recordId={id}
+ */
+export async function getRecordDetail(recordId: string): Promise<RecordItem> {
+  const { data } = await client.get<{ code: number; data: RecordItem; message: string; msg?: string }>(
+    '/api/Account/Task/GetRecordDetail',
+    { params: { recordId } },
+  );
+  if (data.code === 0 || data.code === 200) {
+    return data.data;
+  }
+  throw new Error(data.msg || data.message || '获取记录详情失败');
+}

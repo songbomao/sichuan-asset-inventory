@@ -20,7 +20,7 @@ function formatFallback(latitude: number, longitude: number): string {
  */
 async function dingtalkReverseGeocode(latitude: number, longitude: number): Promise<string | null> {
   try {
-    const ok = await ensureDingtalkConfig();
+    const { ok } = await ensureDingtalkConfig();
     if (!ok) return null;
 
     if (!dd.device || !(dd.device as { geolocation?: { get?: unknown } }).geolocation?.get) {
@@ -118,7 +118,7 @@ export async function getCurrentLocation(): Promise<{
 }> {
   // 1. 先尝试钉钉定位（带地址）
   try {
-    const ok = await ensureDingtalkConfig();
+    const { ok } = await ensureDingtalkConfig();
     if (ok && dd.device && (dd.device as { geolocation?: { get?: unknown } }).geolocation?.get) {
       const result = await (dd.device as { geolocation: { get: (p: unknown) => Promise<{ longitude?: number; latitude?: number; address?: string }> } }).geolocation.get({
         targetAccuracy: 200,
