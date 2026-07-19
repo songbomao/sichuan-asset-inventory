@@ -16,14 +16,14 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { getTaskDetail, getProgress, type AssetInfo } from '../api/tasks';
 import { submitRecord, getAssetByCode } from '../api/inventory';
-import { reverseGeocode, getCurrentLocation } from '../api/reverseGeocode';
+import { getCurrentLocation } from '../api/reverseGeocode';
 import { useAuth } from '../contexts/AuthContext';
 import CameraCapture from '../components/CameraCapture';
 import ProgressBar from '../components/ProgressBar';
 import StatusBadge from '../components/StatusBadge';
-import WatermarkOverlay from '../components/WatermarkOverlay';
 
 /** 盘点状态选项 */
 const STATUS_OPTIONS = [
@@ -33,9 +33,56 @@ const STATUS_OPTIONS = [
   { value: '丢失', label: '❌ 丢失' },
 ];
 
+/** 把多张照片垂直拼接成一张长图，用于后端单字段存储 */
+function combinePhotos(dataUrls: string[]): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const images: HTMLImageElement[] = [];
+    let loaded = 0;
+
+    dataUrls.forEach((url, idx) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        loaded += 1;
+        images[idx] = img;
+        if (loaded === dataUrls.length) {
+          const maxWidth = 960;
+          let totalHeight = 0;
+          const sizes = images.map((img) => {
+            const scale = img.width > maxWidth ? maxWidth / img.width : 1;
+            const w = Math.round(img.width * scale);
+            const h = Math.round(img.height * scale);
+            totalHeight += h;
+            return { w, h };
+          });
+
+          const canvas = document.createElement('canvas');
+          canvas.width = maxWidth;
+          canvas.height = totalHeight;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Canvas 初始化失败'));
+            return;
+          }
+
+          let y = 0;
+          images.forEach((img, i) => {
+            ctx.drawImage(img, 0, y, sizes[i].w, sizes[i].h);
+            y += sizes[i].h;
+          });
+
+          resolve(canvas.toDataURL('image/jpeg', 0.7));
+        }
+      };
+      img.onerror = () => reject(new Error('图片加载失败'));
+      img.src = url;
+    });
+  });
+}
+
 /**
  * 盘点操作页面
- * 核心功能：刷卡切换资产、拍照、选状态、提交
+ * 核心功能：刷卡切换资产、拍照（至少2张）、选状态、提交
  */
 export default function InventoryPage() {
   const { taskId } = useParams<{ taskId: string }>();
@@ -50,7 +97,7 @@ export default function InventoryPage() {
   // 当前资产的盘点状态
   const [assetStatus, setAssetStatus] = useState('正常');
   const [remark, setRemark] = useState('');
-  const [photoDataUrl, setPhotoDataUrl] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<string[]>([]);
 
   // 加载状态
   const [loading, setLoading] = useState(true);
@@ -68,7 +115,6 @@ export default function InventoryPage() {
   // GPS 位置与解析状态
   const [gpsLocation, setGpsLocation] = useState('定位中...');
   const [gpsCoords, setGpsCoords] = useState({ longitude: '', latitude: '' });
-  const [locationReady, setLocationReady] = useState(false);
 
   // 水印时间
   const [watermarkTime, setWatermarkTime] = useState('');
@@ -108,10 +154,8 @@ export default function InventoryPage() {
         latitude: latitude ? latitude.toFixed(6) : '',
       });
       setGpsLocation(address || '定位失败');
-      setLocationReady(true);
     } catch {
       setGpsLocation('定位失败');
-      setLocationReady(true);
     }
   }, []);
 
@@ -156,14 +200,19 @@ export default function InventoryPage() {
     if (currentAsset) {
       setAssetStatus('正常');
       setRemark('');
-      setPhotoDataUrl(null);
+      setPhotos([]);
       updateTime();
     }
   }, [currentIndex, assets]);
 
   /** 处理照片捕获 */
   const handlePhotoCapture = useCallback((dataUrl: string) => {
-    setPhotoDataUrl(dataUrl);
+    setPhotos((prev) => [...prev, dataUrl]);
+  }, []);
+
+  /** 删除某张照片 */
+  const handleRemovePhoto = useCallback((idx: number) => {
+    setPhotos((prev) => prev.filter((_, i) => i !== idx));
   }, []);
 
   /** 切换上一个资产 */
@@ -173,7 +222,7 @@ export default function InventoryPage() {
 
   /** 切换下一个资产 */
   const goNext = useCallback(() => {
-    setCurrentIndex((prev) => Math.min(assets.length - 1, prev + 1));
+    setCurrentIndex((prev) => Math.min(assets.length - 1, prev));
   }, [assets.length]);
 
   /** 触控滑动处理 */
@@ -201,14 +250,20 @@ export default function InventoryPage() {
     const asset = assets[currentIndex];
     if (!asset) return;
 
+    if (photos.length < 2) {
+      setSnackbar({ open: true, message: '❌ 至少需要拍摄 2 张照片', severity: 'error' });
+      return;
+    }
+
     setSubmitting(true);
     try {
+      const combined = await combinePhotos(photos);
       await submitRecord({
         taskId,
         assetCode: asset.assetCode,
         status: assetStatus,
         remark,
-        photoBase64: photoDataUrl || '',
+        photoBase64: combined,
         longitude: gpsCoords.longitude,
         latitude: gpsCoords.latitude,
         location: gpsLocation,
@@ -234,7 +289,7 @@ export default function InventoryPage() {
     } finally {
       setSubmitting(false);
     }
-  }, [taskId, assets, currentIndex, assetStatus, remark, photoDataUrl, gpsCoords, gpsLocation]);
+  }, [taskId, assets, currentIndex, photos, assetStatus, remark, gpsCoords, gpsLocation]);
 
   /** AI 识别资产 */
   const handleScan = useCallback(async () => {
@@ -305,14 +360,14 @@ export default function InventoryPage() {
       onTouchEnd={handleTouchEnd}
     >
       {/* 顶部导航栏 */}
-      <header className="sticky top-0 z-10 bg-gradient-to-r from-primary to-[#4a148c] text-white px-4 py-3 flex items-center gap-3 shadow-lg">
+      <header className="sticky top-0 z-10 bg-gradient-to-r from-primary to-[#4a148c] text-white px-4 py-3 flex items-center gap-3 shadow-lg shrink-0">
         <IconButton color="inherit" size="small" onClick={() => navigate('/tasks')}>
           <ArrowBackIosNewIcon fontSize="small" />
         </IconButton>
         <div className="flex-1 min-w-0">
           <h2 className="text-sm font-semibold truncate">{taskName}</h2>
           <p className="text-xs text-white/70 truncate">
-            {currentIndex + 1} / {assets.length}
+            {currentAsset?.assetName} · {currentIndex + 1} / {assets.length}
           </p>
         </div>
         <Button
@@ -336,7 +391,7 @@ export default function InventoryPage() {
       </div>
 
       {/* 主内容区 - 可滚动 */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
         {/* 已盘点提示 */}
         {isCompleted && (
           <Alert severity="success" sx={{ fontSize: '0.85rem' }}>
@@ -344,47 +399,49 @@ export default function InventoryPage() {
           </Alert>
         )}
 
-        {/* 资产基本信息卡片 */}
-        <div className="bg-white rounded-card p-4 shadow-card glow-border">
-          <div className="flex items-start justify-between mb-2">
-            <h3 className="font-semibold text-gray-900 text-base">
+        {/* 资产基本信息卡片（精简） */}
+        <div className="bg-white rounded-card p-3 shadow-card glow-border">
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="font-semibold text-gray-900 text-base truncate pr-2">
               {currentAsset.assetName}
             </h3>
             <StatusBadge status={isCompleted ? '正常' : 'pending'} />
           </div>
-          <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
-            <div className="flex gap-2">
-              <span className="text-gray-400 shrink-0">资产编码</span>
-              <span className="font-mono text-primary font-medium">{currentAsset.assetCode}</span>
-            </div>
-            <div className="flex gap-2">
-              <span className="text-gray-400 shrink-0">分类</span>
-              <span>{currentAsset.category || '--'}</span>
-            </div>
-            <div className="flex gap-2">
-              <span className="text-gray-400 shrink-0">存放地点</span>
-              <span>{currentAsset.location || '--'}</span>
-            </div>
-            {currentAsset.department && (
-              <div className="flex gap-2">
-                <span className="text-gray-400 shrink-0">部门</span>
-                <span>{currentAsset.department}</span>
-              </div>
-            )}
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+            <span>编码：<span className="font-mono text-gray-700">{currentAsset.assetCode}</span></span>
+            {currentAsset.category && <span>分类：{currentAsset.category}</span>}
+            {currentAsset.location && <span>地点：{currentAsset.location}</span>}
           </div>
         </div>
 
-        {/* 盘点信息卡片 */}
-        <div className="bg-white rounded-card p-4 shadow-card glow-border space-y-4">
-          <h3 className="font-semibold text-gray-900">盘点信息</h3>
+        {/* 水印照片卡片 */}
+        <div className="bg-white rounded-card p-3 shadow-card glow-border space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-gray-900">水印照片</h3>
+            <span className="text-xs text-gray-400">至少 2 张</span>
+          </div>
 
-          {/* 水印预览 */}
-          <WatermarkOverlay
-            time={watermarkTime}
-            location={gpsLocation}
-            operator={user?.name || user?.username || '--'}
-            assetCode={currentAsset.assetCode}
-          />
+          {/* 照片缩略图网格 */}
+          {photos.length > 0 && (
+            <div className="grid grid-cols-4 gap-2">
+              {photos.map((url, idx) => (
+                <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border border-gray-100">
+                  <img src={url} alt={`照片${idx + 1}`} className="w-full h-full object-cover" />
+                  {!isCompleted && (
+                    <button
+                      onClick={() => handleRemovePhoto(idx)}
+                      className="absolute top-0.5 right-0.5 bg-red-500 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs"
+                    >
+                      <DeleteIcon fontSize="inherit" />
+                    </button>
+                  )}
+                  <span className="absolute bottom-0.5 left-0.5 bg-black/50 text-white text-[10px] px-1 rounded">
+                    {idx + 1}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* 相机拍照 */}
           <CameraCapture
@@ -396,54 +453,57 @@ export default function InventoryPage() {
               assetCode: currentAsset.assetCode,
             }}
             disabled={isCompleted}
-          />
-
-          {/* 盘点状态选择 */}
-          <div>
-            <p className="text-sm font-medium text-gray-700 mb-2">盘点状态</p>
-            <ToggleButtonGroup
-              value={assetStatus}
-              exclusive
-              onChange={(_e, val) => val && setAssetStatus(val)}
-              size="small"
-              fullWidth
-              disabled={isCompleted}
-              sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}
-            >
-              {STATUS_OPTIONS.map((opt) => (
-                <ToggleButton
-                  key={opt.value}
-                  value={opt.value}
-                  sx={{
-                    borderRadius: '8px !important',
-                    border: '1px solid rgba(0,0,0,0.12) !important',
-                    fontSize: '0.8rem',
-                    py: 1,
-                    '&.Mui-selected': {
-                      bgcolor: 'rgba(26, 35, 126, 0.08)',
-                      borderColor: '#1a237e !important',
-                    },
-                  }}
-                >
-                  {opt.label}
-                </ToggleButton>
-              ))}
-            </ToggleButtonGroup>
-          </div>
-
-          {/* 备注输入 */}
-          <TextField
-            fullWidth
-            label="备注"
-            multiline
-            rows={2}
-            value={remark}
-            onChange={(e) => setRemark(e.target.value)}
-            placeholder="填写盘点备注..."
-            disabled={isCompleted}
-            size="small"
+            photoCount={photos.length}
+            minPhotos={2}
+            maxPhotos={4}
           />
         </div>
+
+        {/* 盘点状态选择 */}
+        <div>
+          <p className="text-sm font-medium text-gray-700 mb-2">盘点状态</p>
+          <ToggleButtonGroup
+            value={assetStatus}
+            exclusive
+            onChange={(_e, val) => val && setAssetStatus(val)}
+            size="small"
+            fullWidth
+            disabled={isCompleted}
+            sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}
+          >
+            {STATUS_OPTIONS.map((opt) => (
+              <ToggleButton
+                key={opt.value}
+                value={opt.value}
+                sx={{
+                  borderRadius: '8px !important',
+                  border: '1px solid rgba(0,0,0,0.12) !important',
+                  fontSize: '0.8rem',
+                  py: 1,
+                  '&.Mui-selected': {
+                    bgcolor: 'rgba(26, 35, 126, 0.08)',
+                    borderColor: '#1a237e !important',
+                  },
+                }}
+              >
+                {opt.label}
+              </ToggleButton>
+            ))}
+          </ToggleButtonGroup>
+        </div>
+
+        {/* 备注输入 */}
+        <TextField
+          fullWidth
+          label="备注"
+          multiline
+          rows={1}
+          value={remark}
+          onChange={(e) => setRemark(e.target.value)}
+          placeholder="填写盘点备注..."
+          disabled={isCompleted}
+          size="small"
+        />
       </div>
 
       {/* 底部操作区 - 始终可见 */}

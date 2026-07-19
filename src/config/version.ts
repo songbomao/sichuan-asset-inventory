@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607191943';
+export const APP_VERSION = 'v202607192030';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-19 19:43';
-export const RELEASE_NOTES = '修复：1) 钉钉JSAPI鉴权+定位逆地理编码，彻底修复水印经纬度；2) 记录详情展示照片；3) 任务管理卡片字段对齐；4) 管理员配置支持钉钉组织架构选择（带部门名）；5) 盘点重复提交按操作人判定';
+export const RELEASE_TIME = '2026-07-19 20:30';
+export const RELEASE_NOTES = '优化：1) 盘点页至少拍2张水印照片并自动拼接；2) 盘点页精简为一屏操作，信息区改为「水印照片」；3) 记录页卡片与详情弹窗美化，照片默认不加载、点击预览；4) 管理员配置支持输入姓名搜索钉钉用户，并修复组织架构选人错误提示；';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -20,6 +20,11 @@ export const VERSION_HISTORY: Array<{
     version: APP_VERSION,
     time: RELEASE_TIME,
     notes: RELEASE_NOTES,
+  },
+  {
+    version: 'v202607191943',
+    time: '2026-07-19 19:43',
+    notes: '修复：1) 钉钉JSAPI鉴权+定位逆地理编码，彻底修复水印经纬度；2) 记录详情展示照片；3) 任务管理卡片字段对齐；4) 管理员配置支持钉钉组织架构选择（带部门名）；5) 盘点重复提交按操作人判定',
   },
   {
     version: 'v202607191429',

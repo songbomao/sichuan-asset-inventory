@@ -11,7 +11,18 @@ import InboxIcon from '@mui/icons-material/Inbox';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
+import Box from '@mui/material/Box';
+import Grid from '@mui/material/Grid';
+import Paper from '@mui/material/Paper';
+import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+import InventoryIcon from '@mui/icons-material/Inventory';
+import CategoryIcon from '@mui/icons-material/Category';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import NotesIcon from '@mui/icons-material/Notes';
 import { getMyRecords, type RecordItem } from '../api/inventory';
 import StatusBadge from '../components/StatusBadge';
 
@@ -23,6 +34,14 @@ const FILTERS = [
   { key: '报废', label: '报废' },
   { key: '丢失', label: '丢失' },
 ];
+
+/** 状态对应颜色 */
+const STATUS_COLORS: Record<string, 'success' | 'warning' | 'error' | 'default' | 'info'> = {
+  '正常': 'success',
+  '待维修': 'warning',
+  '报废': 'error',
+  '丢失': 'error',
+};
 
 /**
  * 盘点记录页
@@ -37,6 +56,7 @@ export default function RecordsPage() {
   // 详情弹窗
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<RecordItem | null>(null);
+  const [showPhoto, setShowPhoto] = useState(false);
 
   const fetchRecords = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -79,8 +99,22 @@ export default function RecordsPage() {
     }
   };
 
+  /** 打开详情弹窗 */
+  const openDetail = (record: RecordItem) => {
+    setSelectedRecord(record);
+    setShowPhoto(false);
+    setDetailOpen(true);
+  };
+
+  /** 关闭详情弹窗 */
+  const closeDetail = () => {
+    setDetailOpen(false);
+    setSelectedRecord(null);
+    setShowPhoto(false);
+  };
+
   return (
-    <div className="p-4 space-y-4">
+    <div className="p-4 space-y-4 bg-gray-50 min-h-screen">
       {/* 头部 */}
       <div className="flex items-center justify-between">
         <div>
@@ -146,32 +180,49 @@ export default function RecordsPage() {
         filteredRecords.map((record) => (
           <Card
             key={record.recordId}
-            className="hover:shadow-md transition-shadow cursor-pointer"
-            onClick={() => { setSelectedRecord(record); setDetailOpen(true); }}
+            className="hover:shadow-lg transition-shadow cursor-pointer border-l-4"
+            sx={{ borderLeftColor: record.status === '正常' ? '#4caf50' : '#ff9800' }}
+            onClick={() => openDetail(record)}
           >
-            <CardContent>
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex-1 min-w-0 mr-2">
-                  <Typography
-                    variant="subtitle1"
-                    component="h3"
-                    className="font-semibold text-gray-900 truncate"
-                  >
-                    {record.assetName}
-                  </Typography>
-                  <Typography variant="caption" className="text-gray-400 font-mono">
+            <CardContent sx={{ pb: '16px !important' }}>
+              <div className="flex items-start gap-3">
+                {/* 左侧图标 */}
+                <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <InventoryIcon className="text-primary" />
+                </div>
+                {/* 中间内容 */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <Typography
+                      variant="subtitle1"
+                      component="h3"
+                      className="font-semibold text-gray-900 truncate"
+                    >
+                      {record.assetName}
+                    </Typography>
+                    <StatusBadge status={record.status} />
+                  </div>
+                  <Typography variant="caption" className="text-gray-400 font-mono block">
                     {record.assetCode}
                   </Typography>
+                  <div className="flex flex-wrap items-center gap-2 mt-2 text-xs text-gray-500">
+                    <span className="flex items-center gap-0.5">
+                      <AssignmentIcon fontSize="inherit" />
+                      {record.taskName}
+                    </span>
+                    <span className="flex items-center gap-0.5">
+                      <ScheduleIcon fontSize="inherit" />
+                      {formatTime(record.createTime)}
+                    </span>
+                  </div>
+                  {record.location && (
+                    <div className="flex items-center gap-0.5 text-xs text-gray-400 mt-1 truncate">
+                      <LocationOnIcon fontSize="inherit" />
+                      {record.location}
+                    </div>
+                  )}
                 </div>
-                <StatusBadge status={record.status} />
               </div>
-              <div className="flex items-center gap-3 text-xs text-gray-500">
-                <span>📋 {record.taskName}</span>
-                <span>🕐 {formatTime(record.createTime)}</span>
-              </div>
-              {record.location && (
-                <div className="text-xs text-gray-400 mt-1">📍 {record.location}</div>
-              )}
             </CardContent>
           </Card>
         ))}
@@ -179,68 +230,148 @@ export default function RecordsPage() {
       {/* 详情弹窗 */}
       <Dialog
         open={detailOpen}
-        onClose={() => setDetailOpen(false)}
+        onClose={closeDetail}
         fullWidth
         maxWidth="xs"
+        PaperProps={{ sx: { borderRadius: 3 } }}
       >
-        <DialogTitle sx={{ fontWeight: 700, fontSize: '1rem' }}>
+        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.1rem', pb: 1 }}>
           盘点详情
         </DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{ pt: '8px !important' }}>
           {selectedRecord && (
-            <div className="space-y-3 text-sm">
-              {/* 水印照片 */}
-              {selectedRecord.photoUrl && (
-                <div className="rounded-lg overflow-hidden border border-gray-100">
-                  <img
-                    src={selectedRecord.photoUrl}
-                    alt="盘点照片"
-                    className="w-full object-contain max-h-60 bg-gray-50"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                  />
-                </div>
+            <Box className="space-y-3">
+              {/* 照片预览区（默认不加载） */}
+              {selectedRecord.photoUrl ? (
+                <Paper
+                  elevation={0}
+                  className="overflow-hidden rounded-xl border border-gray-100"
+                >
+                  {!showPhoto ? (
+                    <button
+                      onClick={() => setShowPhoto(true)}
+                      className="w-full py-10 flex flex-col items-center justify-center text-gray-400 hover:bg-gray-50 transition-colors"
+                    >
+                      <PhotoCameraIcon sx={{ fontSize: 48, mb: 1, color: 'primary.main' }} />
+                      <span className="text-sm font-medium">点击预览照片</span>
+                      <span className="text-xs text-gray-300 mt-1">加载原图可能消耗较多流量</span>
+                    </button>
+                  ) : (
+                    <img
+                      src={selectedRecord.photoUrl}
+                      alt="盘点照片"
+                      className="w-full object-contain bg-gray-50"
+                      style={{ maxHeight: '360px' }}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  )}
+                </Paper>
+              ) : (
+                <Paper
+                  elevation={0}
+                  className="rounded-xl border border-dashed border-gray-200 py-8 flex flex-col items-center justify-center text-gray-400"
+                >
+                  <PhotoCameraIcon sx={{ fontSize: 40, mb: 1 }} />
+                  <span className="text-sm">无照片</span>
+                </Paper>
               )}
-              <div className="flex justify-between">
-                <span className="text-gray-500">资产名称</span>
-                <span className="font-medium">{selectedRecord.assetName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">资产编码</span>
-                <span className="font-mono">{selectedRecord.assetCode}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">任务名称</span>
-                <span>{selectedRecord.taskName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">盘点状态</span>
-                <StatusBadge status={selectedRecord.status} />
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">盘点时间</span>
-                <span>{formatTime(selectedRecord.createTime)}</span>
-              </div>
-              {selectedRecord.location && (
-                <div className="flex justify-between">
-                  <span className="text-gray-500">位置</span>
-                  <span className="text-right max-w-[60%]">{selectedRecord.location}</span>
-                </div>
-              )}
-              {selectedRecord.remark && (
-                <div className="flex justify-between">
-                  <span className="text-gray-500">备注</span>
-                  <span className="text-right max-w-[60%]">{selectedRecord.remark}</span>
-                </div>
-              )}
-            </div>
+
+              {/* 信息卡片 */}
+              <Paper elevation={0} className="rounded-xl p-3 bg-gray-50/50 border border-gray-100">
+                <Grid container spacing={2}>
+                  <Grid item xs={6}>
+                    <DetailItem
+                      icon={<InventoryIcon fontSize="small" color="action" />}
+                      label="资产名称"
+                      value={selectedRecord.assetName}
+                    />
+                  </Grid>
+                  <Grid item xs={6}>
+                    <DetailItem
+                      icon={<CategoryIcon fontSize="small" color="action" />}
+                      label="资产编码"
+                      value={selectedRecord.assetCode}
+                      mono
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <DetailItem
+                      icon={<AssignmentIcon fontSize="small" color="action" />}
+                      label="任务名称"
+                      value={selectedRecord.taskName}
+                    />
+                  </Grid>
+                  <Grid item xs={6}>
+                    <DetailItem
+                      label="盘点状态"
+                      value={<StatusBadge status={selectedRecord.status} />}
+                    />
+                  </Grid>
+                  <Grid item xs={6}>
+                    <DetailItem
+                      icon={<ScheduleIcon fontSize="small" color="action" />}
+                      label="盘点时间"
+                      value={formatTime(selectedRecord.createTime)}
+                    />
+                  </Grid>
+                  {selectedRecord.location && (
+                    <Grid item xs={12}>
+                      <DetailItem
+                        icon={<LocationOnIcon fontSize="small" color="action" />}
+                        label="位置"
+                        value={selectedRecord.location}
+                      />
+                    </Grid>
+                  )}
+                  {selectedRecord.remark && (
+                    <Grid item xs={12}>
+                      <DetailItem
+                        icon={<NotesIcon fontSize="small" color="action" />}
+                        label="备注"
+                        value={selectedRecord.remark}
+                      />
+                    </Grid>
+                  )}
+                </Grid>
+              </Paper>
+            </Box>
           )}
         </DialogContent>
-        <div className="px-4 pb-4 flex justify-end">
-          <Button onClick={() => setDetailOpen(false)}>关闭</Button>
-        </div>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button onClick={closeDetail} variant="contained" fullWidth sx={{ borderRadius: 2 }}>
+            关闭
+          </Button>
+        </DialogActions>
       </Dialog>
 
       <div className="h-4" />
+    </div>
+  );
+}
+
+/** 详情项小组件 */
+function DetailItem({
+  icon,
+  label,
+  value,
+  mono = false,
+}: {
+  icon?: React.ReactNode;
+  label: string;
+  value: React.ReactNode;
+  mono?: boolean;
+}) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="text-xs text-gray-400 flex items-center gap-1">
+        {icon}
+        {label}
+      </span>
+      <span className={`text-sm text-gray-800 break-words ${mono ? 'font-mono' : 'font-medium'}`}>
+        {value}
+      </span>
     </div>
   );
 }

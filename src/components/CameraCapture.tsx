@@ -3,6 +3,7 @@ import Button from '@mui/material/Button';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
 import CircularProgress from '@mui/material/CircularProgress';
+import Chip from '@mui/material/Chip';
 
 interface CameraCaptureProps {
   onCapture: (dataUrl: string) => void;
@@ -13,6 +14,12 @@ interface CameraCaptureProps {
     assetCode: string;
   };
   disabled?: boolean;
+  /** 已拍张数，用于按钮文案提示 */
+  photoCount?: number;
+  /** 最少需要拍几张 */
+  minPhotos?: number;
+  /** 最多允许拍几张 */
+  maxPhotos?: number;
 }
 
 /**
@@ -20,11 +27,15 @@ interface CameraCaptureProps {
  * - 优先调用后置摄像头拍照
  * - 降级方案：文件上传（相册选取）
  * - 拍照后自动叠加水印
+ * - 支持多次调用，由父组件维护照片数组
  */
 export default function CameraCapture({
   onCapture,
   watermark,
   disabled = false,
+  photoCount = 0,
+  minPhotos = 2,
+  maxPhotos = 4,
 }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -36,6 +47,9 @@ export default function CameraCapture({
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const reachedMax = photoCount >= maxPhotos;
+  const needMore = Math.max(0, minPhotos - photoCount);
 
   /** 停止摄像头 */
   const stopCamera = useCallback(() => {
@@ -246,7 +260,7 @@ export default function CameraCapture({
   }, [stopCamera]);
 
   return (
-    <div className="flex flex-col items-center gap-3">
+    <div className="flex flex-col items-center gap-3 w-full">
       {/* 隐藏的 Canvas */}
       <canvas ref={canvasRef} className="hidden" />
 
@@ -260,28 +274,28 @@ export default function CameraCapture({
         onChange={handleFileSelect}
       />
 
+      {/* 拍照提示 */}
+      {needMore > 0 && (
+        <Chip
+          label={`至少还需拍 ${needMore} 张`}
+          color="warning"
+          size="small"
+          sx={{ width: '100%', fontWeight: 600 }}
+        />
+      )}
+      {needMore === 0 && photoCount > 0 && (
+        <Chip
+          label={`已拍 ${photoCount} 张${reachedMax ? '（已达上限）' : ''}`}
+          color="success"
+          size="small"
+          sx={{ width: '100%', fontWeight: 600 }}
+        />
+      )}
+
       {/* 错误提示 */}
       {error && (
         <div className="w-full p-2 bg-red-50 text-red-600 text-sm rounded-lg text-center">
           {error}
-        </div>
-      )}
-
-      {/* 预览照片 */}
-      {previewSrc && (
-        <div className="relative w-full overflow-hidden rounded-card border-2 border-accent/30 shadow-glow">
-          <img
-            src={previewSrc}
-            alt="盘点照片"
-            className="w-full object-contain"
-            style={{ maxHeight: '320px' }}
-          />
-          <button
-            onClick={() => setPreviewSrc(null)}
-            className="absolute top-2 right-2 bg-black/50 text-white w-7 h-7 rounded-full flex items-center justify-center text-sm"
-          >
-            ✕
-          </button>
         </div>
       )}
 
@@ -331,20 +345,24 @@ export default function CameraCapture({
             fullWidth
             startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <CameraAltIcon />}
             onClick={openCamera}
-            disabled={disabled || loading}
+            disabled={disabled || loading || reachedMax}
             sx={{ py: 1.2 }}
           >
-            {loading ? '正在打开摄像头...' : previewSrc ? '重新拍照' : '📷 拍照'}
+            {loading
+              ? '正在打开摄像头...'
+              : photoCount === 0
+              ? '📷 拍照'
+              : `📷 再拍一张（${photoCount}/${maxPhotos}）`}
           </Button>
           <Button
             variant="outlined"
             fullWidth
             startIcon={<PhotoLibraryIcon />}
             onClick={() => fileInputRef.current?.click()}
-            disabled={disabled}
+            disabled={disabled || reachedMax}
             sx={{ py: 1.2 }}
           >
-            相册选取
+            相册
           </Button>
         </div>
       )}

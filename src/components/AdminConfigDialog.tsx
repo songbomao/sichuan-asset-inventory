@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -14,9 +14,10 @@ import Typography from '@mui/material/Typography';
 import Chip from '@mui/material/Chip';
 import InputAdornment from '@mui/material/InputAdornment';
 import SearchIcon from '@mui/icons-material/Search';
+import CircularProgress from '@mui/material/CircularProgress';
 import dd from 'dingtalk-jsapi';
 import { ensureDingtalkConfig } from '../utils/ddConfig';
-import { getAdminUsers, setAdminUsers, type AdminUser } from '../api/admin';
+import { getAdminUsers, setAdminUsers, searchDingtalkUsers, type AdminUser, type DingtalkSearchUser } from '../api/admin';
 
 interface Props {
   open: boolean;
@@ -27,6 +28,7 @@ interface PickedUser {
   name: string;
   emplId: string;
   selectDeptName?: string;
+  department?: string;
 }
 
 export default function AdminConfigDialog({ open, onClose }: Props) {
@@ -35,6 +37,9 @@ export default function AdminConfigDialog({ open, onClose }: Props) {
   const [candidates, setCandidates] = useState<PickedUser[]>([]);
   const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [picking, setPicking] = useState(false);
+  const [searching, setSearching] = useState(false);
+
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /** 调起钉钉组织架构选人 */
   const handleOpenPicker = async () => {
@@ -43,63 +48,105 @@ export default function AdminConfigDialog({ open, onClose }: Props) {
     try {
       const configOk = await ensureDingtalkConfig();
       if (!configOk) {
-        setMsg({ type: 'error', text: '钉钉 JSAPI 鉴权失败，无法打开选人' });
+        setMsg({ type: 'error', text: '钉钉 JSAPI 鉴权失败，无法打开选人。请确认当前在钉钉内打开，或刷新后重试。' });
         setPicking(false);
         return;
       }
 
-      const result = await (dd as any).biz.contact.complexPicker({
+      (dd as any).biz.contact.complexPicker({
         title: '选择管理员',
         multiple: false,
         responseUserOnly: true,
         startWithDepartmentId: 0,
-      }) as { users?: PickedUser[] };
-      if (result?.users && result.users.length > 0) {
-        const u = result.users[0];
-        if (users.some((x) => x.dingtalkUserId === u.emplId)) {
-          setMsg({ type: 'error', text: '该管理员已存在' });
-        } else {
-          const next = [...users, { dingtalkUserId: u.emplId, name: u.name }];
-          setUsers(next);
-          setAdminUsers(next);
-          setMsg({ type: 'success', text: `已添加：${u.name}（${u.selectDeptName || '未知部门'}）` });
-          setKeyword('');
-          setCandidates([]);
-        }
-      }
+        isNeedSearch: true,
+        onSuccess: (result: { users?: PickedUser[] }) => {
+          if (result?.users && result.users.length > 0) {
+            const u = result.users[0];
+            addUser({
+              dingtalkUserId: u.emplId,
+              name: u.name,
+              department: u.selectDeptName || u.department,
+            });
+          }
+          setPicking(false);
+        },
+        onFail: (err: { errorCode?: number; errorMessage?: string; message?: string }) => {
+          console.warn('钉钉选人失败:', err);
+          const detail = err?.errorMessage || err?.message || JSON.stringify(err);
+          setMsg({ type: 'error', text: `钉钉选人失败：${detail}` });
+          setPicking(false);
+        },
+      });
     } catch (e) {
       console.warn('钉钉选人失败:', e);
-      setMsg({ type: 'error', text: '钉钉选人失败，请重试' });
-    } finally {
+      const detail = e instanceof Error ? e.message : JSON.stringify(e);
+      setMsg({ type: 'error', text: `钉钉选人失败：${detail}` });
       setPicking(false);
     }
   };
 
-  /** 按输入框关键字手动搜索（备用：仅展示已有列表过滤） */
-  const handleSearch = () => {
+  /** 添加用户到管理员列表 */
+  const addUser = (u: AdminUser) => {
+    if (users.some((x) => x.dingtalkUserId === u.dingtalkUserId)) {
+      setMsg({ type: 'error', text: '该管理员已存在' });
+      return;
+    }
+    const next = [...users, u];
+    setUsers(next);
+    setAdminUsers(next);
+    setMsg({
+      type: 'success',
+      text: `已添加：${u.name}${u.department ? `（${u.department}）` : ''}`,
+    });
+    setKeyword('');
+    setCandidates([]);
+  };
+
+  /** 从输入框搜索钉钉用户（debounce） */
+  useEffect(() => {
     const k = keyword.trim();
     if (!k) {
       setCandidates([]);
       return;
     }
-    // 本地过滤：若已选列表中存在匹配项，方便快速删除
-    const found = users
-      .filter((u) => u.name.includes(k) || u.dingtalkUserId.includes(k))
-      .map((u) => ({ name: u.name, emplId: u.dingtalkUserId }));
-    setCandidates(found);
-  };
-
-  const handleAddFromCandidate = (u: PickedUser) => {
-    if (users.some((x) => x.dingtalkUserId === u.emplId)) {
-      setMsg({ type: 'error', text: '该管理员已存在' });
+    if (k.length < 2) {
+      setCandidates([]);
       return;
     }
-    const next = [...users, { dingtalkUserId: u.emplId, name: u.name }];
-    setUsers(next);
-    setAdminUsers(next);
-    setMsg({ type: 'success', text: `已添加：${u.name}` });
-    setKeyword('');
-    setCandidates([]);
+
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(async () => {
+      setSearching(true);
+      setMsg(null);
+      try {
+        const list = await searchDingtalkUsers(k);
+        setCandidates(
+          list.map((u) => ({
+            name: u.name,
+            emplId: u.userId,
+            department: u.department,
+          })),
+        );
+      } catch (e) {
+        console.warn('搜索用户失败:', e);
+        setCandidates([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 400);
+
+    return () => {
+      if (searchTimer.current) clearTimeout(searchTimer.current);
+    };
+  }, [keyword]);
+
+  /** 从候选结果添加 */
+  const handleAddFromCandidate = (u: PickedUser) => {
+    addUser({
+      dingtalkUserId: u.emplId,
+      name: u.name,
+      department: u.selectDeptName || u.department,
+    });
   };
 
   const handleDelete = (dingtalkUserId: string) => {
@@ -121,23 +168,31 @@ export default function AdminConfigDialog({ open, onClose }: Props) {
         <Stack spacing={2}>
           {/* 搜索 / 选人入口 */}
           <TextField
-            label="搜索姓名或选择"
+            label="输入姓名从钉钉通讯录搜索"
             size="small"
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-            placeholder="点击右侧按钮从钉钉组织架构选择"
+            placeholder="输入 2 个及以上字符开始搜索"
             fullWidth
             InputProps={{
               endAdornment: (
                 <InputAdornment position="end">
-                  <IconButton size="small" onClick={handleSearch} disabled={picking}>
-                    <SearchIcon fontSize="small" />
-                  </IconButton>
+                  {searching ? (
+                    <CircularProgress size={16} />
+                  ) : (
+                    <SearchIcon fontSize="small" color="action" />
+                  )}
                 </InputAdornment>
               ),
             }}
           />
+
+          {keyword.trim().length > 0 && keyword.trim().length < 2 && (
+            <Typography variant="caption" color="text.secondary">
+              请至少输入 2 个字符
+            </Typography>
+          )}
+
           <Button
             variant="contained"
             onClick={handleOpenPicker}
@@ -154,22 +209,37 @@ export default function AdminConfigDialog({ open, onClose }: Props) {
             </Alert>
           )}
 
-          {/* 候选结果（本地过滤或选人回调） */}
+          {/* 候选结果（搜索或选人回调） */}
           {candidates.length > 0 && (
             <Stack spacing={1}>
-              <Typography variant="caption" color="text.secondary">搜索结果</Typography>
+              <Typography variant="caption" color="text.secondary">
+                搜索结果（点击添加）
+              </Typography>
               {candidates.map((u) => (
                 <Button
                   key={u.emplId}
                   variant="outlined"
                   size="small"
                   onClick={() => handleAddFromCandidate(u)}
-                  sx={{ justifyContent: 'flex-start', textTransform: 'none', borderRadius: '8px' }}
+                  sx={{ justifyContent: 'flex-start', textTransform: 'none', borderRadius: '8px', py: 1 }}
                 >
-                  {u.name} · {u.emplId}
+                  <Stack alignItems="flex-start" spacing={0.25}>
+                    <Typography variant="body2" fontWeight={600}>
+                      {u.name}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {u.selectDeptName || u.department || '未知部门'} · {u.emplId}
+                    </Typography>
+                  </Stack>
                 </Button>
               ))}
             </Stack>
+          )}
+
+          {keyword.trim().length >= 2 && !searching && candidates.length === 0 && (
+            <Typography variant="caption" color="text.secondary" textAlign="center">
+              未找到匹配用户，请尝试使用「从钉钉组织架构选择」
+            </Typography>
           )}
 
           {/* 管理员列表 */}
@@ -178,7 +248,7 @@ export default function AdminConfigDialog({ open, onClose }: Props) {
           </Typography>
           {users.length === 0 ? (
             <Typography color="text.secondary" textAlign="center" sx={{ py: 2 }}>
-              暂无管理员，请从钉钉组织架构选择
+              暂无管理员，请搜索或从钉钉组织架构选择
             </Typography>
           ) : (
             <Stack spacing={1}>
@@ -188,12 +258,14 @@ export default function AdminConfigDialog({ open, onClose }: Props) {
                   direction="row"
                   alignItems="center"
                   justifyContent="space-between"
-                  sx={{ px: 1, py: 0.75, bgcolor: 'grey.50', borderRadius: 1 }}
+                  sx={{ px: 1.5, py: 1, bgcolor: 'grey.50', borderRadius: 1.5 }}
                 >
                   <Stack spacing={0.25}>
-                    <Typography variant="body2" fontWeight={600}>{u.name}</Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ wordBreak: 'break-all' }}>
-                      {u.dingtalkUserId}
+                    <Typography variant="body2" fontWeight={600}>
+                      {u.name}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {u.department ? `${u.department} · ` : ''}{u.dingtalkUserId}
                     </Typography>
                   </Stack>
                   <IconButton size="small" onClick={() => handleDelete(u.dingtalkUserId)} color="error">

@@ -95,6 +95,27 @@ export interface AdminUser {
   dingtalkUserId: string;
   /** 显示名称 */
   name: string;
+  /** 部门名称 */
+  department?: string;
+}
+
+/** 钉钉搜索用户结果 */
+export interface DingtalkSearchUser {
+  userId: string;
+  name: string;
+  department?: string;
+}
+
+/** 搜索钉钉用户 */
+export async function searchDingtalkUsers(keyword: string): Promise<DingtalkSearchUser[]> {
+  const { data } = await client.post<{ code: number; data: DingtalkSearchUser[]; message: string; msg?: string }>(
+    '/api/Account/UniGetToken',
+    { action: 'SearchDingtalkUsers', keyword },
+  );
+  if (data.code === 0 || data.code === 200) {
+    return data.data || [];
+  }
+  throw new Error(data.msg || data.message || '搜索用户失败');
 }
 
 /** 读取管理员列表 */
