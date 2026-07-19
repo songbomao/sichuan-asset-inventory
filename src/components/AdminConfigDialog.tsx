@@ -11,10 +11,13 @@ import AddIcon from '@mui/icons-material/Add';
 import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import Chip from '@mui/material/Chip';
 import InputAdornment from '@mui/material/InputAdornment';
 import SearchIcon from '@mui/icons-material/Search';
 import CircularProgress from '@mui/material/CircularProgress';
+import Accordion from '@mui/material/Accordion';
+import AccordionSummary from '@mui/material/AccordionSummary';
+import AccordionDetails from '@mui/material/AccordionDetails';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import dd from 'dingtalk-jsapi';
 import { ensureDingtalkConfig, type DingtalkJsapiConfig } from '../utils/ddConfig';
 import { getAdminUsers, setAdminUsers, searchDingtalkUsers, type AdminUser, type DingtalkSearchUser } from '../api/admin';
@@ -38,8 +41,26 @@ export default function AdminConfigDialog({ open, onClose }: Props) {
   const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [picking, setPicking] = useState(false);
   const [searching, setSearching] = useState(false);
+  const [diagnosis, setDiagnosis] = useState<string[]>([]);
+  const [lastConfig, setLastConfig] = useState<DingtalkJsapiConfig | null>(null);
 
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /** 组件打开时做一次环境诊断 */
+  useEffect(() => {
+    if (!open) return;
+    const lines: string[] = [];
+    lines.push(`dd 对象是否存在: ${typeof dd !== 'undefined' ? '是' : '否'}`);
+    lines.push(`dd.config 是否存在: ${typeof dd?.config === 'function' ? '是' : '否'}`);
+    lines.push(`dd.biz.contact.complexPicker 是否存在: ${typeof (dd as any)?.biz?.contact?.complexPicker === 'function' ? '是' : '否'}`);
+    try {
+      const env = (dd as any).env;
+      lines.push(`dd.env: ${env ? JSON.stringify(env) : '无'}`);
+    } catch {
+      lines.push('dd.env: 读取失败');
+    }
+    setDiagnosis(lines);
+  }, [open]);
 
   /** 调起钉钉组织架构选人 */
   const handleOpenPicker = async () => {
@@ -57,6 +78,16 @@ export default function AdminConfigDialog({ open, onClose }: Props) {
         return;
       }
       cfg = configResult.config;
+      setLastConfig(cfg || null);
+
+      if (typeof (dd as any).biz?.contact?.complexPicker !== 'function') {
+        setMsg({
+          type: 'error',
+          text: '当前环境不支持钉钉组织架构选人，请使用上方「输入姓名搜索」方式添加管理员。',
+        });
+        setPicking(false);
+        return;
+      }
 
       (dd as any).biz.contact.complexPicker({
         title: '选择管理员',
@@ -75,13 +106,16 @@ export default function AdminConfigDialog({ open, onClose }: Props) {
           }
           setPicking(false);
         },
-        onFail: (err: { errorCode?: number; errorMessage?: string; message?: string }) => {
+        onFail: (err: { errorCode?: number | string; errorMessage?: string; message?: string; [k: string]: unknown }) => {
           console.warn('钉钉选人失败:', err);
           const detail = err?.errorMessage || err?.message || JSON.stringify(err);
           const configHint = cfg
-            ? `（corpId=${cfg.corpId}，agentId=${cfg.agentId}，请核对是否与钉钉后台一致）`
+            ? `（corpId=${cfg.corpId}，agentId=${cfg.agentId}，timeStamp=${cfg.timeStamp}，请核对这些值是否与钉钉后台「蜀资点兵」应用一致）`
             : '';
-          setMsg({ type: 'error', text: `钉钉选人失败：${detail}${configHint}` });
+          setMsg({
+            type: 'error',
+            text: `钉钉选人失败：${detail}${configHint}。若持续失败，请改用上方「输入姓名搜索」。`,
+          });
           setPicking(false);
         },
       });
@@ -135,6 +169,9 @@ export default function AdminConfigDialog({ open, onClose }: Props) {
             department: u.department,
           })),
         );
+        if (list.length === 0) {
+          setMsg({ type: 'error', text: '未找到匹配用户，请尝试更完整姓名或使用「从钉钉组织架构选择」。' });
+        }
       } catch (e) {
         console.warn('搜索用户失败:', e);
         const msg = e instanceof Error ? e.message : '搜索失败';
@@ -246,7 +283,7 @@ export default function AdminConfigDialog({ open, onClose }: Props) {
             </Stack>
           )}
 
-          {keyword.trim().length >= 2 && !searching && candidates.length === 0 && (
+          {keyword.trim().length >= 2 && !searching && candidates.length === 0 && !msg && (
             <Typography variant="caption" color="text.secondary" textAlign="center">
               未找到匹配用户，请尝试使用「从钉钉组织架构选择」
             </Typography>
@@ -285,6 +322,29 @@ export default function AdminConfigDialog({ open, onClose }: Props) {
               ))}
             </Stack>
           )}
+
+          {/* 诊断信息（可折叠） */}
+          <Accordion elevation={0} sx={{ bgcolor: 'transparent' }}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="caption" color="text.secondary">
+                钉钉环境诊断信息
+              </Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Stack spacing={0.5}>
+                {diagnosis.map((line, idx) => (
+                  <Typography key={idx} variant="caption" color="text.secondary" className="break-all">
+                    {line}
+                  </Typography>
+                ))}
+                {lastConfig && (
+                  <Typography variant="caption" color="text.secondary" className="break-all">
+                    最后鉴权配置：corpId={lastConfig.corpId}，agentId={lastConfig.agentId}
+                  </Typography>
+                )}
+              </Stack>
+            </AccordionDetails>
+          </Accordion>
         </Stack>
       </DialogContent>
       <DialogActions sx={{ px: 2, pb: 2 }}>

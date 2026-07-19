@@ -14,8 +14,8 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
-import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
+import Stack from '@mui/material/Stack';
 import CircularProgress from '@mui/material/CircularProgress';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
@@ -36,14 +36,6 @@ const FILTERS = [
   { key: '丢失', label: '丢失' },
 ];
 
-/** 状态对应颜色 */
-const STATUS_COLORS: Record<string, 'success' | 'warning' | 'error' | 'default' | 'info'> = {
-  '正常': 'success',
-  '待维修': 'warning',
-  '报废': 'error',
-  '丢失': 'error',
-};
-
 /**
  * 盘点记录页
  */
@@ -60,6 +52,7 @@ export default function RecordsPage() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
   const [showPhoto, setShowPhoto] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
 
   const fetchRecords = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -106,6 +99,7 @@ export default function RecordsPage() {
   const openDetail = async (record: RecordItem) => {
     setSelectedRecord(record);
     setShowPhoto(false);
+    setFullscreen(false);
     setDetailError(null);
     setDetailLoading(true);
     setDetailOpen(true);
@@ -126,6 +120,7 @@ export default function RecordsPage() {
     setDetailOpen(false);
     setSelectedRecord(null);
     setShowPhoto(false);
+    setFullscreen(false);
   };
 
   return (
@@ -268,7 +263,7 @@ export default function RecordsPage() {
           )}
 
           {!detailLoading && selectedRecord && (
-            <Box className="space-y-3">
+            <Box className="space-y-4">
               {/* 照片预览区（默认不加载） */}
               {selectedRecord.photoUrl ? (
                 <Paper
@@ -285,15 +280,23 @@ export default function RecordsPage() {
                       <span className="text-xs text-gray-300 mt-1">加载原图可能消耗较多流量</span>
                     </button>
                   ) : (
-                    <img
-                      src={selectedRecord.photoUrl}
-                      alt="盘点照片"
-                      className="w-full object-contain bg-gray-50"
-                      style={{ maxHeight: '360px' }}
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
+                    <button
+                      onClick={() => setFullscreen(true)}
+                      className="w-full block p-0 border-0 bg-transparent"
+                    >
+                      <img
+                        src={selectedRecord.photoUrl}
+                        alt="盘点照片"
+                        className="w-full object-contain bg-gray-50"
+                        style={{ maxHeight: '320px' }}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                      <span className="block text-xs text-center text-gray-400 py-2">
+                        点击照片可放大查看
+                      </span>
+                    </button>
                   )}
                 </Paper>
               ) : (
@@ -306,63 +309,50 @@ export default function RecordsPage() {
                 </Paper>
               )}
 
-              {/* 信息卡片 */}
-              <Paper elevation={0} className="rounded-xl p-3 bg-gray-50/50 border border-gray-100">
-                <Grid container spacing={2}>
-                  <Grid item xs={6}>
-                    <DetailItem
-                      icon={<InventoryIcon fontSize="small" color="action" />}
-                      label="资产名称"
-                      value={selectedRecord.assetName}
-                    />
-                  </Grid>
-                  <Grid item xs={6}>
-                    <DetailItem
-                      icon={<CategoryIcon fontSize="small" color="action" />}
-                      label="资产编码"
-                      value={selectedRecord.assetCode}
-                      mono
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <DetailItem
-                      icon={<AssignmentIcon fontSize="small" color="action" />}
-                      label="任务名称"
-                      value={selectedRecord.taskName}
-                    />
-                  </Grid>
-                  <Grid item xs={6}>
-                    <DetailItem
-                      label="盘点状态"
-                      value={<StatusBadge status={selectedRecord.status} />}
-                    />
-                  </Grid>
-                  <Grid item xs={6}>
-                    <DetailItem
-                      icon={<ScheduleIcon fontSize="small" color="action" />}
-                      label="盘点时间"
-                      value={formatTime(selectedRecord.createTime)}
-                    />
-                  </Grid>
+              {/* 信息卡片 - 单列布局，每行一个信息 */}
+              <Paper elevation={0} className="rounded-xl p-4 bg-gray-50/50 border border-gray-100">
+                <Stack spacing={2.5}>
+                  <DetailRow
+                    icon={<InventoryIcon fontSize="small" color="action" />}
+                    label="资产名称"
+                    value={selectedRecord.assetName}
+                  />
+                  <DetailRow
+                    icon={<CategoryIcon fontSize="small" color="action" />}
+                    label="资产编码"
+                    value={selectedRecord.assetCode}
+                    mono
+                  />
+                  <DetailRow
+                    icon={<AssignmentIcon fontSize="small" color="action" />}
+                    label="任务名称"
+                    value={selectedRecord.taskName}
+                  />
+                  <DetailRow
+                    icon={<Box component="span" className="w-4" />}
+                    label="盘点状态"
+                    value={<StatusBadge status={selectedRecord.status} />}
+                  />
+                  <DetailRow
+                    icon={<ScheduleIcon fontSize="small" color="action" />}
+                    label="盘点时间"
+                    value={formatTime(selectedRecord.createTime)}
+                  />
                   {selectedRecord.location && (
-                    <Grid item xs={12}>
-                      <DetailItem
-                        icon={<LocationOnIcon fontSize="small" color="action" />}
-                        label="位置"
-                        value={selectedRecord.location}
-                      />
-                    </Grid>
+                    <DetailRow
+                      icon={<LocationOnIcon fontSize="small" color="action" />}
+                      label="位置"
+                      value={selectedRecord.location}
+                    />
                   )}
                   {selectedRecord.remark && (
-                    <Grid item xs={12}>
-                      <DetailItem
-                        icon={<NotesIcon fontSize="small" color="action" />}
-                        label="备注"
-                        value={selectedRecord.remark}
-                      />
-                    </Grid>
+                    <DetailRow
+                      icon={<NotesIcon fontSize="small" color="action" />}
+                      label="备注"
+                      value={selectedRecord.remark}
+                    />
                   )}
-                </Grid>
+                </Stack>
               </Paper>
             </Box>
           )}
@@ -374,13 +364,38 @@ export default function RecordsPage() {
         </DialogActions>
       </Dialog>
 
+      {/* 全屏照片查看 */}
+      <Dialog
+        open={fullscreen}
+        onClose={() => setFullscreen(false)}
+        fullScreen
+        PaperProps={{ sx: { bgcolor: 'rgba(0,0,0,0.95)', color: '#fff' } }}
+      >
+        <Box
+          className="w-full h-full flex items-center justify-center"
+          onClick={() => setFullscreen(false)}
+        >
+          {selectedRecord?.photoUrl && (
+            <img
+              src={selectedRecord.photoUrl}
+              alt="盘点照片放大"
+              className="max-w-full max-h-full object-contain"
+              onClick={(e) => {
+                e.stopPropagation();
+                setFullscreen(false);
+              }}
+            />
+          )}
+        </Box>
+      </Dialog>
+
       <div className="h-4" />
     </div>
   );
 }
 
-/** 详情项小组件 */
-function DetailItem({
+/** 详情项小组件 - 每行一个信息 */
+function DetailRow({
   icon,
   label,
   value,
@@ -392,14 +407,14 @@ function DetailItem({
   mono?: boolean;
 }) {
   return (
-    <div className="flex flex-col gap-0.5">
-      <span className="text-xs text-gray-400 flex items-center gap-1">
-        {icon}
-        {label}
-      </span>
-      <span className={`text-sm text-gray-800 break-words ${mono ? 'font-mono' : 'font-medium'}`}>
-        {value}
-      </span>
+    <div className="flex items-start gap-3">
+      <div className="mt-0.5 text-gray-400 shrink-0">{icon}</div>
+      <div className="flex-1 min-w-0">
+        <div className="text-xs text-gray-400 mb-0.5">{label}</div>
+        <div className={`text-sm text-gray-800 break-words ${mono ? 'font-mono' : 'font-medium'}`}>
+          {value}
+        </div>
+      </div>
     </div>
   );
 }

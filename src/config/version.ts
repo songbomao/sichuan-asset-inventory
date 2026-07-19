@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607192053';
+export const APP_VERSION = 'v202607192100';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-19 20:53';
-export const RELEASE_NOTES = '修复：1) 盘点记录列表排除 PhotoUrl 大字段，新增 GetRecordDetail 详情接口，解决列表 30s 超时；2) 管理员搜索限制部门/用户范围加速返回，并显示搜索错误；3) dd.config 返回配置信息，组织架构选人失败时展示 corpId/agentId 便于核对。';
+export const RELEASE_TIME = '2026-07-19 21:00';
+export const RELEASE_NOTES = '优化：1) 盘点记录详情弹窗单列布局，信息不拥挤；2) 照片预览支持点击放大全屏，再次点击返回；3) 后端 GetMyItems 改 Join 单次查询加速列表；4) 管理员搜索改用钉钉 search_key 直接搜索，加速并提升成功率；5) 管理员配置增加钉钉环境诊断信息。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
