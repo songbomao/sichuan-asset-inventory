@@ -18,15 +18,17 @@ export async function reverseGeocode(
   try {
     const resp = await client.post('/api/Account/UniGetToken', {
       action: 'ReverseGeocode',
+      longitude,  // 注意：高德 API 要求 location=经度，纬度
       latitude,
-      longitude,
     });
-    const data = (resp.data as { code?: number; data?: { address?: string } }).data;
-    if (data && data.address) {
+    const data = (resp.data as { code?: number; msg?: string; data?: { address?: string } }).data;
+    if (data?.address) {
       return data.address;
     }
+    // 失败兜底
     return `${longitude.toFixed(4)}, ${latitude.toFixed(4)}`;
-  } catch {
+  } catch (e) {
+    console.warn('逆地理编码失败:', e);
     return `${longitude.toFixed(4)}, ${latitude.toFixed(4)}`;
   }
 }
