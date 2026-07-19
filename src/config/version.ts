@@ -5,7 +5,7 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607191621';
+export const APP_VERSION = 'v202607191646';
 export const APP_NAME = '蜀资点兵';
 export const RELEASE_TIME = '2026-07-19 16:08';
 export const RELEASE_NOTES = '修复：任务列表字段转 camelCase；逆地理编码参数顺序修正；PhotoUrl 改 TEXT 类型';

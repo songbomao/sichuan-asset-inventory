@@ -111,7 +111,7 @@ export default function CameraCapture({
   }, [cameraOpen]);
 
   /** 拍照 */
-  const takePhoto = useCallback(() => {
+  const takePhoto = useCallback(async () => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!video || !canvas) return;
@@ -121,6 +121,11 @@ export default function CameraCapture({
       return;
     }
 
+    // 如果水印地址还是经纬度（逗号分隔），等 1.5 秒让逆地理编码完成
+    if (watermark.location && /^\d+\.\d+, ?\d+\.\d+$/.test(watermark.location)) {
+      await new Promise((r) => setTimeout(r, 1500));
+    }
+
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
@@ -128,13 +133,27 @@ export default function CameraCapture({
     canvas.height = video.videoHeight;
     ctx.drawImage(video, 0, 0);
 
-    const rawDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+    // 限制最大宽度 1280px，等比缩放
+    let finalCanvas: HTMLCanvasElement = canvas;
+    if (canvas.width > 1280) {
+      const scale = 1280 / canvas.width;
+      const scaled = document.createElement('canvas');
+      scaled.width = 1280;
+      scaled.height = Math.round(canvas.height * scale);
+      const sctx = scaled.getContext('2d');
+      if (sctx) {
+        sctx.drawImage(canvas, 0, 0, scaled.width, scaled.height);
+        finalCanvas = scaled;
+      }
+    }
+
+    const rawDataUrl = finalCanvas.toDataURL('image/jpeg', 0.7);
     stopCamera();
     setCameraOpen(false);
 
     // 叠加水印
     addWatermark(rawDataUrl);
-  }, [stopCamera]);
+  }, [stopCamera, watermark.location, addWatermark]);
 
   /** 在照片上叠加水印 */
   const addWatermark = useCallback(
@@ -190,7 +209,7 @@ export default function CameraCapture({
         );
         ctx.restore();
 
-        const watermarked = canvas.toDataURL('image/jpeg', 0.85);
+        const watermarked = canvas.toDataURL('image/jpeg', 0.7);
         setPreviewSrc(watermarked);
         onCapture(watermarked);
       };
