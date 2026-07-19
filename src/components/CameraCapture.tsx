@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import Button from '@mui/material/Button';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
@@ -32,6 +32,7 @@ export default function CameraCapture({
   const streamRef = useRef<MediaStream | null>(null);
 
   const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraReady, setCameraReady] = useState(false);
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,6 +43,7 @@ export default function CameraCapture({
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
+    setCameraReady(false);
   }, []);
 
   /** 打开摄像头 */
@@ -54,25 +56,70 @@ export default function CameraCapture({
         audio: false,
       });
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
       setCameraOpen(true);
     } catch (err) {
       console.warn('摄像头权限被拒绝，降级为文件上传', err);
       // 降级：直接触发文件选择
       fileInputRef.current?.click();
+      setError('摄像头权限不足，已切换为相册选取');
     } finally {
       setLoading(false);
     }
   }, []);
+
+  /** 摄像头开启后，将 stream 绑定到 video 元素 */
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!cameraOpen || !video || !streamRef.current) return;
+
+    setCameraReady(false);
+    video.srcObject = streamRef.current;
+    video.playsInline = true;
+    video.muted = true;
+    video.setAttribute('webkit-playsinline', 'true');
+
+    const handleLoaded = () => {
+      // 等待视频尺寸可用
+      if (video.videoWidth > 0 && video.videoHeight > 0) {
+        setCameraReady(true);
+      }
+    };
+
+    const handleCanPlay = async () => {
+      try {
+        await video.play();
+      } catch (e) {
+        console.warn('video.play() 被阻止', e);
+      }
+    };
+
+    video.addEventListener('loadedmetadata', handleLoaded);
+    video.addEventListener('canplay', handleCanPlay);
+
+    // 兜底：延迟再检查一次
+    const timer = setTimeout(() => {
+      if (video.videoWidth > 0 && video.videoHeight > 0) {
+        setCameraReady(true);
+      }
+    }, 800);
+
+    return () => {
+      video.removeEventListener('loadedmetadata', handleLoaded);
+      video.removeEventListener('canplay', handleCanPlay);
+      clearTimeout(timer);
+    };
+  }, [cameraOpen]);
 
   /** 拍照 */
   const takePhoto = useCallback(() => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!video || !canvas) return;
+
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      setError('摄像头尚未就绪，请稍等片刻');
+      return;
+    }
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -225,12 +272,20 @@ export default function CameraCapture({
             style={{ maxHeight: '360px', background: '#000' }}
             playsInline
             muted
+            autoPlay
           />
+          {!cameraReady && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black text-white/80">
+              <CircularProgress size={28} color="inherit" sx={{ mb: 1 }} />
+              <span className="text-sm">正在启动摄像头...</span>
+            </div>
+          )}
           <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-4">
             <Button
               variant="contained"
               onClick={takePhoto}
               startIcon={<CameraAltIcon />}
+              disabled={!cameraReady}
               sx={{ borderRadius: '24px', px: 3 }}
             >
               拍照

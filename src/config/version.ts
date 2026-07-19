@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607191200';
+export const APP_VERSION = 'v202607191240';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-19 12:00';
-export const RELEASE_NOTES = '批量补齐：复盘流程+钉钉推送+进度看板+盘点报告+资产全生命周期';
+export const RELEASE_TIME = '2026-07-19 12:40';
+export const RELEASE_NOTES = '修复：钉钉用户信息补全（部门/手机/头像）+ 拍照组件视频流绑定';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -22,9 +22,14 @@ export const VERSION_HISTORY: Array<{
     notes: RELEASE_NOTES,
   },
   {
-    version: 'v202607190130',
-    time: '2026-07-19 01:30',
-    notes: '修复任务列表：后端返回 { total, list }，前端取 list 数组',
+    version: 'v202607191300',
+    time: '2026-07-19 13:00',
+    notes: '修复后端 InventoryTaskService GroupBy 语法：改为内存聚合',
+  },
+  {
+    version: 'v202607191200',
+    time: '2026-07-19 12:00',
+    notes: '批量补齐：复盘流程+钉钉推送+进度看板+盘点报告+资产全生命周期',
   },
   {
     version: 'v202607182240',
