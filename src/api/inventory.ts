@@ -94,12 +94,16 @@ interface MyRecordsResponse {
 
 /**
  * 获取我的盘点记录
- * GET /api/Account/Task/GetMyItems?page={page}&pageSize={pageSize}
+ * POST /api/Account/UniGetToken { action: "GetMyItems", page, pageSize }
+ * 与 getTaskList 保持一致的 POST body 调用方式，避免钉钉 WebView 对 GET 跨域请求的拦截
  */
 export async function getMyRecords(page = 1, pageSize = 50): Promise<{ total: number; page: number; pageSize: number; list: RecordItem[] }> {
-  const { data } = await client.get<MyRecordsResponse>('/api/Account/Task/GetMyItems', {
-    params: { page, pageSize },
+  const resp = await client.post('/api/Account/UniGetToken', {
+    action: 'GetMyItems',
+    page,
+    pageSize,
   });
+  const data = resp.data as { code: number; data: { total: number; page: number; pageSize: number; list: RecordItem[] }; msg: string; message: string };
   if (data.code === 0 || data.code === 200) {
     return {
       total: data.data?.total ?? 0,
@@ -113,13 +117,14 @@ export async function getMyRecords(page = 1, pageSize = 50): Promise<{ total: nu
 
 /**
  * 获取单条盘点记录详情（含照片）
- * GET /api/Account/Task/GetRecordDetail?recordId={id}
+ * POST /api/Account/UniGetToken { action: "GetRecordDetail", recordId }
  */
 export async function getRecordDetail(recordId: string): Promise<RecordItem> {
-  const { data } = await client.get<{ code: number; data: RecordItem; message: string; msg?: string }>(
-    '/api/Account/Task/GetRecordDetail',
-    { params: { recordId } },
-  );
+  const resp = await client.post('/api/Account/UniGetToken', {
+    action: 'GetRecordDetail',
+    recordId,
+  });
+  const data = resp.data as { code: number; data: RecordItem; msg: string; message: string };
   if (data.code === 0 || data.code === 200) {
     return data.data;
   }
