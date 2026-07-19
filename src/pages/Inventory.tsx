@@ -18,6 +18,7 @@ import DialogActions from '@mui/material/DialogActions';
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
 import { getTaskDetail, getProgress, type AssetInfo } from '../api/tasks';
 import { submitRecord, getAssetByCode } from '../api/inventory';
+import { reverseGeocode } from '../api/dingtalk';
 import { useAuth } from '../contexts/AuthContext';
 import CameraCapture from '../components/CameraCapture';
 import ProgressBar from '../components/ProgressBar';
@@ -97,20 +98,28 @@ export default function InventoryPage() {
     );
   }, []);
 
-  /** 获取 GPS 位置 */
-  const getGPS = useCallback(() => {
+  /** 获取 GPS 位置（并逆地理编码为具体地址） */
+  const getGPS = useCallback(async () => {
     if (!navigator.geolocation) {
       setGpsLocation('设备不支持定位');
       return;
     }
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
+      async (pos) => {
         const { latitude, longitude } = pos.coords;
         setGpsCoords({
           latitude: latitude.toFixed(6),
           longitude: longitude.toFixed(6),
         });
+        // 先显示经纬度，逆地理编码失败也有兜底
         setGpsLocation(`${longitude.toFixed(4)}, ${latitude.toFixed(4)}`);
+        // 逆地理编码：经纬度 → 具体地址（钉钉 JSAPI）
+        try {
+          const addr = await reverseGeocode(latitude, longitude);
+          setGpsLocation(addr);
+        } catch {
+          // 失败保留经纬度
+        }
       },
       () => {
         setGpsLocation('定位失败');
