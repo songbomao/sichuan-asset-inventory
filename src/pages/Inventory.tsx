@@ -279,6 +279,12 @@ export default function InventoryPage() {
         percentage: Math.round(((prev.completed + 1) / prev.total) * 100),
       }));
 
+      // 重置当前盘点表单（照片/备注/状态/水印时间），避免带入下一个资产
+      setAssetStatus('正常');
+      setRemark('');
+      setPhotos([]);
+      updateTime();
+
       // 自动跳到下一个
       if (currentIndex < assets.length - 1) {
         setCurrentIndex((prev) => prev + 1);
