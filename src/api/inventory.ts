@@ -79,52 +79,35 @@ export interface RecordItem {
   location: string;
 }
 
-/** 我的记录响应（支持分页） */
+/** 我的记录响应 */
 interface MyRecordsResponse {
   code: number;
-  data: {
-    total: number;
-    page: number;
-    pageSize: number;
-    list: RecordItem[];
-  };
+  data: RecordItem[];
   message: string;
   msg?: string;
 }
 
 /**
  * 获取我的盘点记录
- * POST /api/Account/UniGetToken { action: "GetMyItems", page, pageSize }
- * 与 getTaskList 保持一致的 POST body 调用方式，避免钉钉 WebView 对 GET 跨域请求的拦截
+ * GET /api/Account/Task/GetMyItems
  */
-export async function getMyRecords(page = 1, pageSize = 50): Promise<{ total: number; page: number; pageSize: number; list: RecordItem[] }> {
-  const resp = await client.post('/api/Account/UniGetToken', {
-    action: 'GetMyItems',
-    page,
-    pageSize,
-  });
-  const data = resp.data as { code: number; data: { total: number; page: number; pageSize: number; list: RecordItem[] }; msg: string; message: string };
+export async function getMyRecords(): Promise<RecordItem[]> {
+  const { data } = await client.get<MyRecordsResponse>('/api/Account/Task/GetMyItems');
   if (data.code === 0 || data.code === 200) {
-    return {
-      total: data.data?.total ?? 0,
-      page: data.data?.page ?? page,
-      pageSize: data.data?.pageSize ?? pageSize,
-      list: data.data?.list ?? [],
-    };
+    return data.data;
   }
   throw new Error(data.msg || data.message || '获取盘点记录失败');
 }
 
 /**
  * 获取单条盘点记录详情（含照片）
- * POST /api/Account/UniGetToken { action: "GetRecordDetail", recordId }
+ * GET /api/Account/Task/GetRecordDetail?recordId={id}
  */
 export async function getRecordDetail(recordId: string): Promise<RecordItem> {
-  const resp = await client.post('/api/Account/UniGetToken', {
-    action: 'GetRecordDetail',
-    recordId,
-  });
-  const data = resp.data as { code: number; data: RecordItem; msg: string; message: string };
+  const { data } = await client.get<{ code: number; data: RecordItem; message: string; msg?: string }>(
+    '/api/Account/Task/GetRecordDetail',
+    { params: { recordId } },
+  );
   if (data.code === 0 || data.code === 200) {
     return data.data;
   }

@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607192230';
+export const APP_VERSION = 'v202607192245';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-19 22:30';
-export const RELEASE_NOTES = '修复：getMyRecords/getRecordDetail 改为 POST body 调用（与 getTaskList 一致），解决钉钉 WebView 中 GET 请求可能触发的 network error。前端与后端 v202607192200 配套。';
+export const RELEASE_TIME = '2026-07-19 22:45';
+export const RELEASE_NOTES = '紧急回退：getMyRecords/getRecordDetail 恢复到 v202607192100 的 GET 直调数组方案；同时保留后端 GetMyItems 的分页参数兼容（默认 page=1/pageSize=50，内存分页）。彻底解决 v202607192200 后 ToPageList 在 LeftJoin 下的 network error 风险。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -22,7 +22,7 @@ export const VERSION_HISTORY: Array<{
     notes: RELEASE_NOTES,
   },
   {
-    version: 'v202607192200',
+    version: 'v202607192230',
     time: '2026-07-19 21:00',
     notes: '优化：1) 盘点记录详情弹窗单列布局，信息不拥挤；2) 照片预览支持点击放大全屏，再次点击返回；3) 后端 GetMyItems 改 Join 单次查询加速列表；4) 管理员搜索改用钉钉 search_key 直接搜索，加速并提升成功率；5) 管理员配置增加钉钉环境诊断信息。',
   },
