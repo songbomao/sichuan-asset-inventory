@@ -18,7 +18,7 @@ import DialogActions from '@mui/material/DialogActions';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
 import CircularProgress from '@mui/material/CircularProgress';
-import { getAssignments, type ReviewAssignment } from '../api/review';
+import { getAssignments, submitReview, type ReviewAssignment } from '../api/review';
 import { getTaskDetail, type AssetInfo } from '../api/tasks';
 import { useAuth } from '../contexts/AuthContext';
 import StatusBadge from '../components/StatusBadge';
@@ -278,7 +278,6 @@ export default function ReviewPage() {
               if (!currentAssignment) return;
               setSubmitting(true);
               try {
-                const { submitReview } = await import('../api/review');
                 await submitReview({
                   assignmentId: currentAssignment.id,
                   assetCode: `#${currentAssignment.recordId}`,
