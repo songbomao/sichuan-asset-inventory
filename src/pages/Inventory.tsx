@@ -313,7 +313,7 @@ export default function InventoryPage() {
 
   return (
     <div
-      className="min-h-screen bg-gray-50 flex flex-col"
+      className="h-screen bg-gray-50 flex flex-col"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
@@ -341,14 +341,14 @@ export default function InventoryPage() {
       </header>
 
       {/* 进度条 */}
-      <div className="px-4 py-2 bg-white border-b border-gray-100">
+      <div className="px-4 py-2 bg-white border-b border-gray-100 shrink-0">
         <ProgressBar
           current={completedCodes.length + (isCompleted ? 0 : 0)}
           total={assets.length}
         />
       </div>
 
-      {/* 主内容区 - 刷卡区域 */}
+      {/* 主内容区 - 可滚动 */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {/* 已盘点提示 */}
         {isCompleted && (
@@ -365,22 +365,22 @@ export default function InventoryPage() {
             </h3>
             <StatusBadge status={isCompleted ? '正常' : 'pending'} />
           </div>
-          <div className="space-y-1.5 text-sm text-gray-600">
+          <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
             <div className="flex gap-2">
-              <span className="text-gray-400 w-16 shrink-0">资产编码</span>
+              <span className="text-gray-400 shrink-0">资产编码</span>
               <span className="font-mono text-primary font-medium">{currentAsset.assetCode}</span>
             </div>
             <div className="flex gap-2">
-              <span className="text-gray-400 w-16 shrink-0">分类</span>
+              <span className="text-gray-400 shrink-0">分类</span>
               <span>{currentAsset.category || '--'}</span>
             </div>
             <div className="flex gap-2">
-              <span className="text-gray-400 w-16 shrink-0">存放地点</span>
+              <span className="text-gray-400 shrink-0">存放地点</span>
               <span>{currentAsset.location || '--'}</span>
             </div>
             {currentAsset.department && (
               <div className="flex gap-2">
-                <span className="text-gray-400 w-16 shrink-0">部门</span>
+                <span className="text-gray-400 shrink-0">部门</span>
                 <span>{currentAsset.department}</span>
               </div>
             )}
@@ -449,7 +449,7 @@ export default function InventoryPage() {
             fullWidth
             label="备注"
             multiline
-            rows={3}
+            rows={2}
             value={remark}
             onChange={(e) => setRemark(e.target.value)}
             placeholder="填写盘点备注..."
@@ -457,7 +457,10 @@ export default function InventoryPage() {
             size="small"
           />
         </div>
+      </div>
 
+      {/* 底部操作区 - 始终可见 */}
+      <div className="px-4 py-3 bg-white border-t border-gray-100 shrink-0 space-y-3">
         {/* 导航按钮 */}
         <div className="flex items-center justify-between gap-2">
           <Button
@@ -502,9 +505,6 @@ export default function InventoryPage() {
             '📤 提交盘点记录'
           )}
         </Button>
-
-        {/* 底部安全间距 */}
-        <div className="h-4" />
       </div>
 
       {/* Snackbar 提示 */}
