@@ -22,13 +22,15 @@ interface TaskListResponse {
 
 /**
  * 获取盘点任务列表
- * GET /api/Account/Task/GetList
+ * POST /api/Account/UniGetToken { action: "GetTaskList" }
  */
 export async function getTaskList(): Promise<TaskItem[]> {
-  const { data } = await client.get<TaskListResponse>('/api/Account/Task/GetTaskList');
+  const resp = await client.post('/api/Account/UniGetToken', {
+    action: 'GetTaskList',
+  });
+  const data = resp.data as { code: number; data: { total: number; page: number; pageSize: number; list: TaskItem[] }; msg: string; message: string };
   if (data.code === 0 || data.code === 200) {
-    // 后端返回 { total, page, pageSize, list }，取 list 数组
-    return Array.isArray(data.data) ? data.data : (data.data?.list ?? []);
+    return data.data?.list ?? [];
   }
   throw new Error(data.msg || data.message || '获取任务列表失败');
 }
