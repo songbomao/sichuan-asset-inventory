@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607192130';
+export const APP_VERSION = 'v202607192200';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-19 21:30';
-export const RELEASE_NOTES = '优化：1) 盘点页改为一屏布局，根容器固定视口高度、底部操作区常驻，确保按钮始终完整可见；2) 照片为空时显示占位提示，消除中部留白；3) 后端 SearchUsersByName 改为遍历部门按姓名过滤（钉钉 search_key 不支持），修复管理员按姓名搜索无结果的问题。';
+export const RELEASE_TIME = '2026-07-19 22:00';
+export const RELEASE_NOTES = '优化：1) 管理员配置错误提示增加自动换行，确保 corpId/agentId 完整可见；2) 盘点记录页改为分页加载，默认每页 50 条并支持加载更多，避免数据量大时超时 network error；3) 后端 GetMyItems 支持分页，减少单次响应数据量。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -22,7 +22,7 @@ export const VERSION_HISTORY: Array<{
     notes: RELEASE_NOTES,
   },
   {
-    version: 'v202607192100',
+    version: 'v202607192130',
     time: '2026-07-19 21:00',
     notes: '优化：1) 盘点记录详情弹窗单列布局，信息不拥挤；2) 照片预览支持点击放大全屏，再次点击返回；3) 后端 GetMyItems 改 Join 单次查询加速列表；4) 管理员搜索改用钉钉 search_key 直接搜索，加速并提升成功率；5) 管理员配置增加钉钉环境诊断信息。',
   },

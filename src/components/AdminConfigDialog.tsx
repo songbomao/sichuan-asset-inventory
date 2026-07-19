@@ -251,7 +251,7 @@ export default function AdminConfigDialog({ open, onClose }: Props) {
           </Button>
 
           {msg && (
-            <Alert severity={msg.type} sx={{ fontSize: '0.85rem' }} onClose={() => setMsg(null)}>
+            <Alert severity={msg.type} sx={{ fontSize: '0.85rem', wordBreak: 'break-all', whiteSpace: 'pre-wrap' }} onClose={() => setMsg(null)}>
               {msg.text}
             </Alert>
           )}
