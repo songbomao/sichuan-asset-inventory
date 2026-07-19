@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607191428';
+export const APP_VERSION = 'v202607191429';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-19 14:28';
-export const RELEASE_NOTES = '改用高德逆地理编码（方案A）：盘点位置经纬度→具体地址改调后端 ReverseGeocode action，替代钉钉 biz.map.reverseGeocode（钉钉无此 JSAPI）';
+export const RELEASE_TIME = '2026-07-19 15:01';
+export const RELEASE_NOTES = '对齐后端 v202607191429：盘点位置逆地理编码显示具体地址';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
