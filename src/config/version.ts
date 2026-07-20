@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607201246';
+export const APP_VERSION = 'v202607201400';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-20 12:46';
-export const RELEASE_NOTES = '管理员选人优化：1) 后端 access_token 缓存 + 搜索只查根部门及直接子部门，减少超时和 network error；2) 组织架构选人失败提示更明确，引导改用姓名搜索。';
+export const RELEASE_TIME = '2026-07-20 14:00';
+export const RELEASE_NOTES = '修复管理员搜索失效：后端 SearchUsersByName 恢复递归遍历全企业部门，确保深层部门用户可被搜到；保留 access_token 缓存提速。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -20,6 +20,11 @@ export const VERSION_HISTORY: Array<{
     version: APP_VERSION,
     time: RELEASE_TIME,
     notes: RELEASE_NOTES,
+  },
+  {
+    version: 'v202607201246',
+    time: '2026-07-20 12:46',
+    notes: '管理员选人优化：1) 后端 access_token 缓存 + 搜索只查根部门及直接子部门，减少超时和 network error；2) 组织架构选人失败提示更明确，引导改用姓名搜索。',
   },
   {
     version: 'v202607201230',
