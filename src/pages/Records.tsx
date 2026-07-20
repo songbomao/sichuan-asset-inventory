@@ -1,4 +1,5 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import React from 'react';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
@@ -9,15 +10,15 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import IconButton from '@mui/material/IconButton';
 import InboxIcon from '@mui/icons-material/Inbox';
 import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
+import Slide from '@mui/material/Slide';
+import type { TransitionProps } from '@mui/material/transitions';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import CircularProgress from '@mui/material/CircularProgress';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
+import CloseIcon from '@mui/icons-material/Close';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import InventoryIcon from '@mui/icons-material/Inventory';
@@ -35,6 +36,310 @@ const FILTERS = [
   { key: '报废', label: '报废' },
   { key: '丢失', label: '丢失' },
 ];
+
+/** 底部抽屉过渡 */
+const SlideUp = React.forwardRef(function SlideUp(
+  props: TransitionProps & { children: React.ReactElement },
+  ref: React.Ref<unknown>
+) {
+  return <Slide direction="up" ref={ref} {...props} />;
+});
+
+/** 格式化时间 */
+function formatTime(time: string): string {
+  if (!time) return '--';
+  try {
+    return new Date(time).toLocaleString('zh-CN', {
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  } catch {
+    return time;
+  }
+}
+
+/** 移动端详情抽屉 */
+function DetailDrawer({
+  open,
+  onClose,
+  loading,
+  error,
+  record,
+  showPhoto,
+  setShowPhoto,
+  setFullscreen,
+}: {
+  open: boolean;
+  onClose: () => void;
+  loading: boolean;
+  error: string | null;
+  record: RecordItem | null;
+  showPhoto: boolean;
+  setShowPhoto: (v: boolean) => void;
+  setFullscreen: (v: boolean) => void;
+}) {
+  // 下滑关闭手势
+  const startY = useRef(0);
+  const currentY = useRef(0);
+  const [dragOffset, setDragOffset] = useState(0);
+  const dragging = useRef(false);
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    startY.current = e.touches[0].clientY;
+    currentY.current = startY.current;
+    dragging.current = true;
+  };
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (!dragging.current) return;
+    currentY.current = e.touches[0].clientY;
+    const offset = Math.max(0, currentY.current - startY.current);
+    setDragOffset(offset);
+  };
+  const onTouchEnd = () => {
+    dragging.current = false;
+    if (dragOffset > 80) {
+      onClose();
+    }
+    setDragOffset(0);
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullScreen
+      TransitionComponent={SlideUp}
+      PaperProps={{
+        sx: {
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          top: 'auto',
+          m: 0,
+          maxWidth: '100%',
+          maxHeight: '92vh',
+          borderRadius: '24px 24px 0 0',
+          bgcolor: 'background.paper',
+          transform: `translateY(${dragOffset}px)`,
+          transition: dragging.current ? 'none' : 'transform 0.3s ease',
+          display: 'flex',
+          flexDirection: 'column',
+        },
+      }}
+      hideBackdrop={false}
+      BackdropProps={{ sx: { bgcolor: 'rgba(0,0,0,0.45)' } }}
+    >
+      {/* 拖拽条 */}
+      <Box
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        sx={{
+          width: '100%',
+          pt: 1.5,
+          pb: 0.5,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'column',
+          cursor: 'grab',
+        }}
+      >
+        <Box sx={{ width: 40, height: 4, borderRadius: 2, bgcolor: 'rgba(0,0,0,0.2)' }} />
+      </Box>
+
+      {/* 头部 */}
+      <Box sx={{ px: 2.5, pb: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.05rem' }}>
+          盘点详情
+        </Typography>
+        <IconButton size="small" onClick={onClose} sx={{ color: 'text.secondary' }}>
+          <CloseIcon />
+        </IconButton>
+      </Box>
+
+      {/* 内容区 */}
+      <Box sx={{ flex: 1, overflow: 'auto', px: 2.5, pb: 2 }}>
+        {loading && (
+          <Box className="py-8 flex flex-col items-center justify-center text-gray-400">
+            <CircularProgress size={28} sx={{ mb: 1.5 }} />
+            <span className="text-sm">正在加载照片…</span>
+          </Box>
+        )}
+
+        {error && (
+          <Alert severity="error" sx={{ mb: 2, fontSize: '0.8rem' }}>
+            {error}
+          </Alert>
+        )}
+
+        {!loading && record && (
+          <Box className="space-y-3">
+            {/* 照片区 */}
+            {record.photoUrl ? (
+              <Paper
+                elevation={0}
+                className="overflow-hidden rounded-2xl border border-gray-100"
+              >
+                {!showPhoto ? (
+                  <button
+                    onClick={() => setShowPhoto(true)}
+                    className="w-full py-6 flex items-center justify-center gap-3 text-gray-500 hover:bg-gray-50 transition-colors"
+                  >
+                    <PhotoCameraIcon sx={{ fontSize: 28, color: 'primary.main' }} />
+                    <div className="text-left">
+                      <div className="text-sm font-medium text-gray-700">查看照片</div>
+                      <div className="text-xs text-gray-400">点击加载原图</div>
+                    </div>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setFullscreen(true)}
+                    className="w-full block p-0 border-0 bg-transparent"
+                  >
+                    <img
+                      src={record.photoUrl}
+                      alt="盘点照片"
+                      className="w-full object-contain bg-gray-50"
+                      style={{ maxHeight: '240px' }}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                    <span className="block text-xs text-center text-gray-400 py-1.5">
+                      点击照片可放大查看
+                    </span>
+                  </button>
+                )}
+              </Paper>
+            ) : (
+              <Paper
+                elevation={0}
+                className="rounded-2xl border border-dashed border-gray-200 py-5 flex items-center justify-center gap-2 text-gray-400"
+              >
+                <PhotoCameraIcon sx={{ fontSize: 24 }} />
+                <span className="text-sm">无照片</span>
+              </Paper>
+            )}
+
+            {/* 主要信息 */}
+            <Paper elevation={0} className="rounded-2xl p-3.5 bg-gray-50/60 border border-gray-100">
+              <Stack spacing={2}>
+                <DetailRow
+                  icon={<InventoryIcon fontSize="small" color="action" />}
+                  label="资产名称"
+                  value={record.assetName}
+                  emphasized
+                />
+                <DetailRow
+                  icon={<CategoryIcon fontSize="small" color="action" />}
+                  label="资产编码"
+                  value={record.assetCode}
+                  mono
+                />
+                <DetailRow
+                  icon={<AssignmentIcon fontSize="small" color="action" />}
+                  label="任务名称"
+                  value={record.taskName}
+                />
+                <DetailRow
+                  icon={<Box component="span" className="w-4" />}
+                  label="盘点状态"
+                  value={<StatusBadge status={record.status} />}
+                />
+              </Stack>
+            </Paper>
+
+            {/* 次要信息 - 两列网格 */}
+            <Paper elevation={0} className="rounded-2xl p-3.5 bg-gray-50/60 border border-gray-100">
+              <div className="grid grid-cols-2 gap-x-3 gap-y-3">
+                <DetailItem label="盘点时间" value={formatTime(record.createTime)} icon={<ScheduleIcon fontSize="inherit" />} />
+                {record.location && (
+                  <DetailItem
+                    label="位置"
+                    value={record.location}
+                    icon={<LocationOnIcon fontSize="inherit" />}
+                    fullWidth
+                  />
+                )}
+                {record.remark && (
+                  <DetailItem
+                    label="备注"
+                    value={record.remark}
+                    icon={<NotesIcon fontSize="inherit" />}
+                    fullWidth
+                  />
+                )}
+              </div>
+            </Paper>
+          </Box>
+        )}
+      </Box>
+
+      {/* 底部关闭按钮 */}
+      <Box sx={{ px: 2.5, pb: 2, pt: 0.5 }}>
+        <Button onClick={onClose} variant="contained" fullWidth sx={{ borderRadius: 2, py: 1.1 }}>
+          关闭
+        </Button>
+      </Box>
+    </Dialog>
+  );
+}
+
+/** 详情项 - 单列行 */
+function DetailRow({
+  icon,
+  label,
+  value,
+  mono = false,
+  emphasized = false,
+}: {
+  icon?: React.ReactNode;
+  label: string;
+  value: React.ReactNode;
+  mono?: boolean;
+  emphasized?: boolean;
+}) {
+  return (
+    <div className="flex items-start gap-3">
+      <div className="mt-0.5 text-gray-400 shrink-0">{icon}</div>
+      <div className="flex-1 min-w-0">
+        <div className="text-xs text-gray-400 mb-0.5">{label}</div>
+        <div
+          className={`text-sm break-words ${mono ? 'font-mono' : emphasized ? 'font-bold text-gray-900' : 'font-medium text-gray-800'}`}
+        >
+          {value}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** 详情项 - 两列网格小项 */
+function DetailItem({
+  icon,
+  label,
+  value,
+  fullWidth = false,
+}: {
+  icon?: React.ReactNode;
+  label: string;
+  value: string;
+  fullWidth?: boolean;
+}) {
+  return (
+    <div className={`flex items-start gap-1.5 ${fullWidth ? 'col-span-2' : ''}`}>
+      <div className="mt-0.5 text-gray-400 shrink-0">{icon}</div>
+      <div className="flex-1 min-w-0">
+        <div className="text-[10px] text-gray-400 mb-0.5">{label}</div>
+        <div className="text-xs font-medium text-gray-700 break-words leading-relaxed">{value}</div>
+      </div>
+    </div>
+  );
+}
 
 /**
  * 盘点记录页
@@ -92,21 +397,6 @@ export default function RecordsPage() {
   const filteredRecords = filter === 'all'
     ? records
     : records.filter((r) => r.status === filter);
-
-  /** 格式化时间 */
-  const formatTime = (time: string): string => {
-    if (!time) return '--';
-    try {
-      return new Date(time).toLocaleString('zh-CN', {
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    } catch {
-      return time;
-    }
-  };
 
   /** 打开详情弹窗（列表不带照片，单独拉详情） */
   const openDetail = async (record: RecordItem) => {
@@ -269,131 +559,16 @@ export default function RecordsPage() {
       )}
 
       {/* 详情弹窗 */}
-      <Dialog
+      <DetailDrawer
         open={detailOpen}
         onClose={closeDetail}
-        fullWidth
-        maxWidth="xs"
-        PaperProps={{ sx: { borderRadius: 3 } }}
-      >
-        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.1rem', pb: 1 }}>
-          盘点详情
-        </DialogTitle>
-        <DialogContent sx={{ pt: '8px !important' }}>
-          {detailLoading && (
-            <Box className="py-8 flex flex-col items-center justify-center text-gray-400">
-              <CircularProgress size={32} sx={{ mb: 2 }} />
-              <span className="text-sm">正在加载照片…</span>
-            </Box>
-          )}
-
-          {detailError && (
-            <Alert severity="error" sx={{ mb: 2, fontSize: '0.85rem' }}>
-              {detailError}
-            </Alert>
-          )}
-
-          {!detailLoading && selectedRecord && (
-            <Box className="space-y-4">
-              {/* 照片预览区（默认不加载） */}
-              {selectedRecord.photoUrl ? (
-                <Paper
-                  elevation={0}
-                  className="overflow-hidden rounded-xl border border-gray-100"
-                >
-                  {!showPhoto ? (
-                    <button
-                      onClick={() => setShowPhoto(true)}
-                      className="w-full py-10 flex flex-col items-center justify-center text-gray-400 hover:bg-gray-50 transition-colors"
-                    >
-                      <PhotoCameraIcon sx={{ fontSize: 48, mb: 1, color: 'primary.main' }} />
-                      <span className="text-sm font-medium">点击预览照片</span>
-                      <span className="text-xs text-gray-300 mt-1">加载原图可能消耗较多流量</span>
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => setFullscreen(true)}
-                      className="w-full block p-0 border-0 bg-transparent"
-                    >
-                      <img
-                        src={selectedRecord.photoUrl}
-                        alt="盘点照片"
-                        className="w-full object-contain bg-gray-50"
-                        style={{ maxHeight: '320px' }}
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
-                      <span className="block text-xs text-center text-gray-400 py-2">
-                        点击照片可放大查看
-                      </span>
-                    </button>
-                  )}
-                </Paper>
-              ) : (
-                <Paper
-                  elevation={0}
-                  className="rounded-xl border border-dashed border-gray-200 py-8 flex flex-col items-center justify-center text-gray-400"
-                >
-                  <PhotoCameraIcon sx={{ fontSize: 40, mb: 1 }} />
-                  <span className="text-sm">无照片</span>
-                </Paper>
-              )}
-
-              {/* 信息卡片 - 单列布局，每行一个信息 */}
-              <Paper elevation={0} className="rounded-xl p-4 bg-gray-50/50 border border-gray-100">
-                <Stack spacing={2.5}>
-                  <DetailRow
-                    icon={<InventoryIcon fontSize="small" color="action" />}
-                    label="资产名称"
-                    value={selectedRecord.assetName}
-                  />
-                  <DetailRow
-                    icon={<CategoryIcon fontSize="small" color="action" />}
-                    label="资产编码"
-                    value={selectedRecord.assetCode}
-                    mono
-                  />
-                  <DetailRow
-                    icon={<AssignmentIcon fontSize="small" color="action" />}
-                    label="任务名称"
-                    value={selectedRecord.taskName}
-                  />
-                  <DetailRow
-                    icon={<Box component="span" className="w-4" />}
-                    label="盘点状态"
-                    value={<StatusBadge status={selectedRecord.status} />}
-                  />
-                  <DetailRow
-                    icon={<ScheduleIcon fontSize="small" color="action" />}
-                    label="盘点时间"
-                    value={formatTime(selectedRecord.createTime)}
-                  />
-                  {selectedRecord.location && (
-                    <DetailRow
-                      icon={<LocationOnIcon fontSize="small" color="action" />}
-                      label="位置"
-                      value={selectedRecord.location}
-                    />
-                  )}
-                  {selectedRecord.remark && (
-                    <DetailRow
-                      icon={<NotesIcon fontSize="small" color="action" />}
-                      label="备注"
-                      value={selectedRecord.remark}
-                    />
-                  )}
-                </Stack>
-              </Paper>
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 3 }}>
-          <Button onClick={closeDetail} variant="contained" fullWidth sx={{ borderRadius: 2 }}>
-            关闭
-          </Button>
-        </DialogActions>
-      </Dialog>
+        loading={detailLoading}
+        error={detailError}
+        record={selectedRecord}
+        showPhoto={showPhoto}
+        setShowPhoto={setShowPhoto}
+        setFullscreen={setFullscreen}
+      />
 
       {/* 全屏照片查看 */}
       <Dialog
@@ -421,31 +596,6 @@ export default function RecordsPage() {
       </Dialog>
 
       <div className="h-4" />
-    </div>
-  );
-}
-
-/** 详情项小组件 - 每行一个信息 */
-function DetailRow({
-  icon,
-  label,
-  value,
-  mono = false,
-}: {
-  icon?: React.ReactNode;
-  label: string;
-  value: React.ReactNode;
-  mono?: boolean;
-}) {
-  return (
-    <div className="flex items-start gap-3">
-      <div className="mt-0.5 text-gray-400 shrink-0">{icon}</div>
-      <div className="flex-1 min-w-0">
-        <div className="text-xs text-gray-400 mb-0.5">{label}</div>
-        <div className={`text-sm text-gray-800 break-words ${mono ? 'font-mono' : 'font-medium'}`}>
-          {value}
-        </div>
-      </div>
     </div>
   );
 }

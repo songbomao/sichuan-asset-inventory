@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607201030';
+export const APP_VERSION = 'v202607201130';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-20 10:30';
-export const RELEASE_NOTES = '恢复 GitHub Pages 托管模式：base 改回 /sichuan-asset-inventory/ 子路径；停止 Gitee 推送，恢复 GitHub 主推送。配套后端 v202607200910（GetMyItems 单表查询修复记录页 network error）。';
+export const RELEASE_TIME = '2026-07-20 11:30';
+export const RELEASE_NOTES = '移动端体验深度优化：盘点记录详情改为底部抽屉（Bottom Sheet）风格，支持下滑关闭、顶部拖拽条、照片区更紧凑、信息分主次两列网格，彻底告别桌面弹窗在手机上拥挤 awkward 的显示。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -22,9 +22,9 @@ export const VERSION_HISTORY: Array<{
     notes: RELEASE_NOTES,
   },
   {
-    version: 'v202607200958',
-    time: '2026-07-20 09:58',
-    notes: '部署调整：base 改为 / 适配 EdgeOne Pages 根域名托管（替代 GitHub Pages 子路径）；后端 GetMyItems 单表查询修复记录页 network error。',
+    version: 'v202607201030',
+    time: '2026-07-20 10:30',
+    notes: '恢复 GitHub Pages 托管模式：base 改回 /sichuan-asset-inventory/ 子路径；停止 Gitee 推送，恢复 GitHub 主推送。配套后端 v202607200910（GetMyItems 单表查询修复记录页 network error）。',
   },
   {
     version: 'v202607200910',
