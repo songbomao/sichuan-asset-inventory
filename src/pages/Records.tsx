@@ -180,25 +180,29 @@ function DetailDrawer({
           <Box className="space-y-3">
             {/* 照片区 */}
             {record.photoUrl ? (
-              <Paper
-                elevation={0}
-                className="overflow-hidden rounded-2xl border border-gray-100"
-              >
+              <Box>
                 {!showPhoto ? (
-                  <button
+                  <Box
                     onClick={() => setShowPhoto(true)}
-                    className="w-full py-6 flex items-center justify-center gap-3 text-gray-500 hover:bg-gray-50 transition-colors"
+                    className="relative w-full h-40 rounded-2xl overflow-hidden bg-gray-100 cursor-pointer"
                   >
-                    <PhotoCameraIcon sx={{ fontSize: 28, color: 'primary.main' }} />
-                    <div className="text-left">
-                      <div className="text-sm font-medium text-gray-700">查看照片</div>
-                      <div className="text-xs text-gray-400">点击加载原图</div>
-                    </div>
-                  </button>
+                    <img
+                      src={record.photoUrl}
+                      alt="盘点照片"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                    <Box className="absolute inset-0 flex items-center justify-center bg-black/30 text-white gap-1">
+                      <PhotoCameraIcon fontSize="small" />
+                      <span className="text-sm font-medium">查看原图</span>
+                    </Box>
+                  </Box>
                 ) : (
-                  <button
+                  <Box
                     onClick={() => setFullscreen(true)}
-                    className="w-full block p-0 border-0 bg-transparent"
+                    className="w-full rounded-2xl overflow-hidden bg-gray-100 cursor-pointer"
                   >
                     <img
                       src={record.photoUrl}
@@ -209,71 +213,38 @@ function DetailDrawer({
                         (e.target as HTMLImageElement).style.display = 'none';
                       }}
                     />
-                    <span className="block text-xs text-center text-gray-400 py-1.5">
-                      点击照片可放大查看
-                    </span>
-                  </button>
+                    <Box className="text-center text-xs text-gray-500 py-1.5">点击照片可放大查看</Box>
+                  </Box>
                 )}
-              </Paper>
+              </Box>
             ) : (
-              <Paper
-                elevation={0}
-                className="rounded-2xl border border-dashed border-gray-200 py-5 flex items-center justify-center gap-2 text-gray-400"
-              >
-                <PhotoCameraIcon sx={{ fontSize: 24 }} />
-                <span className="text-sm">无照片</span>
-              </Paper>
+              <Box className="h-32 rounded-2xl bg-gray-100 flex flex-col items-center justify-center text-gray-400 gap-1">
+                <PhotoCameraIcon fontSize="small" />
+                <span className="text-xs">无照片</span>
+              </Box>
             )}
 
             {/* 主要信息 */}
-            <Paper elevation={0} className="rounded-2xl p-3.5 bg-gray-50/60 border border-gray-100">
-              <Stack spacing={2}>
-                <DetailRow
-                  icon={<InventoryIcon fontSize="small" color="action" />}
-                  label="资产名称"
-                  value={record.assetName}
-                  emphasized
-                />
-                <DetailRow
-                  icon={<CategoryIcon fontSize="small" color="action" />}
-                  label="资产编码"
-                  value={record.assetCode}
-                  mono
-                />
-                <DetailRow
-                  icon={<AssignmentIcon fontSize="small" color="action" />}
-                  label="任务名称"
-                  value={record.taskName}
-                />
-                <DetailRow
-                  icon={<Box component="span" className="w-4" />}
-                  label="盘点状态"
-                  value={<StatusBadge status={record.status} />}
-                />
+            <Paper elevation={0} className="rounded-2xl p-4 bg-gray-50/60 border border-gray-100">
+              <Stack spacing={2.5}>
+                <InfoRow label="资产名称" value={record.assetName} bold />
+                <InfoRow label="资产编码" value={record.assetCode} mono />
+                <InfoRow label="任务名称" value={record.taskName} />
+                <InfoRow label="盘点状态" value={<StatusBadge status={record.status} />} />
               </Stack>
             </Paper>
 
-            {/* 次要信息 - 两列网格 */}
-            <Paper elevation={0} className="rounded-2xl p-3.5 bg-gray-50/60 border border-gray-100">
-              <div className="grid grid-cols-2 gap-x-3 gap-y-3">
-                <DetailItem label="盘点时间" value={formatTime(record.createTime)} icon={<ScheduleIcon fontSize="inherit" />} />
+            {/* 次要信息 */}
+            <Paper elevation={0} className="rounded-2xl p-4 bg-gray-50/60 border border-gray-100">
+              <Stack spacing={2.5}>
+                <InfoRow label="盘点时间" value={formatTime(record.createTime)} small />
                 {record.location && (
-                  <DetailItem
-                    label="位置"
-                    value={record.location}
-                    icon={<LocationOnIcon fontSize="inherit" />}
-                    fullWidth
-                  />
+                  <InfoRow label="位置" value={record.location} small multiline />
                 )}
                 {record.remark && (
-                  <DetailItem
-                    label="备注"
-                    value={record.remark}
-                    icon={<NotesIcon fontSize="inherit" />}
-                    fullWidth
-                  />
+                  <InfoRow label="备注" value={record.remark} small multiline />
                 )}
-              </div>
+              </Stack>
             </Paper>
           </Box>
         )}
@@ -289,53 +260,33 @@ function DetailDrawer({
   );
 }
 
-/** 详情项 - 单列行 */
-function DetailRow({
-  icon,
+/** 详情行：标签 + 值，同水平线，最紧凑 */
+function InfoRow({
   label,
   value,
+  bold = false,
   mono = false,
-  emphasized = false,
+  small = false,
+  multiline = false,
 }: {
-  icon?: React.ReactNode;
   label: string;
   value: React.ReactNode;
+  bold?: boolean;
   mono?: boolean;
-  emphasized?: boolean;
+  small?: boolean;
+  multiline?: boolean;
 }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="mt-0.5 text-gray-400 shrink-0">{icon}</div>
-      <div className="flex-1 min-w-0">
-        <div className="text-xs text-gray-400 mb-0.5">{label}</div>
-        <div
-          className={`text-sm break-words ${mono ? 'font-mono' : emphasized ? 'font-bold text-gray-900' : 'font-medium text-gray-800'}`}
-        >
-          {value}
-        </div>
+      <div className={`text-gray-400 shrink-0 pt-0.5 ${small ? 'text-[11px] w-12' : 'text-xs w-16'}`}>
+        {label}
       </div>
-    </div>
-  );
-}
-
-/** 详情项 - 两列网格小项 */
-function DetailItem({
-  icon,
-  label,
-  value,
-  fullWidth = false,
-}: {
-  icon?: React.ReactNode;
-  label: string;
-  value: string;
-  fullWidth?: boolean;
-}) {
-  return (
-    <div className={`flex items-start gap-1.5 ${fullWidth ? 'col-span-2' : ''}`}>
-      <div className="mt-0.5 text-gray-400 shrink-0">{icon}</div>
-      <div className="flex-1 min-w-0">
-        <div className="text-[10px] text-gray-400 mb-0.5">{label}</div>
-        <div className="text-xs font-medium text-gray-700 break-words leading-relaxed">{value}</div>
+      <div
+        className={`flex-1 min-w-0 ${small ? 'text-xs' : 'text-sm'} ${
+          mono ? 'font-mono' : bold ? 'font-bold text-gray-900' : 'text-gray-800'
+        } ${multiline ? 'leading-relaxed' : 'break-words'}`}
+      >
+        {value}
       </div>
     </div>
   );
