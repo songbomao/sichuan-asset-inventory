@@ -119,11 +119,11 @@ export default function AdminConfigDialog({ open, onClose }: Props) {
             envInfo = '；dd.env=读取失败';
           }
           const configHint = cfg
-            ? `（corpId=${cfg.corpId}，agentId=${cfg.agentId}，timeStamp=${cfg.timeStamp}${envInfo}）`
+            ? `（corpId=${cfg.corpId}，agentId=${cfg.agentId}${envInfo}）`
             : '';
           setMsg({
             type: 'error',
-            text: `钉钉选人失败：${detail}${configHint}。若当前企业不是中通服，请切换企业后再试；若企业正确，请让管理员在钉钉后台「蜀资点兵」开通「通讯录部门信息读取」和「通讯录成员信息读取」权限。仍失败可改用上方「输入姓名搜索」。`,
+            text: `钉钉选人失败：${detail}${configHint}。当前钉钉账号可能未切换到「中通服」企业，导致组织架构选人无法使用；建议直接改用上方「输入姓名搜索」添加管理员（该方式已验证可用）。`,
           });
           setPicking(false);
         },
@@ -246,6 +246,12 @@ export default function AdminConfigDialog({ open, onClose }: Props) {
           {keyword.trim().length > 0 && keyword.trim().length < 2 && (
             <Typography variant="caption" color="text.secondary">
               请至少输入 2 个字符
+            </Typography>
+          )}
+
+          {searching && (
+            <Typography variant="caption" color="text.secondary">
+              正在搜索钉钉通讯录，大型企业可能需要 3–5 秒，请稍候…
             </Typography>
           )}
 
