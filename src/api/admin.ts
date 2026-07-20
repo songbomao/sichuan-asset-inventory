@@ -97,6 +97,8 @@ export interface AdminUser {
   name: string;
   /** 部门名称 */
   department?: string;
+  /** 手机号 */
+  phone?: string;
 }
 
 /** 钉钉搜索用户结果 */
@@ -104,6 +106,8 @@ export interface DingtalkSearchUser {
   userId: string;
   name: string;
   department?: string;
+  /** 手机号（v202607201530 起返回） */
+  mobile?: string;
 }
 
 /** 搜索钉钉用户 */

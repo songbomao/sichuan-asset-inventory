@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607201450';
+export const APP_VERSION = 'v202607201530';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-20 14:50';
-export const RELEASE_NOTES = '后端搜索性能优化：管理员姓名搜索改用钉钉官方「按姓名搜索用户ID」接口，速度从秒级降到毫秒级，根治偶发 30s 超时；新接口不可用时自动回退并行部门遍历。';
+export const RELEASE_TIME = '2026-07-20 15:30';
+export const RELEASE_NOTES = '管理员搜索结果增强：搜索结果展示手机号（后端 SearchDingtalkUsers 返回 mobile 字段）；部门名兜底修复「未知部门」；管理员列表同步展示手机号。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -20,6 +20,11 @@ export const VERSION_HISTORY: Array<{
     version: APP_VERSION,
     time: RELEASE_TIME,
     notes: RELEASE_NOTES,
+  },
+  {
+    version: 'v202607201450',
+    time: '2026-07-20 14:50',
+    notes: '后端搜索性能优化：管理员姓名搜索改用钉钉官方「按姓名搜索用户ID」接口，速度从秒级降到毫秒级，根治偶发 30s 超时；新接口不可用时自动回退并行部门遍历。',
   },
   {
     version: 'v202607201400',

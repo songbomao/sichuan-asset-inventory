@@ -32,6 +32,7 @@ interface PickedUser {
   emplId: string;
   selectDeptName?: string;
   department?: string;
+  phone?: string;
 }
 
 export default function AdminConfigDialog({ open, onClose }: Props) {
@@ -176,6 +177,7 @@ export default function AdminConfigDialog({ open, onClose }: Props) {
             name: u.name,
             emplId: u.userId,
             department: u.department,
+            phone: u.mobile,
           })),
         );
         if (list.length === 0) {
@@ -202,6 +204,7 @@ export default function AdminConfigDialog({ open, onClose }: Props) {
       dingtalkUserId: u.emplId,
       name: u.name,
       department: u.selectDeptName || u.department,
+      phone: u.phone,
     });
   };
 
@@ -290,7 +293,8 @@ export default function AdminConfigDialog({ open, onClose }: Props) {
                       {u.name}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {u.selectDeptName || u.department || '未知部门'} · {u.emplId}
+                      {u.selectDeptName || u.department || '未知部门'}
+                      {u.phone ? ` · ${u.phone}` : ''}
                     </Typography>
                   </Stack>
                 </Button>
@@ -327,7 +331,9 @@ export default function AdminConfigDialog({ open, onClose }: Props) {
                       {u.name}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {u.department ? `${u.department} · ` : ''}{u.dingtalkUserId}
+                      {u.department ? `${u.department} · ` : ''}
+                      {u.phone ? `${u.phone} · ` : ''}
+                      {u.dingtalkUserId}
                     </Typography>
                   </Stack>
                   <IconButton size="small" onClick={() => handleDelete(u.dingtalkUserId)} color="error">
