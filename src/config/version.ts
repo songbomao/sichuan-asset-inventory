@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607201200';
+export const APP_VERSION = 'v202607201230';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-20 12:00';
-export const RELEASE_NOTES = '移动端详情抽屉再优化：去掉冗余图标，改为标签+值同水平线的紧凑布局，照片 thumbnail 直接可见，整体更简洁、信息密度更高。';
+export const RELEASE_TIME = '2026-07-20 12:30';
+export const RELEASE_NOTES = '管理员选人失败诊断增强：选人失败时自动附带 dd.env 环境信息，帮助快速定位 invalid corpId 是企业环境问题还是通讯录权限问题。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -22,9 +22,9 @@ export const VERSION_HISTORY: Array<{
     notes: RELEASE_NOTES,
   },
   {
-    version: 'v202607201130',
-    time: '2026-07-20 11:30',
-    notes: '移动端体验深度优化：盘点记录详情改为底部抽屉（Bottom Sheet）风格，支持下滑关闭、顶部拖拽条、照片区更紧凑、信息分主次两列网格。',
+    version: 'v202607201200',
+    time: '2026-07-20 12:00',
+    notes: '移动端详情抽屉再优化：去掉冗余图标，改为标签+值同水平线的紧凑布局，照片 thumbnail 直接可见，整体更简洁、信息密度更高。',
   },
   {
     version: 'v202607200910',

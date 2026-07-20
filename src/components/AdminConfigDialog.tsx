@@ -109,12 +109,21 @@ export default function AdminConfigDialog({ open, onClose }: Props) {
         onFail: (err: { errorCode?: number | string; errorMessage?: string; message?: string; [k: string]: unknown }) => {
           console.warn('钉钉选人失败:', err);
           const detail = err?.errorMessage || err?.message || JSON.stringify(err);
+          let envInfo = '';
+          try {
+            const env = (dd as any).env;
+            if (env) {
+              envInfo = `；dd.env=${JSON.stringify(env)}`;
+            }
+          } catch {
+            envInfo = '；dd.env=读取失败';
+          }
           const configHint = cfg
-            ? `（corpId=${cfg.corpId}，agentId=${cfg.agentId}，timeStamp=${cfg.timeStamp}，请核对这些值是否与钉钉后台「蜀资点兵」应用一致）`
+            ? `（corpId=${cfg.corpId}，agentId=${cfg.agentId}，timeStamp=${cfg.timeStamp}${envInfo}）`
             : '';
           setMsg({
             type: 'error',
-            text: `钉钉选人失败：${detail}${configHint}。若持续失败，请改用上方「输入姓名搜索」。`,
+            text: `钉钉选人失败：${detail}${configHint}。若当前企业不是中通服，请切换企业后再试；若企业正确，请让管理员在钉钉后台「蜀资点兵」开通「通讯录部门信息读取」和「通讯录成员信息读取」权限。仍失败可改用上方「输入姓名搜索」。`,
           });
           setPicking(false);
         },
