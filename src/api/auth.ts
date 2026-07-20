@@ -11,6 +11,10 @@ export interface DingtalkUserInfo {
   dingtalkUserId?: string;
   avatar?: string;
   company?: string;
+  /** 是否为管理员（含超级管理员） */
+  isAdmin?: boolean;
+  /** 是否为超级管理员 */
+  isSuper?: boolean;
 }
 
 /** 钉钉免登响应（UniGetToken 返回 authCode 分支） */

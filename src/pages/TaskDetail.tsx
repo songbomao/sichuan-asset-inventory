@@ -14,6 +14,7 @@ import AssessmentIcon from '@mui/icons-material/Assessment';
 import RateReviewIcon from '@mui/icons-material/RateReview';
 import DescriptionIcon from '@mui/icons-material/Description';
 import { getTaskDetail, getProgress } from '../api/tasks';
+import { useAuth } from '../contexts/AuthContext';
 
 /**
  * 任务详情入口页（盘点/复盘/看板/报告 分流）
@@ -21,6 +22,7 @@ import { getTaskDetail, getProgress } from '../api/tasks';
 export default function TaskDetailPage() {
   const { taskId } = useParams<{ taskId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [taskName, setTaskName] = useState('');
   const [assetCount, setAssetCount] = useState(0);
@@ -78,36 +80,42 @@ export default function TaskDetailPage() {
     );
   }
 
-  const menus = [
-    {
-      title: '开始盘点',
-      desc: `共 ${assetCount} 件资产 · 已完成 ${progress.completed} 件`,
-      icon: <PlaylistAddCheckIcon sx={{ fontSize: 32, color: '#1a237e' }} />,
-      path: `/tasks/${taskId}/inventory`,
-      color: 'border-l-4 border-l-primary',
-    },
-    {
-      title: '进度看板',
-      desc: `完成率 ${progress.percentage}%`,
-      icon: <AssessmentIcon sx={{ fontSize: 32, color: '#7c4dff' }} />,
-      path: `/tasks/${taskId}/dashboard`,
-      color: 'border-l-4 border-l-purple-500',
-    },
-    {
-      title: '复盘管理',
-      desc: '查看和提交复盘任务',
-      icon: <RateReviewIcon sx={{ fontSize: 32, color: '#ff9800' }} />,
-      path: `/tasks/${taskId}/review`,
-      color: 'border-l-4 border-l-orange-500',
-    },
-    {
-      title: '盘点报告',
-      desc: '查看本次盘点统计报告',
-      icon: <DescriptionIcon sx={{ fontSize: 32, color: '#4caf50' }} />,
-      path: `/tasks/${taskId}/report`,
-      color: 'border-l-4 border-l-green-500',
-    },
-  ];
+  const inventoryMenu = {
+    title: '开始盘点',
+    desc: `共 ${assetCount} 件资产 · 已完成 ${progress.completed} 件`,
+    icon: <PlaylistAddCheckIcon sx={{ fontSize: 32, color: '#1a237e' }} />,
+    path: `/tasks/${taskId}/inventory`,
+    color: 'border-l-4 border-l-primary',
+  };
+
+  // 看板 / 复盘 / 报告 仅管理员可见
+  const adminMenus = user?.isAdmin
+    ? [
+        {
+          title: '进度看板',
+          desc: `完成率 ${progress.percentage}%`,
+          icon: <AssessmentIcon sx={{ fontSize: 32, color: '#7c4dff' }} />,
+          path: `/tasks/${taskId}/dashboard`,
+          color: 'border-l-4 border-l-purple-500',
+        },
+        {
+          title: '复盘管理',
+          desc: '查看和提交复盘任务',
+          icon: <RateReviewIcon sx={{ fontSize: 32, color: '#ff9800' }} />,
+          path: `/tasks/${taskId}/review`,
+          color: 'border-l-4 border-l-orange-500',
+        },
+        {
+          title: '盘点报告',
+          desc: '查看本次盘点统计报告',
+          icon: <DescriptionIcon sx={{ fontSize: 32, color: '#4caf50' }} />,
+          path: `/tasks/${taskId}/report`,
+          color: 'border-l-4 border-l-green-500',
+        },
+      ]
+    : [];
+
+  const menus = [inventoryMenu, ...adminMenus];
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">

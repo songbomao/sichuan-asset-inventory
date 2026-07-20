@@ -12,6 +12,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import LinearProgress from '@mui/material/LinearProgress';
 import { getDashboard, type DashboardData } from '../api/dashboard';
 import { getTaskDetail } from '../api/tasks';
+import { useAuth } from '../contexts/AuthContext';
 
 /**
  * 进度监控看板
@@ -47,6 +48,16 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  const { user } = useAuth();
+  if (!user?.isAdmin) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gray-50">
+        <Alert severity="warning" sx={{ mb: 2, width: '100%', maxWidth: 360 }}>无权限：仅管理员可查看进度看板。</Alert>
+        <Button variant="outlined" onClick={() => navigate(-1)}>返回</Button>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

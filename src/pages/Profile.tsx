@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
@@ -15,9 +15,12 @@ import CorporateFareIcon from '@mui/icons-material/CorporateFare';
 import PhoneIcon from '@mui/icons-material/Phone';
 import FingerprintIcon from '@mui/icons-material/Fingerprint';
 import SettingsIcon from '@mui/icons-material/Settings';
+import StarIcon from '@mui/icons-material/Star';
 import Chip from '@mui/material/Chip';
+import Alert from '@mui/material/Alert';
 import { useAuth } from '../contexts/AuthContext';
 import { APP_VERSION, RELEASE_NOTES } from '../config/version';
+import { getAdminInfo, bootstrapSuperAdmin, type AdminInfo } from '../api/admin';
 import AdminConfigDialog from '../components/AdminConfigDialog';
 
 /** 信息行组件 */
@@ -33,13 +36,29 @@ function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string;
   );
 }
 
+/** 角色中文标签 */
+function roleLabel(role?: string): string {
+  if (role === 'superadmin') return '超级管理员';
+  if (role === 'admin') return '管理员';
+  return '盘点员';
+}
+
 /**
  * 个人中心页面
  */
 export default function ProfilePage() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, refreshAdmin, logout } = useAuth();
   const [adminDialogOpen, setAdminDialogOpen] = useState(false);
+  const [adminInfo, setAdminInfo] = useState<AdminInfo | null>(null);
+  const [bootstrapping, setBootstrapping] = useState(false);
+
+  // 拉取当前权限信息（判断是否已初始化管理员、是否超级管理员）
+  useEffect(() => {
+    getAdminInfo()
+      .then(setAdminInfo)
+      .catch(() => setAdminInfo(null));
+  }, []);
 
   const handleLogout = () => {
     // 设置退出标记，防止登录页自动触发钉钉免登
@@ -47,6 +66,25 @@ export default function ProfilePage() {
     logout();
     navigate('/login', { replace: true });
   };
+
+  /** 一键初始化超级管理员（仅当系统尚无管理员时） */
+  const handleBootstrap = async () => {
+    setBootstrapping(true);
+    try {
+      await bootstrapSuperAdmin();
+      await refreshAdmin();
+      const info = await getAdminInfo();
+      setAdminInfo(info);
+      alert('初始化成功，您已成为超级管理员，现在可以配置其他管理员了。');
+    } catch (e) {
+      alert(e instanceof Error ? e.message : '初始化失败');
+    } finally {
+      setBootstrapping(false);
+    }
+  };
+
+  const isSuper = adminInfo?.isSuper ?? user?.isSuper ?? false;
+  const role = user?.role ?? '';
 
   return (
     <div className="p-4 space-y-4">
@@ -81,9 +119,9 @@ export default function ProfilePage() {
               @{user?.username || '--'}
             </Typography>
             <Chip
-              label={user?.role || '盘点员'}
+              label={roleLabel(role)}
               size="small"
-              color="primary"
+              color={role === 'superadmin' ? 'warning' : role === 'admin' ? 'primary' : 'default'}
               variant="outlined"
               sx={{ mt: 0.5 }}
             />
@@ -102,16 +140,37 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
-      {/* 管理员设置 */}
-      <Button
-        variant="outlined"
-        fullWidth
-        startIcon={<SettingsIcon />}
-        onClick={() => setAdminDialogOpen(true)}
-        sx={{ py: 1.3, borderRadius: '12px', textTransform: 'none' }}
-      >
-        管理员设置
-      </Button>
+      {/* 未初始化管理员：超级管理员一键初始化 */}
+      {adminInfo && !adminInfo.hasAnyAdmin && (
+        <Alert severity="info" sx={{ fontSize: '0.85rem' }}>
+          系统尚未设置管理员。点击下方按钮，将<strong>当前账号</strong>设为超级管理员（拥有全部权限，并可继续配置其他管理员）。
+        </Alert>
+      )}
+      {adminInfo && !adminInfo.hasAnyAdmin && (
+        <Button
+          variant="contained"
+          fullWidth
+          startIcon={<StarIcon />}
+          disabled={bootstrapping}
+          onClick={handleBootstrap}
+          sx={{ py: 1.3, borderRadius: '12px', textTransform: 'none' }}
+        >
+          {bootstrapping ? '初始化中...' : '初始化超级管理员'}
+        </Button>
+      )}
+
+      {/* 管理员配置（仅超级管理员可见） */}
+      {isSuper && (
+        <Button
+          variant="outlined"
+          fullWidth
+          startIcon={<SettingsIcon />}
+          onClick={() => setAdminDialogOpen(true)}
+          sx={{ py: 1.3, borderRadius: '12px', textTransform: 'none' }}
+        >
+          管理员配置
+        </Button>
+      )}
 
       {/* 退出登录 */}
       <Button
@@ -137,7 +196,14 @@ export default function ProfilePage() {
       </Typography>
 
       {/* 管理员配置弹窗 */}
-      <AdminConfigDialog open={adminDialogOpen} onClose={() => setAdminDialogOpen(false)} />
+      <AdminConfigDialog
+        open={adminDialogOpen}
+        onClose={() => setAdminDialogOpen(false)}
+        onChanged={async () => {
+          await refreshAdmin();
+          try { setAdminInfo(await getAdminInfo()); } catch { /* ignore */ }
+        }}
+      />
     </div>
   );
 }

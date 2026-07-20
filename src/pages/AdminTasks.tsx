@@ -26,6 +26,7 @@ import {
   type AdminTaskItem,
   type CreateTaskParams,
 } from '../api/admin';
+import { useAuth } from '../contexts/AuthContext';
 
 const scopeTypeOptions = [
   { value: 'all', label: '全部资产' },
@@ -56,6 +57,16 @@ export default function AdminTasks() {
   const [tasks, setTasks] = useState<AdminTaskItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+
+  // 仅管理员可进入任务管理
+  if (!user?.isAdmin) {
+    return (
+      <div className="p-4">
+        <Alert severity="warning">无权限：仅管理员可进入任务管理。</Alert>
+      </div>
+    );
+  }
 
   /* ---- 新建任务 Dialog ---- */
   const [dialogOpen, setDialogOpen] = useState(false);

@@ -77,6 +77,16 @@ export default function ReviewPage() {
     fetchData();
   }, [fetchData]);
 
+  // 复盘全管理员化：仅管理员可进入（含提交）
+  if (!user?.isAdmin) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gray-50">
+        <Alert severity="warning" sx={{ mb: 2, width: '100%', maxWidth: 360 }}>无权限：仅管理员可查看/提交复盘。</Alert>
+        <Button variant="outlined" onClick={() => navigate(-1)}>返回</Button>
+      </div>
+    );
+  }
+
   /** 打开复盘弹窗 */
   const openReview = (assignment: ReviewAssignment) => {
     setCurrentAssignment(assignment);

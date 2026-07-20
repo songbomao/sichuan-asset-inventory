@@ -7,7 +7,6 @@ import PersonIcon from '@mui/icons-material/Person';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import Paper from '@mui/material/Paper';
 import { useAuth } from '../contexts/AuthContext';
-import { isAdmin } from '../api/admin';
 
 const baseTabs = [
   { path: '/tasks', label: '任务', icon: <AssignmentIcon /> },
@@ -19,14 +18,14 @@ const adminTab = { path: '/admin', label: '管理', icon: <AdminPanelSettingsIco
 
 /**
  * 主布局组件：底部导航 + 内容区
- * 管理员可见"管理"tab
+ * 管理员（后端判定）可见"管理"tab
  */
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const tabs = isAdmin(user?.dingtalkUserId) ? [...baseTabs, adminTab] : baseTabs;
+  const tabs = user?.isAdmin ? [...baseTabs, adminTab] : baseTabs;
 
   const currentTab = tabs.find((t) => location.pathname.startsWith(t.path))?.path ?? '/tasks';
 

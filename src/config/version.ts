@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607201551';
+export const APP_VERSION = 'v202607201610';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-20 15:51';
-export const RELEASE_NOTES = '我的页部门名兜底：后端钉钉免登 GetUserInfoByCode 在 user/get 未返回 dept_name_list 时，用 dept_id_list 调 department/get 取部门名，修复「我的」页部门显示为空；ID 字段为本地系统用户标识。';
+export const RELEASE_TIME = '2026-07-20 16:10';
+export const RELEASE_NOTES = '权限体系重构：管理员名单从前端 localStorage 迁到后端数据库（清缓存/换设备不丢、跨设备一致）；新增超级管理员（全权限，仅其可配置管理员）；仅管理员可创建盘点任务、查看进度看板/复盘/盘点报告；JWT 写入真实角色，网关按 action 做角色门控。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -20,6 +20,11 @@ export const VERSION_HISTORY: Array<{
     version: APP_VERSION,
     time: RELEASE_TIME,
     notes: RELEASE_NOTES,
+  },
+  {
+    version: 'v202607201551',
+    time: '2026-07-20 15:51',
+    notes: '我的页部门名兜底：后端钉钉免登 GetUserInfoByCode 在 user/get 未返回 dept_name_list 时，用 dept_id_list 调 department/get 取部门名，修复「我的」页部门显示为空；ID 字段为本地系统用户标识。',
   },
   {
     version: 'v202607201530',
