@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607200958';
+export const APP_VERSION = 'v202607201030';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-20 09:58';
-export const RELEASE_NOTES = '部署调整：base 改为 / 适配 EdgeOne Pages 根域名托管（替代 GitHub Pages 子路径）；后端 GetMyItems 单表查询修复记录页 network error。';
+export const RELEASE_TIME = '2026-07-20 10:30';
+export const RELEASE_NOTES = '恢复 GitHub Pages 托管模式：base 改回 /sichuan-asset-inventory/ 子路径；停止 Gitee 推送，恢复 GitHub 主推送。配套后端 v202607200910（GetMyItems 单表查询修复记录页 network error）。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -20,6 +20,11 @@ export const VERSION_HISTORY: Array<{
     version: APP_VERSION,
     time: RELEASE_TIME,
     notes: RELEASE_NOTES,
+  },
+  {
+    version: 'v202607200958',
+    time: '2026-07-20 09:58',
+    notes: '部署调整：base 改为 / 适配 EdgeOne Pages 根域名托管（替代 GitHub Pages 子路径）；后端 GetMyItems 单表查询修复记录页 network error。',
   },
   {
     version: 'v202607200910',
