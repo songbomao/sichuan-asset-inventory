@@ -21,6 +21,12 @@ import AccordionDetails from '@mui/material/AccordionDetails';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
+import Drawer from '@mui/material/Drawer';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemText from '@mui/material/ListItemText';
+import CloseIcon from '@mui/icons-material/Close';
+import Box from '@mui/material/Box';
+import Divider from '@mui/material/Divider';
 import dd from 'dingtalk-jsapi';
 import { ensureDingtalkConfig, type DingtalkJsapiConfig } from '../utils/ddConfig';
 import {
@@ -28,8 +34,11 @@ import {
   addAdmin,
   removeAdmin,
   searchDingtalkUsers,
+  getDingtalkDepartments,
+  getDingtalkDepartmentUsers,
   type AdminUser,
   type DingtalkSearchUser,
+  type DingtalkDepartmentNode,
 } from '../api/admin';
 
 interface Props {
@@ -57,6 +66,14 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
   const [searching, setSearching] = useState(false);
   const [diagnosis, setDiagnosis] = useState<string[]>([]);
   const [lastConfig, setLastConfig] = useState<DingtalkJsapiConfig | null>(null);
+
+  /* 后端组织架构选择器（抽屉） */
+  const [orgDrawerOpen, setOrgDrawerOpen] = useState(false);
+  const [departments, setDepartments] = useState<DingtalkDepartmentNode[]>([]);
+  const [selectedDeptId, setSelectedDeptId] = useState<number | null>(null);
+  const [deptUsers, setDeptUsers] = useState<DingtalkSearchUser[]>([]);
+  const [loadingDepartments, setLoadingDepartments] = useState(false);
+  const [loadingUsers, setLoadingUsers] = useState(false);
 
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -91,7 +108,27 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
     setDiagnosis(lines);
   }, [open]);
 
-  /** 调起钉钉组织架构选人（可选方式，失败可改用搜索） */
+  /** 加载某部门下的用户列表（后端代理） */
+  const loadDepartmentUsers = async (deptId: number) => {
+    setLoadingUsers(true);
+    try {
+      const users = await getDingtalkDepartmentUsers(deptId);
+      setDeptUsers(users);
+    } catch (e) {
+      setMsg({ type: 'error', text: e instanceof Error ? e.message : '加载部门用户失败' });
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  /** 打开后端组织架构选择器并加载部门树 */
+  const openOrgDrawer = () => {
+    setOrgDrawerOpen(true);
+    setMsg(null);
+    setPicking(false);
+  };
+
+  /** 调起钉钉组织架构选人（原生 complexPicker 优先，失败自动兜底到后端自定义选择器） */
   const handleOpenPicker = async () => {
     setPicking(true);
     setMsg(null);
@@ -99,22 +136,16 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
     try {
       const configResult = await ensureDingtalkConfig();
       if (!configResult.ok) {
-        setMsg({
-          type: 'error',
-          text: `钉钉 JSAPI 鉴权失败：${configResult.error || '未知错误'}。请确认当前在钉钉内打开，或刷新后重试。`,
-        });
-        setPicking(false);
+        // 鉴权失败，直接走后端组织架构选择器（与手动输入同样稳定）
+        openOrgDrawer();
         return;
       }
       cfg = configResult.config;
       setLastConfig(cfg || null);
 
       if (typeof (dd as any).biz?.contact?.complexPicker !== 'function') {
-        setMsg({
-          type: 'error',
-          text: '当前环境不支持钉钉组织架构选人，请使用上方「输入姓名搜索」方式添加管理员。',
-        });
-        setPicking(false);
+        // 非钉钉环境或原生不可用，直接走后端选择器
+        openOrgDrawer();
         return;
       }
 
@@ -137,26 +168,15 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
           setPicking(false);
         },
         onFail: (err: { errorCode?: number | string; errorMessage?: string; message?: string; [k: string]: unknown }) => {
-          console.warn('钉钉选人失败:', err);
-          const detail = err?.errorMessage || err?.message || JSON.stringify(err);
-          let envInfo = '';
-          try {
-            const env = (dd as any).env;
-            if (env) envInfo = `；dd.env=${JSON.stringify(env)}`;
-          } catch { envInfo = '；dd.env=读取失败'; }
-          const configHint = cfg ? `（corpId=${cfg.corpId}，agentId=${cfg.agentId}${envInfo}）` : '';
-          setMsg({
-            type: 'error',
-            text: `钉钉选人失败：${detail}${configHint}。当前钉钉账号可能未切换到「中通服」企业；建议直接改用上方「输入姓名搜索」添加管理员。`,
-          });
-          setPicking(false);
+          console.warn('钉钉选人失败，自动切换后端组织架构选择器:', err);
+          setMsg({ type: 'error', text: '钉钉原生选人失败，已自动切换为后端组织架构选择器，请在下方面板选择。' });
+          openOrgDrawer();
         },
       });
     } catch (e) {
-      console.warn('钉钉选人失败:', e);
-      const detail = e instanceof Error ? e.message : JSON.stringify(e);
-      setMsg({ type: 'error', text: `钉钉选人失败：${detail}` });
-      setPicking(false);
+      console.warn('钉钉选人失败，自动切换后端组织架构选择器:', e);
+      setMsg({ type: 'error', text: '钉钉原生选人失败，已自动切换为后端组织架构选择器，请在下方面板选择。' });
+      openOrgDrawer();
     }
   };
 
@@ -186,6 +206,71 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
       setMsg({ type: 'error', text: e instanceof Error ? e.message : '添加失败' });
     }
   };
+
+  /** 从后端组织架构选择器选中用户后添加并关闭抽屉 */
+  const handlePickUser = (u: DingtalkSearchUser) => {
+    void doAdd({
+      dingtalkUserId: u.userId,
+      name: u.name,
+      department: u.department,
+      mobile: u.mobile,
+    });
+    setOrgDrawerOpen(false);
+  };
+
+  /** 抽屉打开时加载部门树 */
+  useEffect(() => {
+    if (!orgDrawerOpen) return;
+    const load = async () => {
+      setLoadingDepartments(true);
+      try {
+        const tree = await getDingtalkDepartments();
+        setDepartments(tree);
+        if (tree.length > 0) {
+          setSelectedDeptId(tree[0].deptId);
+          setLoadingUsers(true);
+          try {
+            const users = await getDingtalkDepartmentUsers(tree[0].deptId);
+            setDeptUsers(users);
+          } catch (e) {
+            setMsg({ type: 'error', text: e instanceof Error ? e.message : '加载部门用户失败' });
+          } finally {
+            setLoadingUsers(false);
+          }
+        }
+      } catch (e) {
+        setMsg({ type: 'error', text: e instanceof Error ? e.message : '加载部门架构失败' });
+      } finally {
+        setLoadingDepartments(false);
+      }
+    };
+    void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orgDrawerOpen]);
+
+  /** 递归渲染部门树 */
+  const renderDepartmentTree = (nodes: DingtalkDepartmentNode[], depth = 0) => (
+    <Stack spacing={0.5}>
+      {nodes.map((dept) => (
+        <Stack key={dept.deptId} spacing={0.5}>
+          <ListItemButton
+            selected={selectedDeptId === dept.deptId}
+            onClick={() => {
+              setSelectedDeptId(dept.deptId);
+              void loadDepartmentUsers(dept.deptId);
+            }}
+            sx={{ pl: depth * 3 + 2, py: 0.5, borderRadius: 1 }}
+          >
+            <ListItemText
+              primary={dept.name}
+              primaryTypographyProps={{ fontSize: '0.9rem', fontWeight: selectedDeptId === dept.deptId ? 700 : 400 }}
+            />
+          </ListItemButton>
+          {dept.children && dept.children.length > 0 && renderDepartmentTree(dept.children, depth + 1)}
+        </Stack>
+      ))}
+    </Stack>
+  );
 
   /** 从输入框搜索钉钉用户（debounce） */
   useEffect(() => {
@@ -377,6 +462,80 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
           完成
         </Button>
       </DialogActions>
+
+      {/* 后端组织架构选择器（替代 complexPicker 的底部抽屉） */}
+      <Drawer
+        anchor="bottom"
+        open={orgDrawerOpen}
+        onClose={() => setOrgDrawerOpen(false)}
+        PaperProps={{ sx: { maxHeight: '85vh', borderTopLeftRadius: 16, borderTopRightRadius: 16 } }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', maxHeight: '85vh' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1.5 }}>
+            <Typography variant="subtitle1" fontWeight={700}>从钉钉组织架构选择</Typography>
+            <IconButton onClick={() => setOrgDrawerOpen(false)} size="small">
+              <CloseIcon />
+            </IconButton>
+          </Box>
+          <Divider />
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, overflow: 'hidden', flexGrow: 1 }}>
+            {/* 左侧：部门树 */}
+            <Box
+              sx={{
+                width: { xs: '100%', sm: 200 },
+                borderRight: { sm: '1px solid' },
+                borderColor: 'divider',
+                overflowY: 'auto',
+                maxHeight: { xs: '40vh', sm: '70vh' },
+                py: 1,
+              }}
+            >
+              {loadingDepartments ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                  <CircularProgress size={24} />
+                </Box>
+              ) : departments.length === 0 ? (
+                <Typography color="text.secondary" sx={{ p: 2, fontSize: '0.85rem' }}>暂无部门数据</Typography>
+              ) : (
+                renderDepartmentTree(departments)
+              )}
+            </Box>
+            {/* 右侧：部门用户列表 */}
+            <Box sx={{ flexGrow: 1, overflowY: 'auto', maxHeight: { xs: '40vh', sm: '70vh' }, py: 1, px: 1.5 }}>
+              <Typography variant="caption" color="text.secondary" sx={{ px: 1 }}>
+                {selectedDeptId != null ? '该部门成员（点击添加）' : '请选择左侧部门'}
+              </Typography>
+              {loadingUsers ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                  <CircularProgress size={24} />
+                </Box>
+              ) : deptUsers.length === 0 ? (
+                <Typography color="text.secondary" sx={{ p: 2, fontSize: '0.85rem' }}>该部门暂无可添加成员</Typography>
+              ) : (
+                <Stack spacing={1} sx={{ mt: 1 }}>
+                  {deptUsers.map((u) => (
+                    <Button
+                      key={u.userId}
+                      variant="outlined"
+                      size="small"
+                      onClick={() => handlePickUser(u)}
+                      sx={{ justifyContent: 'flex-start', textTransform: 'none', borderRadius: '8px', py: 1 }}
+                    >
+                      <Stack alignItems="flex-start" spacing={0.25}>
+                        <Typography variant="body2" fontWeight={600}>{u.name}</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {(u.department || '未知部门')}
+                          {u.mobile ? ` · ${u.mobile}` : ''}
+                        </Typography>
+                      </Stack>
+                    </Button>
+                  ))}
+                </Stack>
+              )}
+            </Box>
+          </Box>
+        </Box>
+      </Drawer>
     </Dialog>
   );
 }

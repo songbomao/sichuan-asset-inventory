@@ -221,3 +221,41 @@ export async function searchDingtalkUsers(keyword: string): Promise<DingtalkSear
   }
   throw new Error(data.msg || data.message || '搜索用户失败');
 }
+
+/* ============================================================
+ * 后端驱动的钉钉组织架构（自定义选人，替代 complexPicker）
+ * ============================================================ */
+
+/** 钉钉部门树节点（递归） */
+export interface DingtalkDepartmentNode {
+  deptId: number;
+  name: string;
+  parentId: number;
+  children: DingtalkDepartmentNode[];
+}
+
+/**
+ * 获取钉钉部门树（后端代理，避免 complexPicker 在 iOS 容器报 invalid corpId）
+ * POST /api/Account/UniGetToken
+ */
+export async function getDingtalkDepartments(): Promise<DingtalkDepartmentNode[]> {
+  const { data } = await client.post<{ code: number; data: DingtalkDepartmentNode[]; msg?: string; message?: string }>(
+    '/api/Account/UniGetToken',
+    { action: 'GetDingtalkDepartments' },
+  );
+  if (data.code === 0 || data.code === 200) return data.data || [];
+  throw new Error(data.msg || data.message || '获取部门架构失败');
+}
+
+/**
+ * 获取部门下的用户列表（后端代理）
+ * POST /api/Account/UniGetToken
+ */
+export async function getDingtalkDepartmentUsers(deptId: number): Promise<DingtalkSearchUser[]> {
+  const { data } = await client.post<{ code: number; data: DingtalkSearchUser[]; msg?: string; message?: string }>(
+    '/api/Account/UniGetToken',
+    { action: 'GetDingtalkDepartmentUsers', deptId },
+  );
+  if (data.code === 0 || data.code === 200) return data.data || [];
+  throw new Error(data.msg || data.message || '获取部门用户失败');
+}

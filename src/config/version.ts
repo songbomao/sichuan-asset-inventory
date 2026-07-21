@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607210930';
+export const APP_VERSION = 'v202607211000';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-21 09:30';
-export const RELEASE_NOTES = '修复登录后页面闪烁循环：统一为 /api/Account/UniGetToken 的 GET/POST 请求自动附加 _token，修复 GetAdminInfo 因未带 token 反复 401 触发登录重定向循环；401 时同步清除全局 token 缓存；AuthContext 监听 localStorage 变化同步登出；Login 页使用 ref 防止自动登录重复触发。';
+export const RELEASE_TIME = '2026-07-21 10:00';
+export const RELEASE_NOTES = '管理员配置的组织架构选人改为后端驱动自定义选择器，避免钉钉 complexPicker 在 iOS 容器报 invalid corpId；保留原生选人为可选兜底。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -20,6 +20,11 @@ export const VERSION_HISTORY: Array<{
     version: APP_VERSION,
     time: RELEASE_TIME,
     notes: RELEASE_NOTES,
+  },
+  {
+    version: 'v202607210930',
+    time: '2026-07-21 09:30',
+    notes: '修复登录后页面闪烁循环：统一为 /api/Account/UniGetToken 的 GET/POST 请求自动附加 _token，修复 GetAdminInfo 因未带 token 反复 401 触发登录重定向循环；401 时同步清除全局 token 缓存；AuthContext 监听 localStorage 变化同步登出；Login 页使用 ref 防止自动登录重复触发。',
   },
   {
     version: 'v202607201551',
