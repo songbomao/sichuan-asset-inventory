@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607211500';
+export const APP_VERSION = 'v202607211800';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-21 15:00';
-export const RELEASE_NOTES = '管理员任务页新增前后端版本对照条，后端版本经 /api/Account/GetServerVersion 获取，不一致时黄色警示提醒部署后端；';
+export const RELEASE_TIME = '2026-07-21 18:00';
+export const RELEASE_NOTES = '后端 GetDingtalkDepartments 部门树字段契约修复（DeptId→deptId），前端版本号对齐；';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607211800',
+    time: '2026-07-21 18:00',
+    notes: '后端 GetDingtalkDepartments 部门树字段契约修复（DeptId→deptId），前端版本号对齐；',
+  },
   {
     version: 'v202607211500',
     time: '2026-07-21 15:00',
