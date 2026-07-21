@@ -287,3 +287,24 @@ export async function getDingtalkDepartmentUsers(deptId: number): Promise<Dingta
   if (data.code === 0 || data.code === 200) return data.data || [];
   throw new Error(data.msg || data.message || '获取部门用户失败');
 }
+
+/* ============================================================
+ * 后端版本号（用于管理员页前后端版本对照）
+ * ============================================================ */
+
+export interface ServerVersion {
+  version: string;
+  releaseTime: string;
+  releaseNotes: string;
+}
+
+/** 获取后端服务版本号，用于管理员页前后端版本对照 */
+export async function getServerVersion(): Promise<ServerVersion> {
+  const res = await client.get('/api/Account/GetServerVersion');
+  const payload = (res.data && res.data.data) ? res.data.data : res.data;
+  return {
+    version: payload?.version ?? '',
+    releaseTime: payload?.releaseTime ?? '',
+    releaseNotes: payload?.releaseNotes ?? '',
+  };
+}
