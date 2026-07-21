@@ -21,7 +21,6 @@ import AccordionDetails from '@mui/material/AccordionDetails';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
-import Drawer from '@mui/material/Drawer';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
 import CloseIcon from '@mui/icons-material/Close';
@@ -323,13 +322,14 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
   };
 
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      fullWidth
-      maxWidth="xs"
-      sx={{ '& .MuiDialog-paper': { margin: { xs: 2, sm: 4 } } }}
-    >
+    <>
+      <Dialog
+        open={open}
+        onClose={onClose}
+        fullWidth
+        maxWidth="xs"
+        sx={{ '& .MuiDialog-paper': { margin: { xs: 2, sm: 4 } } }}
+      >
       <DialogTitle sx={{ fontWeight: 700, fontSize: '1.1rem', pb: 1 }}>管理员配置（超级管理员）</DialogTitle>
       <DialogContent sx={{ pt: '8px !important' }}>
         <Stack spacing={2}>
@@ -462,80 +462,72 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
           完成
         </Button>
       </DialogActions>
+    </Dialog>
 
-      {/* 后端组织架构选择器（替代 complexPicker 的底部抽屉） */}
-      <Drawer
-        anchor="bottom"
-        open={orgDrawerOpen}
-        onClose={() => setOrgDrawerOpen(false)}
-        PaperProps={{ sx: { maxHeight: '85vh', borderTopLeftRadius: 16, borderTopRightRadius: 16 } }}
-      >
-        <Box sx={{ display: 'flex', flexDirection: 'column', maxHeight: '85vh' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1.5 }}>
-            <Typography variant="subtitle1" fontWeight={700}>从钉钉组织架构选择</Typography>
-            <IconButton onClick={() => setOrgDrawerOpen(false)} size="small">
-              <CloseIcon />
-            </IconButton>
+    {/* 后端组织架构选择器（独立全屏 Dialog，避免被外层 Dialog 遮罩压住） */}
+    <Dialog
+      open={orgDrawerOpen}
+      onClose={() => setOrgDrawerOpen(false)}
+      fullScreen
+      PaperProps={{ sx: { bgcolor: 'background.paper' } }}
+    >
+      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1.5 }}>
+          <Typography variant="subtitle1" fontWeight={700}>从钉钉组织架构选择</Typography>
+          <IconButton onClick={() => setOrgDrawerOpen(false)} size="small">
+            <CloseIcon />
+          </IconButton>
+        </Box>
+        <Divider />
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, overflow: 'hidden', flexGrow: 1 }}>
+          {/* 左侧部门树 */}
+          <Box sx={{ width: { xs: '100%', sm: 220 }, borderRight: { sm: '1px solid' }, borderColor: 'divider', overflowY: 'auto', py: 1, bgcolor: 'grey.50' }}>
+            {loadingDepartments ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                <CircularProgress size={24} />
+              </Box>
+            ) : departments.length === 0 ? (
+              <Typography color="text.secondary" sx={{ p: 2, fontSize: '0.85rem' }}>暂无部门数据</Typography>
+            ) : (
+              renderDepartmentTree(departments)
+            )}
           </Box>
-          <Divider />
-          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, overflow: 'hidden', flexGrow: 1 }}>
-            {/* 左侧：部门树 */}
-            <Box
-              sx={{
-                width: { xs: '100%', sm: 200 },
-                borderRight: { sm: '1px solid' },
-                borderColor: 'divider',
-                overflowY: 'auto',
-                maxHeight: { xs: '40vh', sm: '70vh' },
-                py: 1,
-              }}
-            >
-              {loadingDepartments ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                  <CircularProgress size={24} />
-                </Box>
-              ) : departments.length === 0 ? (
-                <Typography color="text.secondary" sx={{ p: 2, fontSize: '0.85rem' }}>暂无部门数据</Typography>
-              ) : (
-                renderDepartmentTree(departments)
-              )}
-            </Box>
-            {/* 右侧：部门用户列表 */}
-            <Box sx={{ flexGrow: 1, overflowY: 'auto', maxHeight: { xs: '40vh', sm: '70vh' }, py: 1, px: 1.5 }}>
-              <Typography variant="caption" color="text.secondary" sx={{ px: 1 }}>
-                {selectedDeptId != null ? '该部门成员（点击添加）' : '请选择左侧部门'}
-              </Typography>
-              {loadingUsers ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                  <CircularProgress size={24} />
-                </Box>
-              ) : deptUsers.length === 0 ? (
-                <Typography color="text.secondary" sx={{ p: 2, fontSize: '0.85rem' }}>该部门暂无可添加成员</Typography>
-              ) : (
-                <Stack spacing={1} sx={{ mt: 1 }}>
-                  {deptUsers.map((u) => (
-                    <Button
-                      key={u.userId}
-                      variant="outlined"
-                      size="small"
-                      onClick={() => handlePickUser(u)}
-                      sx={{ justifyContent: 'flex-start', textTransform: 'none', borderRadius: '8px', py: 1 }}
-                    >
-                      <Stack alignItems="flex-start" spacing={0.25}>
-                        <Typography variant="body2" fontWeight={600}>{u.name}</Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {(u.department || '未知部门')}
-                          {u.mobile ? ` · ${u.mobile}` : ''}
-                        </Typography>
-                      </Stack>
-                    </Button>
-                  ))}
-                </Stack>
-              )}
-            </Box>
+          {/* 右侧用户列表 */}
+          <Box sx={{ flexGrow: 1, overflowY: 'auto', py: 1, px: 1.5 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ px: 1 }}>
+              {selectedDeptId != null ? '该部门成员（点击添加）' : '请选择左侧部门'}
+            </Typography>
+            {loadingUsers ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                <CircularProgress size={24} />
+              </Box>
+            ) : deptUsers.length === 0 ? (
+              <Typography color="text.secondary" sx={{ p: 2, fontSize: '0.85rem' }}>该部门暂无可添加成员</Typography>
+            ) : (
+              <Stack spacing={1} sx={{ mt: 1 }}>
+                {deptUsers.map((u) => (
+                  <Button
+                    key={u.userId}
+                    variant="outlined"
+                    size="small"
+                    onClick={() => handlePickUser(u)}
+                    sx={{ justifyContent: 'flex-start', textTransform: 'none', borderRadius: '8px', py: 1 }}
+                  >
+                    <Stack alignItems="flex-start" spacing={0.25}>
+                      <Typography variant="body2" fontWeight={600}>{u.name}</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {(u.department || '未知部门')}
+                        {u.mobile ? ` · ${u.mobile}` : ''}
+                      </Typography>
+                    </Stack>
+                  </Button>
+                ))}
+              </Stack>
+            )}
           </Box>
         </Box>
-      </Drawer>
+      </Box>
     </Dialog>
+    </>
   );
 }
