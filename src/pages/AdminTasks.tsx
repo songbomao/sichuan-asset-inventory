@@ -221,7 +221,7 @@ export default function AdminTasks() {
                   </div>
 
                   <div className="flex items-center justify-between text-xs text-gray-400">
-                    <span>创建人：{task.createdBy || '--'} · {new Date(task.createdAt).toLocaleDateString('zh-CN')}</span>
+                    <span>{task.createdBy || '--'}{task.createdAt ? ` · ${new Date(task.createdAt).toLocaleDateString('zh-CN')}` : ''}</span>
                     {task.status === 'draft' && (
                       <Button
                         size="small"

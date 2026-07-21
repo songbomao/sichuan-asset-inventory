@@ -74,10 +74,27 @@ export interface AdminTaskItem {
   createdAt: string;
 }
 
+/** 后端 GetTaskList 实际返回的原始字段（带 taskId / createTime 等） */
+interface RawAdminTaskItem {
+  taskId: string;
+  taskName: string;
+  assetCount?: number;
+  completedCount?: number;
+  deadline?: string | null;
+  status: string;
+  createTime?: string;
+  location?: string;
+  createdBy?: string;
+  scopeType?: string;
+  scopeConfig?: string;
+  needReview?: boolean;
+  reviewRatio?: number | null;
+}
+
 /** 任务列表响应 */
 interface AdminTaskListResponse {
   code: number;
-  data: { total: number; page: number; pageSize: number; list: AdminTaskItem[] };
+  data: { total: number; page: number; pageSize: number; list: RawAdminTaskItem[] };
   message: string;
   msg?: string;
 }
@@ -91,7 +108,18 @@ export async function getAdminTaskList(status?: string): Promise<AdminTaskItem[]
     params: { status: status ?? '', page: 1, pageSize: 50 },
   });
   if (data.code === 0 || data.code === 200) {
-    return data.data.list;
+    return data.data.list.map((item) => ({
+      id: parseInt(item.taskId, 10),
+      taskName: item.taskName,
+      scopeType: item.scopeType ?? '',
+      scopeConfig: item.scopeConfig ?? '',
+      needReview: item.needReview ?? false,
+      reviewRatio: item.reviewRatio ?? null,
+      deadline: item.deadline ?? null,
+      status: item.status,
+      createdBy: item.createdBy ?? '',
+      createdAt: item.createTime ?? '',
+    }));
   }
   throw new Error(data.msg || data.message || '获取任务列表失败');
 }
