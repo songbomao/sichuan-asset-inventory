@@ -20,5 +20,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
+    // 转译 ES2020+ 语法（?. / ?? / async 等）以兼容旧版钉钉 WebView 内核，避免白屏
+    target: 'es2015',
   },
 });

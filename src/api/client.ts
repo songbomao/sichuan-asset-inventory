@@ -133,9 +133,9 @@ client.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('auth_token');
       localStorage.removeItem('auth_user');
-      // 跳转登录页（避免在登录页重复跳转）
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
+      // HashRouter：用 hash 切换登录页，避免整页刷新触发重定向死循环白屏
+      if (window.location.hash !== '#/login') {
+        window.location.hash = '#/login';
       }
     }
     return Promise.reject(error);

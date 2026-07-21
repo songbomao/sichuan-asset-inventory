@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607201610';
+export const APP_VERSION = 'v202607210900';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-20 16:10';
-export const RELEASE_NOTES = '权限体系重构：管理员名单从前端 localStorage 迁到后端数据库（清缓存/换设备不丢、跨设备一致）；新增超级管理员（全权限，仅其可配置管理员）；仅管理员可创建盘点任务、查看进度看板/复盘/盘点报告；JWT 写入真实角色，网关按 action 做角色门控。';
+export const RELEASE_TIME = '2026-07-21 09:00';
+export const RELEASE_NOTES = '修复钉钉 WebView 白屏：vite build.target 降为 es2015，转译 ??/?./async 等 ES2020+ 语法以兼容旧版钉钉内核；401 未授权跳转改为 HashRouter 的 hash 方式（window.location.hash），避免整页刷新触发重定向死循环；新增全局 ErrorBoundary，渲染异常时显示可读错误而非白屏。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
