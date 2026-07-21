@@ -144,6 +144,11 @@ client.interceptors.response.use(
         window.location.hash = '#/login';
       }
     }
+    // 透传后端返回的业务错误详情（含 500 时的异常原因），覆盖 axios 默认文案
+    const data = error.response?.data as { message?: string; msg?: string } | undefined;
+    if (data && (data.message || data.msg)) {
+      error.message = data.message || data.msg || error.message;
+    }
     return Promise.reject(error);
   },
 );

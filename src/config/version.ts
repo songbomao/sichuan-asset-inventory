@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607211300';
+export const APP_VERSION = 'v202607211400';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-21 13:00';
-export const RELEASE_NOTES = '修复任务列表字段映射：getAdminTaskList 将后端 taskId/createTime 等原始字段映射为 AdminTaskItem，修复创建人时间显示异常与卡片点击跳转 /tasks/undefined 触发后端 500；创建人/时间行增加空值防御；';
+export const RELEASE_TIME = '2026-07-21 14:00';
+export const RELEASE_NOTES = '前端响应拦截器透传后端业务错误详情，便于定位 500 根因；';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607211400',
+    time: '2026-07-21 14:00',
+    notes: '前端响应拦截器透传后端业务错误详情，便于定位 500 根因；',
+  },
   {
     version: 'v202607211300',
     time: '2026-07-21 13:00',
