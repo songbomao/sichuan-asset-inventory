@@ -70,10 +70,15 @@ client.interceptors.request.use(
 
     // 登录接口本身不经过网关（UniGetToken 入口直接调用）
     if (BYPASS_GATEWAY.some((p) => url === p)) {
-      if (token && config.method?.toLowerCase() !== 'get') {
-        const body: Record<string, unknown> = config.data || {};
-        if (typeof body === 'object' && !(body instanceof FormData)) {
-          config.data = toFormUrlEncoded({ _token: token, ...body });
+      // 无论是 GET 还是 POST，都自动附加 token，避免手动传参遗漏导致 401 死循环
+      if (token) {
+        if (config.method?.toLowerCase() === 'get') {
+          config.params = { ...(config.params || {}), _token: token };
+        } else {
+          const body: Record<string, unknown> = config.data || {};
+          if (typeof body === 'object' && !(body instanceof FormData)) {
+            config.data = toFormUrlEncoded({ _token: token, ...body });
+          }
         }
       }
       return config;
@@ -133,6 +138,7 @@ client.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('auth_token');
       localStorage.removeItem('auth_user');
+      _globalToken = ''; // 同步清除全局缓存，避免后续请求仍带失效 token
       // HashRouter：用 hash 切换登录页，避免整页刷新触发重定向死循环白屏
       if (window.location.hash !== '#/login') {
         window.location.hash = '#/login';

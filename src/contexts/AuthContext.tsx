@@ -68,6 +68,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
+  // 监听 localStorage 被其他标签页或 axios 拦截器清除 token 的事件，同步 React state
+  useEffect(() => {
+    const handler = (e: StorageEvent) => {
+      if (e.key === 'auth_token' && !e.newValue && token) {
+        logout();
+      }
+    };
+    window.addEventListener('storage', handler);
+    return () => window.removeEventListener('storage', handler);
+  }, [token, logout]);
+
   const value = useMemo(
     () => ({
       token,

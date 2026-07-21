@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -62,6 +62,8 @@ export default function LoginPage() {
       });
   }, [performLogin]);
 
+  const startedRef = useRef(false);
+
   useEffect(() => {
     // 退出登录后不自动触发钉钉免登，显示手动登录按钮
     const isLoggedOut = localStorage.getItem('logout_flag') === '1';
@@ -69,8 +71,12 @@ export default function LoginPage() {
       setState('logged-out');
       return;
     }
+    // 防止 startDingtalkAuth 引用变化或 StrictMode 导致自动登录重复触发
+    if (startedRef.current) return;
+    startedRef.current = true;
     startDingtalkAuth();
-  }, [startDingtalkAuth]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-br from-primary via-primary-dark to-[#4a148c]">

@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607210900';
+export const APP_VERSION = 'v202607210930';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-21 09:00';
-export const RELEASE_NOTES = '修复钉钉 WebView 白屏：vite build.target 降为 es2015，转译 ??/?./async 等 ES2020+ 语法以兼容旧版钉钉内核；401 未授权跳转改为 HashRouter 的 hash 方式（window.location.hash），避免整页刷新触发重定向死循环；新增全局 ErrorBoundary，渲染异常时显示可读错误而非白屏。';
+export const RELEASE_TIME = '2026-07-21 09:30';
+export const RELEASE_NOTES = '修复登录后页面闪烁循环：统一为 /api/Account/UniGetToken 的 GET/POST 请求自动附加 _token，修复 GetAdminInfo 因未带 token 反复 401 触发登录重定向循环；401 时同步清除全局 token 缓存；AuthContext 监听 localStorage 变化同步登出；Login 页使用 ref 防止自动登录重复触发。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
