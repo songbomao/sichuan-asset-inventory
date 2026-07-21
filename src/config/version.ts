@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607211800';
+export const APP_VERSION = 'v202607211900';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-21 18:00';
-export const RELEASE_NOTES = '后端 GetDingtalkDepartments 部门树字段契约修复（DeptId→deptId），前端版本号对齐；';
+export const RELEASE_TIME = '2026-07-21 19:00';
+export const RELEASE_NOTES = '组织架构选择器点选父部门时递归加载该部门及其所有子部门成员（去重），修复只显示本级 2 人的问题；';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607211900',
+    time: '2026-07-21 19:00',
+    notes: '组织架构选择器点选父部门时递归加载该部门及其所有子部门成员（去重），修复只显示本级 2 人的问题；',
+  },
   {
     version: 'v202607211800',
     time: '2026-07-21 18:00',

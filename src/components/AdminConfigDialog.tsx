@@ -111,7 +111,7 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
   const loadDepartmentUsers = async (deptId: number) => {
     setLoadingUsers(true);
     try {
-      const users = await getDingtalkDepartmentUsers(deptId);
+      const users = await getDingtalkDepartmentUsers(deptId, true);
       setDeptUsers(users);
     } catch (e) {
       setMsg({ type: 'error', text: e instanceof Error ? e.message : '加载部门用户失败' });
@@ -229,7 +229,7 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
           setSelectedDeptId(tree[0].deptId);
           setLoadingUsers(true);
           try {
-            const users = await getDingtalkDepartmentUsers(tree[0].deptId);
+            const users = await getDingtalkDepartmentUsers(tree[0].deptId, true);
             setDeptUsers(users);
           } catch (e) {
             setMsg({ type: 'error', text: e instanceof Error ? e.message : '加载部门用户失败' });

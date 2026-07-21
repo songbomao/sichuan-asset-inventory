@@ -279,10 +279,13 @@ export async function getDingtalkDepartments(): Promise<DingtalkDepartmentNode[]
  * 获取部门下的用户列表（后端代理）
  * POST /api/Account/UniGetToken
  */
-export async function getDingtalkDepartmentUsers(deptId: number): Promise<DingtalkSearchUser[]> {
+export async function getDingtalkDepartmentUsers(
+  deptId: number,
+  recursive = false,
+): Promise<DingtalkSearchUser[]> {
   const { data } = await client.post<{ code: number; data: DingtalkSearchUser[]; msg?: string; message?: string }>(
     '/api/Account/UniGetToken',
-    { action: 'GetDingtalkDepartmentUsers', deptId },
+    { action: 'GetDingtalkDepartmentUsers', deptId, recursive },
   );
   if (data.code === 0 || data.code === 200) return data.data || [];
   throw new Error(data.msg || data.message || '获取部门用户失败');
