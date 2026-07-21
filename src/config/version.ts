@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607211030';
+export const APP_VERSION = 'v202607211200';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-21 10:30';
-export const RELEASE_NOTES = '修复管理员配置中组织架构选择器被 Dialog 遮罩压住的层级问题，将抽屉改为独立全屏 Dialog。';
+export const RELEASE_TIME = '2026-07-21 12:00';
+export const RELEASE_NOTES = '管理员页任务卡片改为可点击跳转任务详情，恢复进度看板/复盘/报告模块入口；';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -17,9 +17,14 @@ export const VERSION_HISTORY: Array<{
   notes: string;
 }> = [
   {
-    version: APP_VERSION,
-    time: RELEASE_TIME,
-    notes: RELEASE_NOTES,
+    version: 'v202607211200',
+    time: '2026-07-21 12:00',
+    notes: '管理员页任务卡片可点击跳转详情，恢复看板/复盘/报告入口；',
+  },
+  {
+    version: 'v202607211030',
+    time: '2026-07-21 10:30',
+    notes: '修复管理员配置中组织架构选择器被 Dialog 遮罩压住的层级问题，将抽屉改为独立全屏 Dialog。',
   },
   {
     version: 'v202607210930',

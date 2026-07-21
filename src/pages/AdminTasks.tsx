@@ -1,5 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Card from '@mui/material/Card';
+import CardActionArea from '@mui/material/CardActionArea';
 import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
@@ -58,6 +60,7 @@ export default function AdminTasks() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   // 仅管理员可进入任务管理
   if (!user?.isAdmin) {
@@ -189,41 +192,53 @@ export default function AdminTasks() {
         </div>
       )}
 
+      {/* 引导提示 */}
+      {!loading && !error && tasks.length > 0 && (
+        <Alert severity="info" sx={{ fontSize: '0.8rem', mb: 1 }}>
+          点击任务卡片可查看进度看板、复盘管理与盘点报告
+        </Alert>
+      )}
+
       {/* 任务卡片列表 */}
       {!loading &&
         tasks.map((task) => {
           const st = statusMap[task.status] ?? { label: task.status, color: 'default' as const };
           return (
-            <Card key={task.id}>
-              <CardContent>
-                <div className="flex items-start justify-between mb-2">
-                  <Typography variant="subtitle1" component="h3" className="font-semibold text-gray-900" sx={{ flex: 1, mr: 1 }}>
-                    {task.taskName}
-                  </Typography>
-                  <Chip label={st.label} color={st.color} size="small" />
-                </div>
+            <Card key={task.id} className="glow-border hover:shadow-glow transition-shadow">
+              <CardActionArea onClick={() => navigate(`/tasks/${task.id}`)}>
+                <CardContent>
+                  <div className="flex items-start justify-between mb-2">
+                    <Typography variant="subtitle1" component="h3" className="font-semibold text-gray-900" sx={{ flex: 1, mr: 1 }}>
+                      {task.taskName}
+                    </Typography>
+                    <Chip label={st.label} color={st.color} size="small" />
+                  </div>
 
-                <div className="flex items-center gap-4 text-sm text-gray-500 mb-3 flex-wrap">
-                  <span>范围：{scopeTypeOptions.find((o) => o.value === task.scopeType)?.label ?? task.scopeType}</span>
-                  {task.deadline && <span>截止：{new Date(task.deadline).toLocaleDateString('zh-CN')}</span>}
-                  {task.needReview && <span>复盘 {(task.reviewRatio ?? 0.3) * 100}%</span>}
-                </div>
+                  <div className="flex items-center gap-4 text-sm text-gray-500 mb-3 flex-wrap">
+                    <span>范围：{scopeTypeOptions.find((o) => o.value === task.scopeType)?.label ?? task.scopeType}</span>
+                    {task.deadline && <span>截止：{new Date(task.deadline).toLocaleDateString('zh-CN')}</span>}
+                    {task.needReview && <span>复盘 {(task.reviewRatio ?? 0.3) * 100}%</span>}
+                  </div>
 
-                <div className="flex items-center justify-between text-xs text-gray-400">
-                  <span>创建人：{task.createdBy || '--'} · {new Date(task.createdAt).toLocaleDateString('zh-CN')}</span>
-                  {task.status === 'draft' && (
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      startIcon={<PlayArrowIcon />}
-                      onClick={() => handleStart(task.id)}
-                      sx={{ borderRadius: '8px', textTransform: 'none' }}
-                    >
-                      启动
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
+                  <div className="flex items-center justify-between text-xs text-gray-400">
+                    <span>创建人：{task.createdBy || '--'} · {new Date(task.createdAt).toLocaleDateString('zh-CN')}</span>
+                    {task.status === 'draft' && (
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<PlayArrowIcon />}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleStart(task.id);
+                        }}
+                        sx={{ borderRadius: '8px', textTransform: 'none' }}
+                      >
+                        启动
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </CardActionArea>
             </Card>
           );
         })}
