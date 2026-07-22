@@ -76,8 +76,13 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
   const [loadingDepartments, setLoadingDepartments] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
 
-  /** 当前展开（focused）的部门节点：手风琴式，同一时间仅有一个 */
-  const focused = path.length > 0 ? path[path.length - 1] : null;
+  /** 当前展开（focused）的部门节点：手风琴式，同一时间仅有一个。
+   *  必须从最新的 departments 树中按 deptId 查找，否则懒加载回填的 children 不会同步到 path 中的旧快照节点，导致子部门不显示。 */
+  const focused = (() => {
+    const last = path[path.length - 1];
+    if (!last) return null;
+    return findDeptNode(departments, last.deptId) ?? last;
+  })();
 
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -112,8 +117,9 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
     setDiagnosis(lines);
   }, [open]);
 
-  /** 在部门树中按 deptId 查找节点（用于取子部门列表） */
-  const findDeptNode = (nodes: DingtalkDepartmentNode[], deptId: number): DingtalkDepartmentNode | null => {
+  /** 在部门树中按 deptId 查找节点（用于取子部门列表）
+   *  使用 function 声明以便在组件顶部定义 focused 时提前使用。 */
+  function findDeptNode(nodes: DingtalkDepartmentNode[], deptId: number): DingtalkDepartmentNode | null {
     for (const n of nodes) {
       if (n.deptId === deptId) return n;
       if (n.children && n.children.length > 0) {
@@ -122,7 +128,7 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
       }
     }
     return null;
-  };
+  }
 
   /** 递归更新部门树中某节点的 children（用于懒加载后回填） */
   const updateDeptChildren = (

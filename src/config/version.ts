@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607221228';
+export const APP_VERSION = 'v202607221250';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-22 12:28';
-export const RELEASE_NOTES = '新增固定资产对比与同步版块（管理员）：本地资产表分页+搜索展示；差异对比（仅本地表/仅视图/字段不一致高亮）；手动同步（预览变更数量+明细→二次确认→执行，返回成功/失败数量）；导出PDF（浏览器打印，中文不乱码）；权限仅管理员可见。';
+export const RELEASE_TIME = '2026-07-22 12:50';
+export const RELEASE_NOTES = '修复组织架构选择器子部门不显示：focused 节点改从最新 departments 树实时查找，避免懒加载回填的 children 停留在 path 旧快照；保留手风琴就地展开/面包屑/动画效果。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -17,9 +17,9 @@ export const VERSION_HISTORY: Array<{
   notes: string;
 }> = [
   {
-    version: 'v202607221228',
-    time: '2026-07-22 12:28',
-    notes: '新增固定资产对比与同步版块（管理员）：本地资产表分页+搜索展示；差异对比（仅本地表/仅视图/字段不一致高亮）；手动同步（预览变更数量+明细→二次确认→执行，返回成功/失败数量）；导出PDF（浏览器打印，中文不乱码）；权限仅管理员可见。',
+    version: 'v202607221250',
+    time: '2026-07-22 12:50',
+    notes: '修复组织架构选择器子部门不显示：focused 节点改从最新 departments 树实时查找，避免懒加载回填的 children 停留在 path 旧快照；保留手风琴就地展开/面包屑/动画效果。',
   },
   {
     version: 'v202607221148',
