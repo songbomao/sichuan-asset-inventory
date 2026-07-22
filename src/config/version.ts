@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607221045';
+export const APP_VERSION = 'v202607221131';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-22 10:45';
-export const RELEASE_NOTES = '1) 部门树点击部门时懒加载直接子部门（新接口 GetDingtalkSubDepartments），根治部门树只两层导致第三层子部门不显示、无法逐级下钻；2) 修复后端版本获取：getServerVersion 改走统一网关 UniGetToken（原 UniSaiAuth 后端无此端点导致获取不到）；3) 后端版本号显示由管理员页迁移至「我的」页底部，管理员页取消版本对照条；';
+export const RELEASE_TIME = '2026-07-22 11:31';
+export const RELEASE_NOTES = 'sai_assets 对接真实固定资产视图（SAP 视图库，双库分离），适配视图全部字符串字段（原值/净值/转资日期等）；资产全生命周期页展示规格型号/使用部门/利润中心/供应商/制造商等真实字段，原值净值显示做 Number 容错；';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607221131',
+    time: '2026-07-22 11:31',
+    notes: 'sai_assets 对接真实固定资产视图（SAP 视图库，双库分离），适配视图全部字符串字段（原值/净值/转资日期等）；资产全生命周期页展示规格型号/使用部门/利润中心/供应商/制造商等真实字段，原值净值显示做 Number 容错；',
+  },
   {
     version: 'v202607221045',
     time: '2026-07-22 10:45',

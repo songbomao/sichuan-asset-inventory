@@ -54,10 +54,20 @@ export interface LifecycleData {
   assetName: string;
   categoryName: string;
   purchaseDate: string;
-  originalValue: number;
-  netValue: number;
+  /** 视图返回字符串，兼容 number */
+  originalValue: number | string | null;
+  /** 视图返回字符串，兼容 number */
+  netValue: number | string | null;
   userName: string;
   costCenter: string;
+  costCenterName?: string;
+  deptName?: string;
+  department?: string;
+  profitCenterName?: string;
+  supplierName?: string;
+  manufacturer?: string;
+  standard?: string;
+  companyName?: string;
   location: string;
   currentStatus: string;
   records: Array<{

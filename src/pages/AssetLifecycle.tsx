@@ -99,12 +99,18 @@ export default function AssetLifecyclePage() {
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div><span className="text-gray-400">资产编码</span><br /><span className="font-mono font-medium">{data.assetCode}</span></div>
                   <div><span className="text-gray-400">分类</span><br /><span>{data.categoryName}</span></div>
-                  <div><span className="text-gray-400">使用人</span><br /><span>{data.userName}</span></div>
-                  <div><span className="text-gray-400">成本中心</span><br /><span>{data.costCenter}</span></div>
+                  <div><span className="text-gray-400">使用人</span><br /><span>{data.userName || '-'}</span></div>
+                  <div><span className="text-gray-400">使用部门</span><br /><span>{data.deptName || data.costCenter || '-'}</span></div>
+                  <div><span className="text-gray-400">成本中心</span><br /><span>{data.costCenterName || data.costCenter || '-'}</span></div>
+                  <div><span className="text-gray-400">利润中心</span><br /><span>{data.profitCenterName || '-'}</span></div>
                   <div><span className="text-gray-400">存放地点</span><br /><span>{data.location}</span></div>
                   <div><span className="text-gray-400">当前状态</span><br /><Chip label={data.currentStatus} size="small" color={data.currentStatus === '报废' ? 'error' : 'success'} /></div>
-                  <div><span className="text-gray-400">原值</span><br /><span className="font-medium">¥{(data.originalValue ?? 0).toLocaleString()}</span></div>
-                  <div><span className="text-gray-400">净值</span><br /><span className="font-medium">¥{(data.netValue ?? 0).toLocaleString()}</span></div>
+                  <div><span className="text-gray-400">规格型号</span><br /><span>{data.standard || '-'}</span></div>
+                  <div><span className="text-gray-400">制造商</span><br /><span>{data.manufacturer || '-'}</span></div>
+                  <div><span className="text-gray-400">供应商</span><br /><span>{data.supplierName || '-'}</span></div>
+                  <div><span className="text-gray-400">所属公司</span><br /><span>{data.companyName || '-'}</span></div>
+                  <div><span className="text-gray-400">原值</span><br /><span className="font-medium">¥{Number(data.originalValue || 0).toLocaleString()}</span></div>
+                  <div><span className="text-gray-400">净值</span><br /><span className="font-medium">¥{Number(data.netValue || 0).toLocaleString()}</span></div>
                 </div>
               </CardContent>
             </Card>
