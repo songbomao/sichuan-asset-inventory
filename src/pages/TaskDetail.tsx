@@ -15,6 +15,25 @@ import RateReviewIcon from '@mui/icons-material/RateReview';
 import DescriptionIcon from '@mui/icons-material/Description';
 import { getTaskDetail, getProgress } from '../api/tasks';
 import { useAuth } from '../contexts/AuthContext';
+import VerticalTimeline, { type TimelineEvent } from '../components/VerticalTimeline';
+
+/** 根据任务完成百分比生成盘点里程碑时间轴数据 */
+function generateTimelineEvents(percentage: number): TimelineEvent[] {
+  const now = new Date();
+  const fmt = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+  const offset = (minutes: number) => fmt(new Date(now.getTime() - minutes * 60 * 1000));
+
+  const events: TimelineEvent[] = [
+    { id: 'sync', title: '数据同步', timestamp: offset(300), status: 'completed' },
+    { id: 'dispatch', title: '盘点下达（钉钉推送）', timestamp: offset(270), status: percentage > 0 ? 'completed' : 'pending' },
+    { id: 'inventorying', title: '盘点中', timestamp: percentage > 0 && percentage < 100 ? fmt(now) : percentage >= 100 ? offset(180) : '--', status: percentage >= 100 ? 'completed' : percentage > 0 ? 'in-progress' : 'pending' },
+    { id: 'report', title: '报告生成中', timestamp: percentage >= 100 ? offset(60) : '--', status: percentage >= 100 ? 'completed' : 'pending' },
+    { id: 'end', title: '盘点结束', timestamp: percentage >= 100 ? offset(30) : '--', status: percentage >= 100 ? 'completed' : 'pending' },
+    { id: 'archive', title: '盘点完成归档', timestamp: percentage >= 100 ? offset(15) : '--', status: percentage >= 100 ? 'completed' : 'pending' },
+  ];
+  return events;
+}
 
 /**
  * 任务详情入口页（盘点/复盘/看板/报告 分流）
@@ -149,6 +168,16 @@ export default function TaskDetailPage() {
             </CardActionArea>
           </Card>
         ))}
+
+        {/* 盘点进度时间轴 */}
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent>
+            <Typography variant="subtitle1" className="font-semibold text-gray-900 mb-3">
+              盘点进度
+            </Typography>
+            <VerticalTimeline events={generateTimelineEvents(progress.percentage)} />
+          </CardContent>
+        </Card>
 
         <div className="h-4" />
       </div>

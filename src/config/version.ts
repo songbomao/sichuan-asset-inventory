@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607221250';
+export const APP_VERSION = 'v202607221354';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-22 12:50';
-export const RELEASE_NOTES = '修复组织架构选择器子部门不显示：focused 节点改从最新 departments 树实时查找，避免懒加载回填的 children 停留在 path 旧快照；保留手风琴就地展开/面包屑/动画效果。';
+export const RELEASE_TIME = '2026-07-22 13:54';
+export const RELEASE_NOTES = '任务详情页新增竖向盘点进度时间轴：根据完成率展示数据同步/盘点下达/盘点中/报告生成/盘点结束/完成归档六个里程碑，已完成绿色对勾、进行中蓝色脉冲圆点、待处理灰色空心圆，与现有卡片风格统一。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -17,9 +17,9 @@ export const VERSION_HISTORY: Array<{
   notes: string;
 }> = [
   {
-    version: 'v202607221250',
-    time: '2026-07-22 12:50',
-    notes: '修复组织架构选择器子部门不显示：focused 节点改从最新 departments 树实时查找，避免懒加载回填的 children 停留在 path 旧快照；保留手风琴就地展开/面包屑/动画效果。',
+    version: 'v202607221354',
+    time: '2026-07-22 13:54',
+    notes: '任务详情页新增竖向盘点进度时间轴：根据完成率展示数据同步/盘点下达/盘点中/报告生成/盘点结束/完成归档六个里程碑，已完成绿色对勾、进行中蓝色脉冲圆点、待处理灰色空心圆，与现有卡片风格统一。',
   },
   {
     version: 'v202607221148',
