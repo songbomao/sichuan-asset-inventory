@@ -217,26 +217,16 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
     setOrgDrawerOpen(false);
   };
 
-  /** 抽屉打开时加载部门树 */
+  /** 抽屉打开时只加载部门树，不默认加载人员 */
   useEffect(() => {
     if (!orgDrawerOpen) return;
     const load = async () => {
       setLoadingDepartments(true);
+      setSelectedDeptId(null); // 重置选中
+      setDeptUsers([]); // 清空旧的人员列表
       try {
         const tree = await getDingtalkDepartments();
         setDepartments(tree);
-        if (tree.length > 0) {
-          setSelectedDeptId(tree[0].deptId);
-          setLoadingUsers(true);
-          try {
-            const users = await getDingtalkDepartmentUsers(tree[0].deptId, true);
-            setDeptUsers(users);
-          } catch (e) {
-            setMsg({ type: 'error', text: e instanceof Error ? e.message : '加载部门用户失败' });
-          } finally {
-            setLoadingUsers(false);
-          }
-        }
       } catch (e) {
         setMsg({ type: 'error', text: e instanceof Error ? e.message : '加载部门架构失败' });
       } finally {
@@ -494,35 +484,43 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
           </Box>
           {/* 右侧用户列表 */}
           <Box sx={{ flexGrow: 1, overflowY: 'auto', py: 1, px: 1.5 }}>
-            <Typography variant="caption" color="text.secondary" sx={{ px: 1 }}>
-              {selectedDeptId != null ? '该部门成员（点击添加）' : '请选择左侧部门'}
-            </Typography>
-            {loadingUsers ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                <CircularProgress size={24} />
-              </Box>
-            ) : deptUsers.length === 0 ? (
-              <Typography color="text.secondary" sx={{ p: 2, fontSize: '0.85rem' }}>该部门暂无可添加成员</Typography>
+            {selectedDeptId == null ? (
+              <Typography color="text.secondary" textAlign="center" sx={{ py: 4 }}>
+                请从左侧选择一个部门
+              </Typography>
             ) : (
-              <Stack spacing={1} sx={{ mt: 1 }}>
-                {deptUsers.map((u) => (
-                  <Button
-                    key={u.userId}
-                    variant="outlined"
-                    size="small"
-                    onClick={() => handlePickUser(u)}
-                    sx={{ justifyContent: 'flex-start', textTransform: 'none', borderRadius: '8px', py: 1 }}
-                  >
-                    <Stack alignItems="flex-start" spacing={0.25}>
-                      <Typography variant="body2" fontWeight={600}>{u.name}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {(u.department || '未知部门')}
-                        {u.mobile ? ` · ${u.mobile}` : ''}
-                      </Typography>
-                    </Stack>
-                  </Button>
-                ))}
-              </Stack>
+              <>
+                <Typography variant="caption" color="text.secondary" sx={{ px: 1 }}>
+                  该部门及其子部门成员（点击添加）
+                </Typography>
+                {loadingUsers ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                    <CircularProgress size={24} />
+                  </Box>
+                ) : deptUsers.length === 0 ? (
+                  <Typography color="text.secondary" sx={{ p: 2, fontSize: '0.85rem' }}>该部门暂无可添加成员</Typography>
+                ) : (
+                  <Stack spacing={1} sx={{ mt: 1 }}>
+                    {deptUsers.map((u) => (
+                      <Button
+                        key={u.userId}
+                        variant="outlined"
+                        size="small"
+                        onClick={() => handlePickUser(u)}
+                        sx={{ justifyContent: 'flex-start', textTransform: 'none', borderRadius: '8px', py: 1 }}
+                      >
+                        <Stack alignItems="flex-start" spacing={0.25}>
+                          <Typography variant="body2" fontWeight={600}>{u.name}</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {(u.department || '未知部门')}
+                            {u.mobile ? ` · ${u.mobile}` : ''}
+                          </Typography>
+                        </Stack>
+                      </Button>
+                    ))}
+                  </Stack>
+                )}
+              </>
             )}
           </Box>
         </Box>
