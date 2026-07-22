@@ -25,12 +25,10 @@ import {
   getAdminTaskList,
   createTask,
   startTask,
-  getServerVersion,
   type AdminTaskItem,
   type CreateTaskParams,
 } from '../api/admin';
 import { useAuth } from '../contexts/AuthContext';
-import { APP_VERSION } from '../config/version';
 
 const scopeTypeOptions = [
   { value: 'all', label: '全部资产' },
@@ -95,14 +93,6 @@ export default function AdminTasks() {
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks]);
-
-  /* ---- 前后端版本对照 ---- */
-  const [serverVersion, setServerVersion] = useState<string>('');
-  useEffect(() => {
-    getServerVersion()
-      .then((v) => setServerVersion(v.version))
-      .catch(() => setServerVersion(''));
-  }, []);
 
   /** 提交新建任务 */
   const handleCreate = async () => {
@@ -174,15 +164,6 @@ export default function AdminTasks() {
           </Button>
         </div>
       </div>
-
-      {/* 版本对照：前端 ↔ 后端，部署一致性自检 */}
-      <Alert
-        severity={serverVersion && serverVersion !== APP_VERSION ? 'warning' : 'info'}
-        sx={{ fontSize: '0.8rem' }}
-      >
-        前端版本 {APP_VERSION} ｜ 后端版本 {serverVersion || '获取中…'}
-        {serverVersion && serverVersion !== APP_VERSION && '（前后端版本不一致，请重新部署后端）'}
-      </Alert>
 
       {/* 错误提示 */}
       {error && (

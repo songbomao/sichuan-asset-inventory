@@ -20,7 +20,7 @@ import Chip from '@mui/material/Chip';
 import Alert from '@mui/material/Alert';
 import { useAuth } from '../contexts/AuthContext';
 import { APP_VERSION, RELEASE_NOTES } from '../config/version';
-import { getAdminInfo, bootstrapSuperAdmin, type AdminInfo } from '../api/admin';
+import { getAdminInfo, bootstrapSuperAdmin, getServerVersion, type AdminInfo } from '../api/admin';
 import AdminConfigDialog from '../components/AdminConfigDialog';
 
 /** 信息行组件 */
@@ -52,12 +52,20 @@ export default function ProfilePage() {
   const [adminDialogOpen, setAdminDialogOpen] = useState(false);
   const [adminInfo, setAdminInfo] = useState<AdminInfo | null>(null);
   const [bootstrapping, setBootstrapping] = useState(false);
+  const [backendVersion, setBackendVersion] = useState<string>('');
 
   // 拉取当前权限信息（判断是否已初始化管理员、是否超级管理员）
   useEffect(() => {
     getAdminInfo()
       .then(setAdminInfo)
       .catch(() => setAdminInfo(null));
+  }, []);
+
+  // 拉取后端版本号，显示在页面底部
+  useEffect(() => {
+    getServerVersion()
+      .then((v) => setBackendVersion(v.version))
+      .catch(() => setBackendVersion(''));
   }, []);
 
   const handleLogout = () => {
@@ -184,9 +192,12 @@ export default function ProfilePage() {
         退出登录
       </Button>
 
-      {/* 底部版权 */}
+      {/* 底部版本信息 */}
       <Typography variant="caption" color="text.disabled" textAlign="center" display="block">
-        {APP_VERSION}
+        {APP_VERSION}（前端）
+      </Typography>
+      <Typography variant="caption" color="text.disabled" textAlign="center" display="block" sx={{ opacity: 0.8 }}>
+        {backendVersion ? `${backendVersion}（后端）` : '后端版本获取中…'}
       </Typography>
       <Typography variant="caption" color="text.disabled" textAlign="center" display="block" sx={{ opacity: 0.6 }}>
         {RELEASE_NOTES}

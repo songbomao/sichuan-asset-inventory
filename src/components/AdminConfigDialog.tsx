@@ -35,6 +35,7 @@ import {
   searchDingtalkUsers,
   getDingtalkDepartments,
   getDingtalkDepartmentUsers,
+  getDingtalkSubDepartments,
   type AdminUser,
   type DingtalkSearchUser,
   type DingtalkDepartmentNode,
@@ -122,7 +123,38 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
     return null;
   };
 
-  /** 选中某个部门：设置选中态、在左侧树中展开其自身、加载其直属人员 */
+  /** 递归更新部门树中某节点的 children（用于懒加载后回填） */
+  const updateDeptChildren = (
+    nodes: DingtalkDepartmentNode[],
+    targetDeptId: number,
+    children: DingtalkDepartmentNode[],
+  ): DingtalkDepartmentNode[] =>
+    nodes.map((n) => {
+      if (n.deptId === targetDeptId) return { ...n, children };
+      if (n.children && n.children.length > 0) {
+        return { ...n, children: updateDeptChildren(n.children, targetDeptId, children) };
+      }
+      return n;
+    });
+
+  /** 懒加载某部门的直接子部门：更新右侧子部门列表 + 回填左侧部门树 */
+  const loadSubDepartments = async (deptId: number) => {
+    try {
+      const subs = await getDingtalkSubDepartments(deptId);
+      const mapped: DingtalkDepartmentNode[] = subs.map((s) => ({
+        deptId: s.deptId,
+        name: s.name,
+        parentId: s.parentId,
+        children: [],
+      }));
+      setSelectedDeptChildren(mapped);
+      setDepartments((prev) => updateDeptChildren(prev, deptId, mapped));
+    } catch {
+      setSelectedDeptChildren([]);
+    }
+  };
+
+  /** 选中某个部门：设置选中态、在左侧树中展开其自身、加载其直属人员、懒加载其直接子部门 */
   const selectDept = (dept: DingtalkDepartmentNode) => {
     setSelectedDeptId(dept.deptId);
     setSelectedDeptName(dept.name);
@@ -133,16 +165,24 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
       return next;
     });
     void loadDepartmentUsers(dept.deptId);
+    void loadSubDepartments(dept.deptId);
   };
 
-  /** 切换左侧树某个部门节点的展开/折叠（仅控制显示，不加载人员） */
+  /** 切换左侧树某个部门节点的展开/折叠；展开且尚无子部门时懒加载 */
   const toggleExpand = (deptId: number) => {
+    const willExpand = !expandedDeptIds.has(deptId);
     setExpandedDeptIds((prev) => {
       const next = new Set(prev);
-      if (next.has(deptId)) next.delete(deptId);
-      else next.add(deptId);
+      if (willExpand) next.add(deptId);
+      else next.delete(deptId);
       return next;
     });
+    if (willExpand) {
+      const node = findDeptNode(departments, deptId);
+      if (!node || !node.children || node.children.length === 0) {
+        void loadSubDepartments(deptId);
+      }
+    }
   };
 
   /** 加载某部门的【直属】用户列表（后端代理，recursive=false 只取直接隶属于该部门的成员） */

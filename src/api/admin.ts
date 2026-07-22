@@ -291,6 +291,26 @@ export async function getDingtalkDepartmentUsers(
   throw new Error(data.msg || data.message || '获取部门用户失败');
 }
 
+/** 钉钉直接子部门 */
+export interface DingtalkSubDepartment {
+  deptId: number;
+  name: string;
+  parentId: number;
+}
+
+/**
+ * 获取指定部门的直接子部门（懒加载，配合部门树逐级下钻）
+ * POST /api/Account/UniGetToken
+ */
+export async function getDingtalkSubDepartments(deptId: number): Promise<DingtalkSubDepartment[]> {
+  const { data } = await client.post<{ code: number; data: DingtalkSubDepartment[]; msg?: string; message?: string }>(
+    '/api/Account/UniGetToken',
+    { action: 'GetDingtalkSubDepartments', deptId },
+  );
+  if (data.code === 0 || data.code === 200) return data.data || [];
+  throw new Error(data.msg || data.message || '获取子部门失败');
+}
+
 /* ============================================================
  * 后端版本号（用于管理员页前后端版本对照）
  * ============================================================ */
@@ -301,9 +321,9 @@ export interface ServerVersion {
   releaseNotes: string;
 }
 
-/** 获取后端服务版本号，用于管理员页前后端版本对照（走 UniSaiAuth 网关，与登录同通道可绕过 WAF） */
+/** 获取后端服务版本号（走统一网关 UniGetToken，后端 HandleApiGateway 的 GetVersion case 已支持） */
 export async function getServerVersion(): Promise<ServerVersion> {
-  const res = await client.post('/api/Account/UniSaiAuth', { action: 'GetVersion' });
+  const res = await client.post('/api/Account/UniGetToken', { action: 'GetVersion' });
   const payload = (res.data && res.data.data) ? res.data.data : res.data;
   return {
     version: payload?.appVersion ?? '',
