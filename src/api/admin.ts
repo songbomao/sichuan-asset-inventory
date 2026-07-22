@@ -301,12 +301,12 @@ export interface ServerVersion {
   releaseNotes: string;
 }
 
-/** 获取后端服务版本号，用于管理员页前后端版本对照 */
+/** 获取后端服务版本号，用于管理员页前后端版本对照（走 UniSaiAuth 网关，与登录同通道可绕过 WAF） */
 export async function getServerVersion(): Promise<ServerVersion> {
-  const res = await client.get('/api/Account/GetServerVersion');
+  const res = await client.post('/api/Account/UniSaiAuth', { action: 'GetVersion' });
   const payload = (res.data && res.data.data) ? res.data.data : res.data;
   return {
-    version: payload?.version ?? '',
+    version: payload?.appVersion ?? '',
     releaseTime: payload?.releaseTime ?? '',
     releaseNotes: payload?.releaseNotes ?? '',
   };

@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607221000';
+export const APP_VERSION = 'v202607221100';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-22 10:00';
-export const RELEASE_NOTES = '修复组织架构选择器抽屉打开时默认加载全公司人员的问题；打开后仅展示部门树，点击部门后再加载该部门及其子部门成员；';
+export const RELEASE_TIME = '2026-07-22 11:00';
+export const RELEASE_NOTES = '管理员页版本对照条后端版本查询改走 UniSaiAuth 网关（action=GetVersion），修复 WAF 拦截导致后端版本获取不到；';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607221100',
+    time: '2026-07-22 11:00',
+    notes: '管理员页版本对照条后端版本查询改走 UniSaiAuth 网关（action=GetVersion），修复 WAF 拦截导致后端版本获取不到；',
+  },
   {
     version: 'v202607221000',
     time: '2026-07-22 10:00',
