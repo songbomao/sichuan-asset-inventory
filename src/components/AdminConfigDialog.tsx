@@ -71,6 +71,7 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
   const [departments, setDepartments] = useState<DingtalkDepartmentNode[]>([]);
   const [selectedDeptId, setSelectedDeptId] = useState<number | null>(null);
   const [selectedDeptName, setSelectedDeptName] = useState<string | null>(null);
+  const [selectedDeptChildren, setSelectedDeptChildren] = useState<DingtalkDepartmentNode[]>([]);
   const [expandedDeptIds, setExpandedDeptIds] = useState<Set<number>>(new Set());
   const [deptUsers, setDeptUsers] = useState<DingtalkSearchUser[]>([]);
   const [loadingDepartments, setLoadingDepartments] = useState(false);
@@ -122,15 +123,16 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
   };
 
   /** 选中某个部门：设置选中态、在左侧树中展开其自身、加载其直属人员 */
-  const selectDept = (deptId: number, deptName: string) => {
-    setSelectedDeptId(deptId);
-    setSelectedDeptName(deptName);
+  const selectDept = (dept: DingtalkDepartmentNode) => {
+    setSelectedDeptId(dept.deptId);
+    setSelectedDeptName(dept.name);
+    setSelectedDeptChildren(dept.children || []);
     setExpandedDeptIds((prev) => {
       const next = new Set(prev);
-      next.add(deptId);
+      next.add(dept.deptId);
       return next;
     });
-    void loadDepartmentUsers(deptId);
+    void loadDepartmentUsers(dept.deptId);
   };
 
   /** 切换左侧树某个部门节点的展开/折叠（仅控制显示，不加载人员） */
@@ -260,6 +262,7 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
       setLoadingDepartments(true);
       setSelectedDeptId(null); // 重置选中
       setSelectedDeptName(null);
+      setSelectedDeptChildren([]);
       setExpandedDeptIds(new Set());
       setDeptUsers([]); // 清空旧的人员列表
       try {
@@ -286,7 +289,7 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
           <Stack key={dept.deptId} spacing={0.5}>
             <ListItemButton
               selected={selected}
-              onClick={() => selectDept(dept.deptId, dept.name)}
+              onClick={() => selectDept(dept)}
               sx={{ pl: depth * 3 + 2, py: 0.5, borderRadius: 1 }}
             >
               {hasChildren ? (
@@ -579,42 +582,37 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
                   )}
                 </Box>
 
-                {/* 子部门列表（从已加载的部门树取当前部门的子节点） */}
-                {(() => {
-                  const node = findDeptNode(departments, selectedDeptId);
-                  const subDepts = node?.children && node.children.length > 0 ? node.children : [];
-                  if (subDepts.length === 0) return null;
-                  return (
-                    <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ px: 1 }}>
-                        子部门（点击进入查看成员）
-                      </Typography>
-                      <Stack spacing={0.5} sx={{ mt: 1 }}>
-                        {subDepts.map((sub) => (
-                          <ListItemButton
-                            key={sub.deptId}
-                            onClick={() => selectDept(sub.deptId, sub.name)}
-                            sx={{
-                              borderRadius: 1,
-                              px: 1.5,
-                              py: 0.75,
-                              border: '1px solid',
-                              borderColor: 'divider',
-                              bgcolor: 'background.paper',
-                            }}
-                          >
-                            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ width: '100%' }}>
-                              <Typography variant="body2">{sub.name}</Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                {sub.children && sub.children.length > 0 ? `${sub.children.length} 个子部门 ›` : '查看成员 ›'}
-                              </Typography>
-                            </Stack>
-                          </ListItemButton>
-                        ))}
-                      </Stack>
-                    </Box>
-                  );
-                })()}
+                {/* 子部门列表（选中部门时一并记录其 children） */}
+                {selectedDeptChildren.length > 0 && (
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ px: 1 }}>
+                      子部门（点击进入查看成员）
+                    </Typography>
+                    <Stack spacing={0.5} sx={{ mt: 1 }}>
+                      {selectedDeptChildren.map((sub) => (
+                        <ListItemButton
+                          key={sub.deptId}
+                          onClick={() => selectDept(sub)}
+                          sx={{
+                            borderRadius: 1,
+                            px: 1.5,
+                            py: 0.75,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            bgcolor: 'background.paper',
+                          }}
+                        >
+                          <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ width: '100%' }}>
+                            <Typography variant="body2">{sub.name}</Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {sub.children && sub.children.length > 0 ? `${sub.children.length} 个子部门 ›` : '查看成员 ›'}
+                            </Typography>
+                          </Stack>
+                        </ListItemButton>
+                      ))}
+                    </Stack>
+                  </Box>
+                )}
               </Stack>
             )}
           </Box>

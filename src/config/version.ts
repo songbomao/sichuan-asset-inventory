@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607220910';
+export const APP_VERSION = 'v202607220935';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-22 09:10';
-export const RELEASE_NOTES = '部门树支持逐级展开/折叠（只加载选中部门直属人员，不一次性加载所有子部门人员）；右侧显示直属成员+子部门列表；人员卡片部门名改用当前选中部门名，移除「未知部门」分类；';
+export const RELEASE_TIME = '2026-07-22 09:35';
+export const RELEASE_NOTES = '修复组织架构选择器右侧子部门列表不显示的问题：选中部门时同时记录其子部门到状态，避免依赖树查找失败导致子部门区域空白；';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607220935',
+    time: '2026-07-22 09:35',
+    notes: '修复组织架构选择器右侧子部门列表不显示的问题：选中部门时同时记录其子部门到状态，避免依赖树查找失败导致子部门区域空白；',
+  },
   {
     version: 'v202607220910',
     time: '2026-07-22 09:10',
