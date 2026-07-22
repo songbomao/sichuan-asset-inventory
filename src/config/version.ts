@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607221131';
+export const APP_VERSION = 'v202607221148';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-22 11:31';
-export const RELEASE_NOTES = 'sai_assets 对接真实固定资产视图（SAP 视图库，双库分离），适配视图全部字符串字段（原值/净值/转资日期等）；资产全生命周期页展示规格型号/使用部门/利润中心/供应商/制造商等真实字段，原值净值显示做 Number 容错；';
+export const RELEASE_TIME = '2026-07-22 11:48';
+export const RELEASE_NOTES = '管理员组织架构选择器改为手风琴式就地展开：取消左右分栏，点击部门直接在该节点下方列出直属成员和子部门，同一时间仅一个部门展开，并支持面包屑导航回退；';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607221148',
+    time: '2026-07-22 11:48',
+    notes: '管理员组织架构选择器改为手风琴式就地展开：取消左右分栏，点击部门直接在该节点下方列出直属成员和子部门，同一时间仅一个部门展开，并支持面包屑导航回退；',
+  },
   {
     version: 'v202607221131',
     time: '2026-07-22 11:31',

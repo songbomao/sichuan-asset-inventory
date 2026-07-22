@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Fragment } from 'react';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -22,10 +22,10 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
 import ListItemButton from '@mui/material/ListItemButton';
-import ListItemText from '@mui/material/ListItemText';
 import CloseIcon from '@mui/icons-material/Close';
 import Box from '@mui/material/Box';
 import Divider from '@mui/material/Divider';
+import Collapse from '@mui/material/Collapse';
 import dd from 'dingtalk-jsapi';
 import { ensureDingtalkConfig, type DingtalkJsapiConfig } from '../utils/ddConfig';
 import {
@@ -70,13 +70,14 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
   /* 后端组织架构选择器（抽屉） */
   const [orgDrawerOpen, setOrgDrawerOpen] = useState(false);
   const [departments, setDepartments] = useState<DingtalkDepartmentNode[]>([]);
-  const [selectedDeptId, setSelectedDeptId] = useState<number | null>(null);
-  const [selectedDeptName, setSelectedDeptName] = useState<string | null>(null);
-  const [selectedDeptChildren, setSelectedDeptChildren] = useState<DingtalkDepartmentNode[]>([]);
-  const [expandedDeptIds, setExpandedDeptIds] = useState<Set<number>>(new Set());
-  const [deptUsers, setDeptUsers] = useState<DingtalkSearchUser[]>([]);
+  /** 下钻路径：数组最后一个节点为当前展开（focused）部门；数组为空表示处于根目录（无选中） */
+  const [path, setPath] = useState<DingtalkDepartmentNode[]>([]);
+  const [focusedDeptUsers, setFocusedDeptUsers] = useState<DingtalkSearchUser[]>([]);
   const [loadingDepartments, setLoadingDepartments] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
+
+  /** 当前展开（focused）的部门节点：手风琴式，同一时间仅有一个 */
+  const focused = path.length > 0 ? path[path.length - 1] : null;
 
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -137,7 +138,7 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
       return n;
     });
 
-  /** 懒加载某部门的直接子部门：更新右侧子部门列表 + 回填左侧部门树 */
+  /** 懒加载某部门的直接子部门（回填部门树，供就地展开时使用） */
   const loadSubDepartments = async (deptId: number) => {
     try {
       const subs = await getDingtalkSubDepartments(deptId);
@@ -147,50 +148,42 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
         parentId: s.parentId,
         children: [],
       }));
-      setSelectedDeptChildren(mapped);
       setDepartments((prev) => updateDeptChildren(prev, deptId, mapped));
     } catch {
-      setSelectedDeptChildren([]);
+      // 加载失败时保持为空，下次展开可重试
     }
   };
 
-  /** 选中某个部门：设置选中态、在左侧树中展开其自身、加载其直属人员、懒加载其直接子部门 */
-  const selectDept = (dept: DingtalkDepartmentNode) => {
-    setSelectedDeptId(dept.deptId);
-    setSelectedDeptName(dept.name);
-    setSelectedDeptChildren(dept.children || []);
-    setExpandedDeptIds((prev) => {
-      const next = new Set(prev);
-      next.add(dept.deptId);
-      return next;
-    });
-    void loadDepartmentUsers(dept.deptId);
-    void loadSubDepartments(dept.deptId);
-  };
-
-  /** 切换左侧树某个部门节点的展开/折叠；展开且尚无子部门时懒加载 */
-  const toggleExpand = (deptId: number) => {
-    const willExpand = !expandedDeptIds.has(deptId);
-    setExpandedDeptIds((prev) => {
-      const next = new Set(prev);
-      if (willExpand) next.add(deptId);
-      else next.delete(deptId);
-      return next;
-    });
-    if (willExpand) {
-      const node = findDeptNode(departments, deptId);
-      if (!node || !node.children || node.children.length === 0) {
-        void loadSubDepartments(deptId);
-      }
+  /** 下钻进入某个部门：将其设为当前展开（focused）节点，同时收起其它（手风琴）。
+   *  就地展开其「直属成员」与「子部门列表」，并在尚未加载子部门时懒加载、始终加载直属成员。 */
+  const drillInto = (dept: DingtalkDepartmentNode) => {
+    setPath((prev) => [...prev, dept]);
+    void loadFocusedUsers(dept.deptId);
+    if (!dept.children || dept.children.length === 0) {
+      void loadSubDepartments(dept.deptId);
     }
   };
 
-  /** 加载某部门的【直属】用户列表（后端代理，recursive=false 只取直接隶属于该部门的成员） */
-  const loadDepartmentUsers = async (deptId: number) => {
+  /** 通过面包屑跳转到某一级部门（同时收起其下更深层级，符合手风琴） */
+  const jumpTo = (index: number) => {
+    const target = path[index];
+    if (!target) return;
+    setPath(path.slice(0, index + 1));
+    void loadFocusedUsers(target.deptId);
+  };
+
+  /** 返回根目录（收起所有层级） */
+  const collapseToRoot = () => {
+    setPath([]);
+    setFocusedDeptUsers([]);
+  };
+
+  /** 加载某个部门的【直属】用户列表（后端代理，recursive=false 只取直接隶属于该部门的成员） */
+  const loadFocusedUsers = async (deptId: number) => {
     setLoadingUsers(true);
     try {
       const users = await getDingtalkDepartmentUsers(deptId, false);
-      setDeptUsers(users);
+      setFocusedDeptUsers(users);
     } catch (e) {
       setMsg({ type: 'error', text: e instanceof Error ? e.message : '加载部门用户失败' });
     } finally {
@@ -289,7 +282,7 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
     void doAdd({
       dingtalkUserId: u.userId,
       name: u.name,
-      department: selectedDeptName ?? u.department,
+      department: focused?.name ?? u.department,
       mobile: u.mobile,
     });
     setOrgDrawerOpen(false);
@@ -300,11 +293,8 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
     if (!orgDrawerOpen) return;
     const load = async () => {
       setLoadingDepartments(true);
-      setSelectedDeptId(null); // 重置选中
-      setSelectedDeptName(null);
-      setSelectedDeptChildren([]);
-      setExpandedDeptIds(new Set());
-      setDeptUsers([]); // 清空旧的人员列表
+      setPath([]); // 重置下钻路径
+      setFocusedDeptUsers([]); // 清空旧的人员列表
       try {
         const tree = await getDingtalkDepartments();
         setDepartments(tree);
@@ -318,45 +308,18 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orgDrawerOpen]);
 
-  /** 递归渲染部门树（支持逐级展开/折叠） */
-  const renderDepartmentTree = (nodes: DingtalkDepartmentNode[], depth = 0) => (
-    <Stack spacing={0.5}>
-      {nodes.map((dept) => {
-        const hasChildren = dept.children && dept.children.length > 0;
-        const expanded = expandedDeptIds.has(dept.deptId);
-        const selected = selectedDeptId === dept.deptId;
-        return (
-          <Stack key={dept.deptId} spacing={0.5}>
-            <ListItemButton
-              selected={selected}
-              onClick={() => selectDept(dept)}
-              sx={{ pl: depth * 3 + 2, py: 0.5, borderRadius: 1 }}
-            >
-              {hasChildren ? (
-                <IconButton
-                  size="small"
-                  sx={{ mr: 0.5, ml: -1, p: 0.25 }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleExpand(dept.deptId);
-                  }}
-                >
-                  <ExpandMoreIcon
-                    fontSize="small"
-                    sx={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}
-                  />
-                </IconButton>
-              ) : null}
-              <ListItemText
-                primary={dept.name}
-                primaryTypographyProps={{ fontSize: '0.9rem', fontWeight: selected ? 700 : 400 }}
-              />
-            </ListItemButton>
-            {hasChildren && expanded && renderDepartmentTree(dept.children, depth + 1)}
-          </Stack>
-        );
-      })}
-    </Stack>
+  /** 根目录 / 某一层级下的部门行：点击即就地展开（下钻进入该部门） */
+  const renderDeptRow = (dept: DingtalkDepartmentNode) => (
+    <ListItemButton
+      key={dept.deptId}
+      onClick={() => drillInto(dept)}
+      sx={{ borderRadius: 1, py: 0.75, px: 1.5, border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}
+    >
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ width: '100%' }}>
+        <Typography variant="body2" fontWeight={500}>{dept.name}</Typography>
+        <Typography variant="caption" color="text.secondary">进入 ›</Typography>
+      </Stack>
+    </ListItemButton>
   );
 
   /** 从输入框搜索钉钉用户（debounce） */
@@ -552,7 +515,8 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
       </DialogActions>
     </Dialog>
 
-    {/* 后端组织架构选择器（独立全屏 Dialog，避免被外层 Dialog 遮罩压住） */}
+    {/* 后端组织架构选择器（独立全屏 Dialog，避免被外层 Dialog 遮罩压住）
+        单棵树就地展开 + 手风琴式下钻：面包屑导航 + 当前部门「直属成员 / 子部门」就地展开 */}
     <Dialog
       open={orgDrawerOpen}
       onClose={() => setOrgDrawerOpen(false)}
@@ -567,41 +531,59 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
           </IconButton>
         </Box>
         <Divider />
-        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, overflow: 'hidden', flexGrow: 1 }}>
-          {/* 左侧部门树 */}
-          <Box sx={{ width: { xs: '100%', sm: 220 }, borderRight: { sm: '1px solid' }, borderColor: 'divider', overflowY: 'auto', py: 1, bgcolor: 'grey.50' }}>
-            {loadingDepartments ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                <CircularProgress size={24} />
-              </Box>
-            ) : departments.length === 0 ? (
-              <Typography color="text.secondary" sx={{ p: 2, fontSize: '0.85rem' }}>暂无部门数据</Typography>
-            ) : (
-              renderDepartmentTree(departments)
-            )}
-          </Box>
-          {/* 右侧：选中部门的直属成员 + 子部门列表 */}
-          <Box sx={{ flexGrow: 1, overflowY: 'auto', py: 1, px: 1.5 }}>
-            {selectedDeptId == null ? (
-              <Typography color="text.secondary" textAlign="center" sx={{ py: 4 }}>
-                请从左侧选择一个部门
-              </Typography>
-            ) : (
-              <Stack spacing={2}>
-                {/* 直属成员 */}
+        <Box sx={{ overflowY: 'auto', flexGrow: 1, py: 1, px: 1.5 }}>
+          {/* 面包屑：根目录 + 逐级下钻路径（点击回退，手风琴自动收起更深层） */}
+          <Stack direction="row" spacing={0.5} alignItems="center" sx={{ px: 0.5, py: 1, flexWrap: 'wrap' }}>
+            <Button
+              size="small"
+              onClick={collapseToRoot}
+              sx={{ textTransform: 'none', minWidth: 'auto', fontWeight: focused ? 400 : 700 }}
+            >
+              根目录
+            </Button>
+            {path.map((node, idx) => (
+              <Fragment key={node.deptId}>
+                <Typography color="text.secondary" sx={{ fontSize: '0.9rem' }}>›</Typography>
+                <Button
+                  size="small"
+                  onClick={() => jumpTo(idx)}
+                  sx={{ textTransform: 'none', minWidth: 'auto', fontWeight: idx === path.length - 1 ? 700 : 400 }}
+                >
+                  {node.name}
+                </Button>
+              </Fragment>
+            ))}
+          </Stack>
+
+          {loadingDepartments ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress size={24} />
+            </Box>
+          ) : departments.length === 0 ? (
+            <Typography color="text.secondary" sx={{ p: 2, fontSize: '0.85rem' }}>暂无部门数据</Typography>
+          ) : focused == null ? (
+            /* 根目录：列出顶层部门，点击即就地展开（进入该部门） */
+            <Stack spacing={0.5} sx={{ mt: 1 }}>
+              {departments.map((dept) => renderDeptRow(dept))}
+            </Stack>
+          ) : (
+            /* 当前展开部门：就地展开「直属成员」与「子部门列表」，用 Collapse 做过渡动画 */
+            <Collapse in timeout="auto" key={focused.deptId}>
+              <Stack spacing={2} sx={{ mt: 1, px: 0.5 }}>
+                {/* 直属成员（点击即添加） */}
                 <Box>
                   <Typography variant="caption" color="text.secondary" sx={{ px: 1 }}>
-                    {selectedDeptName ? `「${selectedDeptName}」直属成员（点击添加）` : '直属成员（点击添加）'}
+                    「{focused.name}」直属成员（点击添加）
                   </Typography>
                   {loadingUsers ? (
                     <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
                       <CircularProgress size={24} />
                     </Box>
-                  ) : deptUsers.length === 0 ? (
+                  ) : focusedDeptUsers.length === 0 ? (
                     <Typography color="text.secondary" sx={{ p: 2, fontSize: '0.85rem' }}>该部门暂无可添加成员</Typography>
                   ) : (
                     <Stack spacing={1} sx={{ mt: 1 }}>
-                      {deptUsers.map((u) => (
+                      {focusedDeptUsers.map((u) => (
                         <Button
                           key={u.userId}
                           variant="outlined"
@@ -612,7 +594,7 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
                           <Stack alignItems="flex-start" spacing={0.25}>
                             <Typography variant="body2" fontWeight={600}>{u.name}</Typography>
                             <Typography variant="caption" color="text.secondary">
-                              {selectedDeptName ?? ''}
+                              {focused.name}
                               {u.mobile ? ` · ${u.mobile}` : ''}
                             </Typography>
                           </Stack>
@@ -622,17 +604,17 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
                   )}
                 </Box>
 
-                {/* 子部门列表（选中部门时一并记录其 children） */}
-                {selectedDeptChildren.length > 0 && (
+                {/* 子部门列表：点击子部门即就地展开该子部门（手风琴自动收起其他） */}
+                {focused.children && focused.children.length > 0 && (
                   <Box>
                     <Typography variant="caption" color="text.secondary" sx={{ px: 1 }}>
                       子部门（点击进入查看成员）
                     </Typography>
                     <Stack spacing={0.5} sx={{ mt: 1 }}>
-                      {selectedDeptChildren.map((sub) => (
+                      {focused.children.map((sub) => (
                         <ListItemButton
                           key={sub.deptId}
-                          onClick={() => selectDept(sub)}
+                          onClick={() => drillInto(sub)}
                           sx={{
                             borderRadius: 1,
                             px: 1.5,
@@ -654,8 +636,8 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
                   </Box>
                 )}
               </Stack>
-            )}
-          </Box>
+            </Collapse>
+          )}
         </Box>
       </Box>
     </Dialog>
