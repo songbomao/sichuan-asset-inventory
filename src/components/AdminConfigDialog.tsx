@@ -70,6 +70,8 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
   const [orgDrawerOpen, setOrgDrawerOpen] = useState(false);
   const [departments, setDepartments] = useState<DingtalkDepartmentNode[]>([]);
   const [selectedDeptId, setSelectedDeptId] = useState<number | null>(null);
+  const [selectedDeptName, setSelectedDeptName] = useState<string | null>(null);
+  const [expandedDeptIds, setExpandedDeptIds] = useState<Set<number>>(new Set());
   const [deptUsers, setDeptUsers] = useState<DingtalkSearchUser[]>([]);
   const [loadingDepartments, setLoadingDepartments] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
@@ -107,11 +109,45 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
     setDiagnosis(lines);
   }, [open]);
 
-  /** 加载某部门下的用户列表（后端代理） */
+  /** 在部门树中按 deptId 查找节点（用于取子部门列表） */
+  const findDeptNode = (nodes: DingtalkDepartmentNode[], deptId: number): DingtalkDepartmentNode | null => {
+    for (const n of nodes) {
+      if (n.deptId === deptId) return n;
+      if (n.children && n.children.length > 0) {
+        const found = findDeptNode(n.children, deptId);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  /** 选中某个部门：设置选中态、在左侧树中展开其自身、加载其直属人员 */
+  const selectDept = (deptId: number, deptName: string) => {
+    setSelectedDeptId(deptId);
+    setSelectedDeptName(deptName);
+    setExpandedDeptIds((prev) => {
+      const next = new Set(prev);
+      next.add(deptId);
+      return next;
+    });
+    void loadDepartmentUsers(deptId);
+  };
+
+  /** 切换左侧树某个部门节点的展开/折叠（仅控制显示，不加载人员） */
+  const toggleExpand = (deptId: number) => {
+    setExpandedDeptIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(deptId)) next.delete(deptId);
+      else next.add(deptId);
+      return next;
+    });
+  };
+
+  /** 加载某部门的【直属】用户列表（后端代理，recursive=false 只取直接隶属于该部门的成员） */
   const loadDepartmentUsers = async (deptId: number) => {
     setLoadingUsers(true);
     try {
-      const users = await getDingtalkDepartmentUsers(deptId, true);
+      const users = await getDingtalkDepartmentUsers(deptId, false);
       setDeptUsers(users);
     } catch (e) {
       setMsg({ type: 'error', text: e instanceof Error ? e.message : '加载部门用户失败' });
@@ -211,7 +247,7 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
     void doAdd({
       dingtalkUserId: u.userId,
       name: u.name,
-      department: u.department,
+      department: selectedDeptName ?? u.department,
       mobile: u.mobile,
     });
     setOrgDrawerOpen(false);
@@ -223,6 +259,8 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
     const load = async () => {
       setLoadingDepartments(true);
       setSelectedDeptId(null); // 重置选中
+      setSelectedDeptName(null);
+      setExpandedDeptIds(new Set());
       setDeptUsers([]); // 清空旧的人员列表
       try {
         const tree = await getDingtalkDepartments();
@@ -237,27 +275,44 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orgDrawerOpen]);
 
-  /** 递归渲染部门树 */
+  /** 递归渲染部门树（支持逐级展开/折叠） */
   const renderDepartmentTree = (nodes: DingtalkDepartmentNode[], depth = 0) => (
     <Stack spacing={0.5}>
-      {nodes.map((dept) => (
-        <Stack key={dept.deptId} spacing={0.5}>
-          <ListItemButton
-            selected={selectedDeptId === dept.deptId}
-            onClick={() => {
-              setSelectedDeptId(dept.deptId);
-              void loadDepartmentUsers(dept.deptId);
-            }}
-            sx={{ pl: depth * 3 + 2, py: 0.5, borderRadius: 1 }}
-          >
-            <ListItemText
-              primary={dept.name}
-              primaryTypographyProps={{ fontSize: '0.9rem', fontWeight: selectedDeptId === dept.deptId ? 700 : 400 }}
-            />
-          </ListItemButton>
-          {dept.children && dept.children.length > 0 && renderDepartmentTree(dept.children, depth + 1)}
-        </Stack>
-      ))}
+      {nodes.map((dept) => {
+        const hasChildren = dept.children && dept.children.length > 0;
+        const expanded = expandedDeptIds.has(dept.deptId);
+        const selected = selectedDeptId === dept.deptId;
+        return (
+          <Stack key={dept.deptId} spacing={0.5}>
+            <ListItemButton
+              selected={selected}
+              onClick={() => selectDept(dept.deptId, dept.name)}
+              sx={{ pl: depth * 3 + 2, py: 0.5, borderRadius: 1 }}
+            >
+              {hasChildren ? (
+                <IconButton
+                  size="small"
+                  sx={{ mr: 0.5, ml: -1, p: 0.25 }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleExpand(dept.deptId);
+                  }}
+                >
+                  <ExpandMoreIcon
+                    fontSize="small"
+                    sx={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}
+                  />
+                </IconButton>
+              ) : null}
+              <ListItemText
+                primary={dept.name}
+                primaryTypographyProps={{ fontSize: '0.9rem', fontWeight: selected ? 700 : 400 }}
+              />
+            </ListItemButton>
+            {hasChildren && expanded && renderDepartmentTree(dept.children, depth + 1)}
+          </Stack>
+        );
+      })}
     </Stack>
   );
 
@@ -384,7 +439,7 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
                   <Stack alignItems="flex-start" spacing={0.25}>
                     <Typography variant="body2" fontWeight={600}>{u.name}</Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {(u.selectDeptName || u.department || '未知部门')}
+                      {(u.selectDeptName || u.department || '未填写部门')}
                       {u.phone ? ` · ${u.phone}` : ''}
                     </Typography>
                   </Stack>
@@ -482,45 +537,85 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
               renderDepartmentTree(departments)
             )}
           </Box>
-          {/* 右侧用户列表 */}
+          {/* 右侧：选中部门的直属成员 + 子部门列表 */}
           <Box sx={{ flexGrow: 1, overflowY: 'auto', py: 1, px: 1.5 }}>
             {selectedDeptId == null ? (
               <Typography color="text.secondary" textAlign="center" sx={{ py: 4 }}>
                 请从左侧选择一个部门
               </Typography>
             ) : (
-              <>
-                <Typography variant="caption" color="text.secondary" sx={{ px: 1 }}>
-                  该部门及其子部门成员（点击添加）
-                </Typography>
-                {loadingUsers ? (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                    <CircularProgress size={24} />
-                  </Box>
-                ) : deptUsers.length === 0 ? (
-                  <Typography color="text.secondary" sx={{ p: 2, fontSize: '0.85rem' }}>该部门暂无可添加成员</Typography>
-                ) : (
-                  <Stack spacing={1} sx={{ mt: 1 }}>
-                    {deptUsers.map((u) => (
-                      <Button
-                        key={u.userId}
-                        variant="outlined"
-                        size="small"
-                        onClick={() => handlePickUser(u)}
-                        sx={{ justifyContent: 'flex-start', textTransform: 'none', borderRadius: '8px', py: 1 }}
-                      >
-                        <Stack alignItems="flex-start" spacing={0.25}>
-                          <Typography variant="body2" fontWeight={600}>{u.name}</Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {(u.department || '未知部门')}
-                            {u.mobile ? ` · ${u.mobile}` : ''}
-                          </Typography>
-                        </Stack>
-                      </Button>
-                    ))}
-                  </Stack>
-                )}
-              </>
+              <Stack spacing={2}>
+                {/* 直属成员 */}
+                <Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ px: 1 }}>
+                    {selectedDeptName ? `「${selectedDeptName}」直属成员（点击添加）` : '直属成员（点击添加）'}
+                  </Typography>
+                  {loadingUsers ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                      <CircularProgress size={24} />
+                    </Box>
+                  ) : deptUsers.length === 0 ? (
+                    <Typography color="text.secondary" sx={{ p: 2, fontSize: '0.85rem' }}>该部门暂无可添加成员</Typography>
+                  ) : (
+                    <Stack spacing={1} sx={{ mt: 1 }}>
+                      {deptUsers.map((u) => (
+                        <Button
+                          key={u.userId}
+                          variant="outlined"
+                          size="small"
+                          onClick={() => handlePickUser(u)}
+                          sx={{ justifyContent: 'flex-start', textTransform: 'none', borderRadius: '8px', py: 1 }}
+                        >
+                          <Stack alignItems="flex-start" spacing={0.25}>
+                            <Typography variant="body2" fontWeight={600}>{u.name}</Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {selectedDeptName ?? ''}
+                              {u.mobile ? ` · ${u.mobile}` : ''}
+                            </Typography>
+                          </Stack>
+                        </Button>
+                      ))}
+                    </Stack>
+                  )}
+                </Box>
+
+                {/* 子部门列表（从已加载的部门树取当前部门的子节点） */}
+                {(() => {
+                  const node = findDeptNode(departments, selectedDeptId);
+                  const subDepts = node?.children && node.children.length > 0 ? node.children : [];
+                  if (subDepts.length === 0) return null;
+                  return (
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ px: 1 }}>
+                        子部门（点击进入查看成员）
+                      </Typography>
+                      <Stack spacing={0.5} sx={{ mt: 1 }}>
+                        {subDepts.map((sub) => (
+                          <ListItemButton
+                            key={sub.deptId}
+                            onClick={() => selectDept(sub.deptId, sub.name)}
+                            sx={{
+                              borderRadius: 1,
+                              px: 1.5,
+                              py: 0.75,
+                              border: '1px solid',
+                              borderColor: 'divider',
+                              bgcolor: 'background.paper',
+                            }}
+                          >
+                            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ width: '100%' }}>
+                              <Typography variant="body2">{sub.name}</Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {sub.children && sub.children.length > 0 ? `${sub.children.length} 个子部门 ›` : '查看成员 ›'}
+                              </Typography>
+                            </Stack>
+                          </ListItemButton>
+                        ))}
+                      </Stack>
+                    </Box>
+                  );
+                })()}
+              </Stack>
             )}
           </Box>
         </Box>
