@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Card from '@mui/material/Card';
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
 import CardActionArea from '@mui/material/CardActionArea';
 import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
@@ -29,6 +31,7 @@ import {
   type CreateTaskParams,
 } from '../api/admin';
 import { useAuth } from '../contexts/AuthContext';
+import AssetSyncCompare from './AssetSyncCompare';
 
 const scopeTypeOptions = [
   { value: 'all', label: '全部资产' },
@@ -61,6 +64,7 @@ export default function AdminTasks() {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [tab, setTab] = useState<'tasks' | 'sync'>('tasks');
 
   // 仅管理员可进入任务管理
   if (!user?.isAdmin) {
@@ -137,6 +141,19 @@ export default function AdminTasks() {
 
   return (
     <div className="p-4 space-y-4">
+      {/* 版块切换 */}
+      <Tabs
+        value={tab}
+        onChange={(_e, v) => setTab(v)}
+        variant="fullWidth"
+        sx={{ mb: 1, minHeight: 40, '& .MuiTab-root': { minHeight: 40, textTransform: 'none', fontSize: '0.9rem' } }}
+      >
+        <Tab value="tasks" label="任务管理" />
+        <Tab value="sync" label="资产对比同步" />
+      </Tabs>
+
+      {tab === 'tasks' && (
+      <>
       {/* 头部 */}
       <div className="flex items-start justify-between gap-2">
         <div>
@@ -345,6 +362,10 @@ export default function AdminTasks() {
           </Button>
         </DialogActions>
       </Dialog>
+      </>
+      )}
+
+      {tab === 'sync' && <AssetSyncCompare />}
     </div>
   );
 }

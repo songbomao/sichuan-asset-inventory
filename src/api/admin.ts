@@ -331,3 +331,148 @@ export async function getServerVersion(): Promise<ServerVersion> {
     releaseNotes: payload?.releaseNotes ?? '',
   };
 }
+
+/* ============================================================
+ * 固定资产对比与同步（仅管理员）
+ * 后端网关 action，沿用统一 UniGetToken 网关 + _token 机制
+ * ============================================================ */
+
+/** 本地资产表（sai_assets）单条记录 */
+export interface AssetTableItem {
+  assetCode: string;
+  assetName: string;
+  categoryName: string;
+  useStatus: string;
+  /** 原值（可能为空） */
+  originalValue: string | number | null;
+  /** 净值（可能为空） */
+  netValue: string | number | null;
+  deptName?: string;
+  companyName?: string;
+  standard?: string;
+}
+
+/** 资产表分页结果 */
+export interface AssetTableResult {
+  total: number;
+  page: number;
+  pageSize: number;
+  list: AssetTableItem[];
+}
+
+/**
+ * 读取本地资产表（分页 + 关键字搜索）
+ * POST /api/Account/UniGetToken/GetAssetTable
+ */
+export async function getAssetTable(params: {
+  keyword?: string;
+  page: number;
+  pageSize: number;
+}): Promise<AssetTableResult> {
+  const { data } = await client.post<{ code: number; data: AssetTableResult; msg?: string; message?: string }>(
+    '/api/Account/UniGetToken',
+    {
+      action: 'GetAssetTable',
+      keyword: params.keyword ?? '',
+      page: params.page,
+      pageSize: params.pageSize,
+    },
+  );
+  if (data.code === 0 || data.code === 200) return data.data;
+  throw new Error(data.msg || data.message || '获取资产表失败');
+}
+
+/** 单条差异字段 */
+export interface AssetDiffField {
+  field: string;
+  tableValue: string | number | null;
+  viewValue: string | number | null;
+}
+
+/** 字段不一致的对照记录 */
+export interface AssetDiffItem {
+  assetCode: string;
+  assetName: string;
+  diffs: AssetDiffField[];
+}
+
+/** 差异对比结果 */
+export interface CompareAssetsResult {
+  onlyInTable: { assetCode: string; assetName: string }[];
+  onlyInView: { assetCode: string; assetName: string }[];
+  different: AssetDiffItem[];
+  summary: {
+    localCount: number;
+    viewCount: number;
+    onlyInTableCount: number;
+    onlyInViewCount: number;
+    differentCount: number;
+  };
+}
+
+/**
+ * 本地表 vs SAP 视图 差异对比
+ * POST /api/Account/UniGetToken/CompareAssets
+ */
+export async function compareAssets(): Promise<CompareAssetsResult> {
+  const { data } = await client.post<{ code: number; data: CompareAssetsResult; msg?: string; message?: string }>(
+    '/api/Account/UniGetToken',
+    { action: 'CompareAssets' },
+  );
+  if (data.code === 0 || data.code === 200) return data.data;
+  throw new Error(data.msg || data.message || '差异对比失败');
+}
+
+/** 单条同步明细 */
+export interface SyncDetail {
+  assetCode: string;
+  changeType: 'insert' | 'update' | 'delete' | string;
+}
+
+/** 同步预览结果 */
+export interface PreviewSyncResult {
+  toInsert: unknown[];
+  toUpdate: unknown[];
+  toDelete: unknown[];
+  details: SyncDetail[];
+  summary: {
+    insertCount: number;
+    updateCount: number;
+    deleteCount: number;
+  };
+}
+
+/**
+ * 视图 → 本地表 同步预览（不落库）
+ * POST /api/Account/UniGetToken/PreviewSyncAssets
+ */
+export async function previewSyncAssets(): Promise<PreviewSyncResult> {
+  const { data } = await client.post<{ code: number; data: PreviewSyncResult; msg?: string; message?: string }>(
+    '/api/Account/UniGetToken',
+    { action: 'PreviewSyncAssets' },
+  );
+  if (data.code === 0 || data.code === 200) return data.data;
+  throw new Error(data.msg || data.message || '同步预览失败');
+}
+
+/** 执行同步结果 */
+export interface SyncAssetsResult {
+  inserted: number;
+  updated: number;
+  deleted: number;
+  success: boolean;
+  message: string;
+}
+
+/**
+ * 执行同步（视图 → 本地表，覆盖本地快照）
+ * POST /api/Account/UniGetToken/SyncAssets
+ */
+export async function syncAssets(): Promise<SyncAssetsResult> {
+  const { data } = await client.post<{ code: number; data: SyncAssetsResult; msg?: string; message?: string }>(
+    '/api/Account/UniGetToken',
+    { action: 'SyncAssets' },
+  );
+  if (data.code === 0 || data.code === 200) return data.data;
+  throw new Error(data.msg || data.message || '同步失败');
+}

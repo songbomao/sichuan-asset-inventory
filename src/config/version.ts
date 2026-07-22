@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607221148';
+export const APP_VERSION = 'v202607221228';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-22 11:48';
-export const RELEASE_NOTES = '管理员组织架构选择器改为手风琴式就地展开：取消左右分栏，点击部门直接在该节点下方列出直属成员和子部门，同一时间仅一个部门展开，并支持面包屑导航回退；';
+export const RELEASE_TIME = '2026-07-22 12:28';
+export const RELEASE_NOTES = '新增固定资产对比与同步版块（管理员）：本地资产表分页+搜索展示；差异对比（仅本地表/仅视图/字段不一致高亮）；手动同步（预览变更数量+明细→二次确认→执行，返回成功/失败数量）；导出PDF（浏览器打印，中文不乱码）；权限仅管理员可见。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607221228',
+    time: '2026-07-22 12:28',
+    notes: '新增固定资产对比与同步版块（管理员）：本地资产表分页+搜索展示；差异对比（仅本地表/仅视图/字段不一致高亮）；手动同步（预览变更数量+明细→二次确认→执行，返回成功/失败数量）；导出PDF（浏览器打印，中文不乱码）；权限仅管理员可见。',
+  },
   {
     version: 'v202607221148',
     time: '2026-07-22 11:48',
