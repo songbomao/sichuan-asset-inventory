@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607221354';
+export const APP_VERSION = 'v202607231050';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-22 13:54';
-export const RELEASE_NOTES = '任务详情页新增竖向盘点进度时间轴：根据完成率展示数据同步/盘点下达/盘点中/报告生成/盘点结束/完成归档六个里程碑，已完成绿色对勾、进行中蓝色脉冲圆点、待处理灰色空心圆，与现有卡片风格统一。';
+export const RELEASE_TIME = '2026-07-23 10:50';
+export const RELEASE_NOTES = '修复任务详情页竖向时间轴被错误放置在页面底部的问题，将其调整至页面最顶部；修复资产对比同步模块差异对比/同步预览 Network Error：前端增加超长超时（120s），后端限制比对/预览结果明细数量并优化响应体大小；';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607231050',
+    time: '2026-07-23 10:50',
+    notes: '修复任务详情页竖向时间轴被错误放置在页面底部的问题，将其调整至页面最顶部；修复资产对比同步模块差异对比/同步预览 Network Error：前端增加超长超时（120s），后端限制比对/预览结果明细数量并优化响应体大小；',
+  },
   {
     version: 'v202607221354',
     time: '2026-07-22 13:54',

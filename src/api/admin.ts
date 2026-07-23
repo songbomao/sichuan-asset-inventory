@@ -418,6 +418,7 @@ export async function compareAssets(): Promise<CompareAssetsResult> {
   const { data } = await client.post<{ code: number; data: CompareAssetsResult; msg?: string; message?: string }>(
     '/api/Account/UniGetToken',
     { action: 'CompareAssets' },
+    { timeout: 120000 },
   );
   if (data.code === 0 || data.code === 200) return data.data;
   throw new Error(data.msg || data.message || '差异对比失败');
@@ -450,6 +451,7 @@ export async function previewSyncAssets(): Promise<PreviewSyncResult> {
   const { data } = await client.post<{ code: number; data: PreviewSyncResult; msg?: string; message?: string }>(
     '/api/Account/UniGetToken',
     { action: 'PreviewSyncAssets' },
+    { timeout: 120000 },
   );
   if (data.code === 0 || data.code === 200) return data.data;
   throw new Error(data.msg || data.message || '同步预览失败');
@@ -472,6 +474,7 @@ export async function syncAssets(): Promise<SyncAssetsResult> {
   const { data } = await client.post<{ code: number; data: SyncAssetsResult; msg?: string; message?: string }>(
     '/api/Account/UniGetToken',
     { action: 'SyncAssets' },
+    { timeout: 180000 },
   );
   if (data.code === 0 || data.code === 200) return data.data;
   throw new Error(data.msg || data.message || '同步失败');

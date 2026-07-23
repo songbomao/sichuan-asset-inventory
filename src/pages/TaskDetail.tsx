@@ -149,6 +149,16 @@ export default function TaskDetailPage() {
       </header>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* 盘点进度时间轴 */}
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent>
+            <Typography variant="subtitle1" className="font-semibold text-gray-900 mb-3">
+              盘点进度
+            </Typography>
+            <VerticalTimeline events={generateTimelineEvents(progress.percentage)} />
+          </CardContent>
+        </Card>
+
         {menus.map((m) => (
           <Card key={m.title} className={`${m.color} hover:shadow-md transition-shadow`}>
             <CardActionArea onClick={() => navigate(m.path)}>
@@ -168,16 +178,6 @@ export default function TaskDetailPage() {
             </CardActionArea>
           </Card>
         ))}
-
-        {/* 盘点进度时间轴 */}
-        <Card className="hover:shadow-md transition-shadow">
-          <CardContent>
-            <Typography variant="subtitle1" className="font-semibold text-gray-900 mb-3">
-              盘点进度
-            </Typography>
-            <VerticalTimeline events={generateTimelineEvents(progress.percentage)} />
-          </CardContent>
-        </Card>
 
         <div className="h-4" />
       </div>
