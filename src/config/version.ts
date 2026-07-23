@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607231650';
+export const APP_VERSION = 'v202607231811';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-23 16:50';
-export const RELEASE_NOTES = '彻底修复资产对比/同步预览/同步报 Network Error：根因是这些请求走 POST 且 action+_token 放在请求体 body 中，被前置 WAF(scwms.chinaccsscm.cn:8096) 拦截，请求从未到达后端（GatewayTrace 日志文件从未生成已印证）；前端请求拦截器改为将无大字段(如照片Base64)的网关 POST 请求自动转为 GET + query string(action/_token/参数放 URL)，与一直正常的任务列表 GetTaskList 走同一 WAF 放行路径；照片等大字段仍走 POST form body。后端零改动。';
+export const RELEASE_TIME = '2026-07-23 18:11';
+export const RELEASE_NOTES = '基于 sai_assets 新结构重设计盘点资产详情页：新增 AssetDetailTabs 组件，顶部突出资产编号与名称，下方采用 Tab 标签页分区展示（基本信息、位置信息、使用信息、财务信息、维护/供应商、历史变更）；切换资产时实时调用 GetAssetByCode 拉取 SAP 视图完整字段、调用 GetLifecycle 拉取盘点历史时间线；字段按类别归属清晰，核心字段优先，移动端横向滚动 Tab 适配；';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607231811',
+    time: '2026-07-23 18:11',
+    notes: '基于 sai_assets 新结构重设计盘点资产详情页：新增 AssetDetailTabs 组件，顶部突出资产编号与名称，下方采用 Tab 标签页分区展示（基本信息、位置信息、使用信息、财务信息、维护/供应商、历史变更）；切换资产时实时调用 GetAssetByCode 拉取 SAP 视图完整字段、调用 GetLifecycle 拉取盘点历史时间线；字段按类别归属清晰，核心字段优先，移动端横向滚动 Tab 适配；',
+  },
   {
     version: 'v202607231650',
     time: '2026-07-23 16:50',

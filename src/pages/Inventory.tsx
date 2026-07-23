@@ -19,12 +19,13 @@ import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import { getTaskDetail, getProgress, type AssetInfo } from '../api/tasks';
-import { submitRecord, getAssetByCode } from '../api/inventory';
+import { submitRecord, getAssetByCode, type AssetDetail } from '../api/inventory';
+import { getLifecycle, type LifecycleData } from '../api/report';
 import { getCurrentLocation } from '../api/reverseGeocode';
 import { useAuth } from '../contexts/AuthContext';
 import CameraCapture from '../components/CameraCapture';
 import ProgressBar from '../components/ProgressBar';
-import StatusBadge from '../components/StatusBadge';
+import AssetDetailTabs from '../components/AssetDetailTabs';
 
 /** 盘点状态选项 */
 const STATUS_OPTIONS = [
@@ -113,6 +114,15 @@ export default function InventoryPage() {
   // 进度
   const [progress, setProgress] = useState({ total: 0, completed: 0, percentage: 0 });
 
+  // 当前资产完整详情
+  const [assetDetail, setAssetDetail] = useState<AssetDetail | null>(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [detailError, setDetailError] = useState<string | null>(null);
+
+  // 资产历史变更记录
+  const [lifecycle, setLifecycle] = useState<LifecycleData | null>(null);
+  const [lifecycleLoading, setLifecycleLoading] = useState(false);
+
   // GPS 位置与解析状态
   const [gpsLocation, setGpsLocation] = useState('定位中...');
   const [gpsCoords, setGpsCoords] = useState({ longitude: '', latitude: '' });
@@ -195,7 +205,29 @@ export default function InventoryPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /** 切换资产时重置当前盘点状态 */
+  /** 加载当前资产完整详情与历史记录 */
+  const fetchAssetDetail = useCallback(async (assetCode: string) => {
+    setLoadingDetail(true);
+    setDetailError(null);
+    setLifecycleLoading(true);
+    try {
+      const [detail, life] = await Promise.all([
+        getAssetByCode(assetCode),
+        getLifecycle(assetCode).catch(() => null),
+      ]);
+      setAssetDetail(detail);
+      setLifecycle(life);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : '加载资产详情失败';
+      setDetailError(msg);
+      setAssetDetail(null);
+    } finally {
+      setLoadingDetail(false);
+      setLifecycleLoading(false);
+    }
+  }, []);
+
+  /** 切换资产时重置当前盘点状态并加载详情 */
   useEffect(() => {
     const currentAsset = assets[currentIndex];
     if (currentAsset) {
@@ -203,8 +235,9 @@ export default function InventoryPage() {
       setRemark('');
       setPhotos([]);
       updateTime();
+      fetchAssetDetail(currentAsset.assetCode);
     }
-  }, [currentIndex, assets]);
+  }, [currentIndex, assets, fetchAssetDetail]);
 
   /** 处理照片捕获 */
   const handlePhotoCapture = useCallback((dataUrl: string) => {
@@ -306,7 +339,7 @@ export default function InventoryPage() {
     try {
       const result = await getAssetByCode(scanCode.trim());
       setScanResult(
-        `资产编码：${result.assetCode}\n名称：${result.assetName}\n分类：${result.category}\n位置：${result.location}`,
+        `资产编码：${result.assetCode}\n名称：${result.assetName}\n分类：${result.categoryName || '-'}\n位置：${result.location || '-'}`,
       );
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : '识别失败';
@@ -405,20 +438,14 @@ export default function InventoryPage() {
           </Alert>
         )}
 
-        {/* 资产基本信息卡片（超紧凑） */}
-        <div className="bg-white rounded-xl p-2.5 shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between mb-0.5">
-            <h3 className="font-semibold text-gray-900 text-sm truncate pr-2">
-              {currentAsset.assetName}
-            </h3>
-            <StatusBadge status={isCompleted ? '正常' : 'pending'} />
-          </div>
-          <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-gray-500">
-            <span>编码：<span className="font-mono text-gray-700">{currentAsset.assetCode}</span></span>
-            {currentAsset.category && <span>分类：{currentAsset.category}</span>}
-            {currentAsset.location && <span>地点：{currentAsset.location}</span>}
-          </div>
-        </div>
+        {/* 资产详情 Tab 卡片 */}
+        <AssetDetailTabs
+          asset={assetDetail}
+          loading={loadingDetail}
+          error={detailError}
+          lifecycle={lifecycle}
+          lifecycleLoading={lifecycleLoading}
+        />
 
         {/* 水印照片卡片 */}
         <div className="bg-white rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-2">

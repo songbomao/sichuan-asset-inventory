@@ -36,17 +36,75 @@ export async function submitRecord(params: SubmitRecordParams): Promise<string> 
   throw new Error(data.msg || data.message || '提交盘点记录失败');
 }
 
+/** 资产完整详情（映射后端 SapAssetView / sai_assets 同构结构） */
+export interface AssetDetail {
+  id?: string;
+  systemId?: string;
+  companyCode?: string;
+  companyName?: string;
+  profitsGroupCode?: string;
+  profitsGroupName?: string;
+  accountYear?: string;
+  assetType?: string;
+  assetTypeName?: string;
+  mainAssetCode?: string;
+  oldAssetsCardCode?: string;
+  createDate?: string;
+  assetCode: string;
+  assetName: string;
+  parentAsset?: string;
+  unit?: string;
+  categoryCode?: string;
+  categoryName?: string;
+  assetsSubject?: string;
+  assetsNode?: string;
+  assetsPoint?: string;
+  standard?: string;
+  abcType?: string;
+  workcostType?: string;
+  costCenterCode?: string;
+  costCenterName?: string;
+  costCenter?: string;
+  deptCode?: string;
+  deptName?: string;
+  location?: string;
+  wbs?: string;
+  assetsRelegation?: string;
+  specialtyRelegation?: string;
+  assetsNature?: string;
+  useStatus?: string;
+  planUsePeriod?: string;
+  purchaseDate?: string;
+  leaveUsePeriod?: string;
+  licenceNumber?: string;
+  isOverAge?: string;
+  zexp?: string;
+  remark?: string;
+  menge?: string;
+  originalValue?: string;
+  accDepreciation?: string;
+  netValue?: string;
+  lostValue?: string;
+  newnessRate?: string;
+  provinceCode?: string;
+  profitCenterCode?: string;
+  profitCenterName?: string;
+  assetsSeCode?: string;
+  supplierCode?: string;
+  supplierName?: string;
+  userName?: string;
+  manufacturer?: string;
+  itemNumber?: string;
+  increaseReson?: string;
+  depreciationKey?: string;
+  subjectMatterCode?: string;
+  contractCode?: string;
+}
+
 /** 资产查询（按编码） */
 interface AssetQueryResponse {
   code: number;
-  data: {
-    assetCode: string;
-    assetName: string;
-    category: string;
-    location: string;
-    department: string;
-    status: string;
-  };
+  data: AssetDetail;
   message: string;
   msg?: string;
 }
@@ -55,7 +113,7 @@ interface AssetQueryResponse {
  * 按资产编码查询资产
  * GET /api/Account/Asset/GetByCode?assetCode={code}
  */
-export async function getAssetByCode(assetCode: string) {
+export async function getAssetByCode(assetCode: string): Promise<AssetDetail> {
   const { data } = await client.get<AssetQueryResponse>('/api/Account/Asset/GetAssetByCode', {
     params: { assetCode },
   });
