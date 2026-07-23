@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607231420';
+export const APP_VERSION = 'v202607231430';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-23 14:20';
-export const RELEASE_NOTES = '前端缓存根治：index.html 加 no-cache 头 + 构建产物 JS/CSS 资源引用追加 ?v=版本号 query，强制钉钉 WebView 每次拉取最新资源，彻底解决因 SPA 资源被强缓存导致反复加载旧前端（旧同步 CompareAssets 请求读 150 视图超时断连、误报 Network Error）的问题；后端 Start* 异步轮询接口已就绪（v202607231348），本次确保钉钉真正加载到新前端；';
+export const RELEASE_TIME = '2026-07-23 14:30';
+export const RELEASE_NOTES = '修复 GitHub Actions 构建失败：vite.config.ts 使用 fs/path/__dirname 做 cache-busting 时被 tsc -b 检查报错缺少 Node 类型；package.json 添加 @types/node，tsconfig.node.json 增加 types: ["node"]，npm install 同步 package-lock.json；功能与 v202607231420 一致（index.html no-cache + JS/CSS ?v=版本号 强制钉钉拉最新资源）；';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607231430',
+    time: '2026-07-23 14:30',
+    notes: '修复 GitHub Actions 构建失败：vite.config.ts 使用 fs/path/__dirname 做 cache-busting 时被 tsc -b 检查报错缺少 Node 类型；package.json 添加 @types/node，tsconfig.node.json 增加 types: ["node"]，npm install 同步 package-lock.json；功能与 v202607231420 一致（index.html no-cache + JS/CSS ?v=版本号 强制钉钉拉最新资源）；',
+  },
   {
     version: 'v202607231420',
     time: '2026-07-23 14:20',
