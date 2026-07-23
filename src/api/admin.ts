@@ -72,6 +72,10 @@ export interface AdminTaskItem {
   status: string;
   createdBy: string;
   createdAt: string;
+  /** 任务覆盖资产数（列表接口可能带回，缺省 undefined） */
+  assetCount?: number;
+  /** 已完成盘点资产数 */
+  completedCount?: number;
 }
 
 /** 后端 GetTaskList 实际返回的原始字段（带 taskId / createTime 等） */
@@ -119,9 +123,111 @@ export async function getAdminTaskList(status?: string): Promise<AdminTaskItem[]
       status: item.status,
       createdBy: item.createdBy ?? '',
       createdAt: item.createTime ?? '',
+      assetCount: item.assetCount ?? undefined,
+      completedCount: item.completedCount ?? undefined,
     }));
   }
   throw new Error(data.msg || data.message || '获取任务列表失败');
+}
+
+/* ============================================================
+ * 数据同步状态 / 范围筛选项 / 任务下达（管理员）
+ * 统一走 UniGetToken 网关，长超时
+ * ============================================================ */
+
+/** 数据同步状态 */
+export interface SyncStatusResult {
+  /** 最后同步时间（ISO 字符串或 null） */
+  lastSyncTime: string | null;
+  /** 本地资产表行数 */
+  localCount: number;
+  /** SAP 视图行数 */
+  viewCount: number;
+  /** 是否最新（已同步且一致） */
+  isLatest: boolean;
+}
+
+/**
+ * 获取数据同步状态（管理员需先同步 150 数据到本地）
+ * POST /api/Account/UniGetToken/GetSyncStatus
+ */
+export async function getSyncStatus(): Promise<SyncStatusResult> {
+  const { data } = await client.post<{ code: number; data: SyncStatusResult; msg?: string; message?: string }>(
+    '/api/Account/UniGetToken',
+    { action: 'GetSyncStatus' },
+    { timeout: 60000 },
+  );
+  if (data.code === 0 || data.code === 200) return data.data;
+  throw new Error(data.msg || data.message || '获取同步状态失败');
+}
+
+/** 单个范围筛选项 */
+export interface ScopeOption {
+  code: string;
+  name: string;
+}
+
+/** 范围筛选项（组织 / 类别 / 成本中心） */
+export interface ScopeOptionsResult {
+  orgs: ScopeOption[];
+  categories: ScopeOption[];
+  costCenters: ScopeOption[];
+}
+
+/**
+ * 获取盘点范围筛选项（三个维度）
+ * POST /api/Account/UniGetToken/GetScopeOptions
+ */
+export async function getScopeOptions(): Promise<ScopeOptionsResult> {
+  const { data } = await client.post<{ code: number; data: ScopeOptionsResult; msg?: string; message?: string }>(
+    '/api/Account/UniGetToken',
+    { action: 'GetScopeOptions' },
+    { timeout: 60000 },
+  );
+  if (data.code === 0 || data.code === 200) return data.data;
+  throw new Error(data.msg || data.message || '获取范围筛选项失败');
+}
+
+/** 任务下达结果 */
+export interface DispatchResult {
+  /** 成功通知到的钉钉用户数 */
+  dispatchedUsers: number;
+  /** 未匹配到钉钉的用户名列表 */
+  failedUserNames: string[];
+}
+
+/**
+ * 下达盘点任务（钉钉推送通知）
+ * POST /api/Account/UniGetToken/DispatchTask
+ */
+export async function dispatchTask(taskId: number): Promise<DispatchResult> {
+  const { data } = await client.post<{ code: number; data: DispatchResult; msg?: string; message?: string }>(
+    '/api/Account/UniGetToken',
+    { action: 'DispatchTask', taskId },
+    { timeout: 120000 },
+  );
+  if (data.code === 0 || data.code === 200) return data.data;
+  throw new Error(data.msg || data.message || '下达任务失败');
+}
+
+/** 任务资产摘要（卡片展示用） */
+export interface TaskAssetSummary {
+  totalAssets: number;
+  completedCount: number;
+}
+
+/**
+ * 获取任务资产摘要
+ * POST /api/Account/UniGetToken/GetTaskAssetSummary
+ */
+export async function getTaskAssetSummary(taskId: number): Promise<TaskAssetSummary> {
+  const { data } = await client.post<{ code: number; data: TaskAssetSummary; msg?: string; message?: string }>(
+    '/api/Account/UniGetToken',
+    { action: 'GetTaskAssetSummary', taskId },
+    { timeout: 60000 },
+  );
+  if (data.code === 0 || data.code === 200) return data.data;
+  throw new Error(data.msg || data.message || '获取任务资产摘要失败');
 }
 
 /* ============================================================

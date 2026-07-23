@@ -18,17 +18,23 @@ import Checkbox from '@mui/material/Checkbox';
 import Skeleton from '@mui/material/Skeleton';
 import Alert from '@mui/material/Alert';
 import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
 import AddIcon from '@mui/icons-material/Add';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import SendIcon from '@mui/icons-material/Send';
+import SyncIcon from '@mui/icons-material/Sync';
 import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import {
   getAdminTaskList,
   createTask,
-  startTask,
+  dispatchTask,
+  getSyncStatus,
+  getScopeOptions,
   type AdminTaskItem,
   type CreateTaskParams,
+  type ScopeOptionsResult,
+  type SyncStatusResult,
 } from '../api/admin';
 import { useAuth } from '../contexts/AuthContext';
 import AssetSyncCompare from './AssetSyncCompare';
@@ -47,11 +53,47 @@ const statusMap: Record<string, { label: string; color: 'default' | 'primary' | 
   cancelled: { label: '已取消', color: 'error' },
 };
 
-/** 默认表单 */
-const defaultForm: CreateTaskParams = {
+/** 按当前年份生成 5 类任务名称预设 */
+function buildPresetNames(year: number): { value: string; label: string }[] {
+  const month = new Date().getMonth() + 1;
+  const quarter = Math.floor((month - 1) / 3) + 1;
+  return [
+    { value: `${year}年${month}月月度盘点`, label: `${year}年${month}月月度盘点` },
+    { value: `${year}年Q${quarter}季度盘点`, label: `${year}年Q${quarter}季度盘点` },
+    { value: `${year}年上半年盘点`, label: `${year}年上半年盘点` },
+    { value: `${year}年度盘点`, label: `${year}年度盘点` },
+    { value: '专项盘点', label: '专项盘点' },
+  ];
+}
+
+/** 根据三维度选中情况推导 ScopeType（兼容旧字段） */
+function deriveScopeType(org: string[], cat: string[], cc: string[]): string {
+  if (org.length) return 'by_org';
+  if (cat.length) return 'by_category';
+  if (cc.length) return 'by_cost_center';
+  return 'all';
+}
+
+/** 新建任务 Dialog 本地表单（比提交参数多几个维度字段） */
+interface DialogForm {
+  TaskName: string;
+  /** 当前选中的预设（仅用于回填空文本，不直接提交） */
+  preset: string;
+  orgCodes: string[];
+  categoryCodes: string[];
+  costCenterCodes: string[];
+  NeedReview: boolean;
+  ReviewRatio: number;
+  Deadline: string;
+  CreatedBy: string;
+}
+
+const defaultForm: DialogForm = {
   TaskName: '',
-  ScopeType: 'all',
-  ScopeConfig: '',
+  preset: '',
+  orgCodes: [],
+  categoryCodes: [],
+  costCenterCodes: [],
   NeedReview: false,
   ReviewRatio: 0.3,
   Deadline: '',
@@ -66,6 +108,13 @@ export default function AdminTasks() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<'tasks' | 'sync'>('tasks');
 
+  // 数据同步状态（下达任务前置校验）
+  const [syncStatus, setSyncStatus] = useState<SyncStatusResult | null>(null);
+  const [syncLoading, setSyncLoading] = useState(false);
+
+  // 下达任务的页面级反馈
+  const [dispatchMsg, setDispatchMsg] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+
   // 仅管理员可进入任务管理
   if (!user?.isAdmin) {
     return (
@@ -77,9 +126,13 @@ export default function AdminTasks() {
 
   /* ---- 新建任务 Dialog ---- */
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [form, setForm] = useState<CreateTaskParams>({ ...defaultForm });
+  const [form, setForm] = useState<DialogForm>({ ...defaultForm });
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [scopeOptions, setScopeOptions] = useState<ScopeOptionsResult>({ orgs: [], categories: [], costCenters: [] });
+  const [scopeLoading, setScopeLoading] = useState(false);
+
+  const presetNames = buildPresetNames(new Date().getFullYear());
 
   const fetchTasks = useCallback(async () => {
     setLoading(true);
@@ -94,9 +147,45 @@ export default function AdminTasks() {
     }
   }, []);
 
+  const fetchSyncStatus = useCallback(async () => {
+    setSyncLoading(true);
+    try {
+      const s = await getSyncStatus();
+      setSyncStatus(s);
+    } catch {
+      // 获取失败时不阻塞页面，syncReady 保持 false
+    } finally {
+      setSyncLoading(false);
+    }
+  }, []);
+
+  const fetchScopeOptions = useCallback(async () => {
+    setScopeLoading(true);
+    try {
+      const o = await getScopeOptions();
+      setScopeOptions(o);
+    } catch {
+      setScopeOptions({ orgs: [], categories: [], costCenters: [] });
+    } finally {
+      setScopeLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchTasks();
+    fetchSyncStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchTasks]);
+
+  const syncReady = !!syncStatus?.isLatest;
+
+  /** 打开新建任务弹窗 */
+  const openDialog = () => {
+    setForm({ ...defaultForm, CreatedBy: user?.name ?? '' });
+    setFeedback(null);
+    setDialogOpen(true);
+    fetchScopeOptions();
+  };
 
   /** 提交新建任务 */
   const handleCreate = async () => {
@@ -107,15 +196,20 @@ export default function AdminTasks() {
     setSubmitting(true);
     setFeedback(null);
     try {
+      const scopeConfig = JSON.stringify({
+        orgCodes: form.orgCodes,
+        categoryCodes: form.categoryCodes,
+        costCenterCodes: form.costCenterCodes,
+      });
       const body: CreateTaskParams = {
         TaskName: form.TaskName.trim(),
-        ScopeType: form.ScopeType,
+        ScopeType: deriveScopeType(form.orgCodes, form.categoryCodes, form.costCenterCodes),
+        ScopeConfig: scopeConfig,
         NeedReview: form.NeedReview,
+        CreatedBy: form.CreatedBy.trim(),
       };
-      if (form.ScopeConfig?.trim()) body.ScopeConfig = form.ScopeConfig.trim();
       if (form.NeedReview && form.ReviewRatio) body.ReviewRatio = form.ReviewRatio;
       if (form.Deadline) body.Deadline = form.Deadline;
-      if (form.CreatedBy?.trim()) body.CreatedBy = form.CreatedBy.trim();
 
       await createTask(body);
       setFeedback({ type: 'success', msg: '任务创建成功！' });
@@ -129,13 +223,26 @@ export default function AdminTasks() {
     }
   };
 
-  /** 启动任务 */
-  const handleStart = async (taskId: number) => {
+  /** 下达任务（钉钉推送） */
+  const handleDispatch = async (taskId: number) => {
+    if (!syncReady) {
+      setDispatchMsg({
+        type: 'error',
+        msg: '数据未同步到最新，请先到「资产对比同步」完成数据同步后再下达任务。',
+      });
+      return;
+    }
     try {
-      await startTask(taskId);
+      const r = await dispatchTask(taskId);
+      const failedCount = r.failedUserNames?.length ?? 0;
+      const failedText = failedCount > 0 ? `；${failedCount} 人未匹配到钉钉（${r.failedUserNames.join('、')}）` : '；全部匹配成功';
+      setDispatchMsg({
+        type: 'success',
+        msg: `已通知 ${r.dispatchedUsers} 人${failedText}`,
+      });
       fetchTasks();
     } catch (err) {
-      setError(err instanceof Error ? err.message : '启动失败');
+      setDispatchMsg({ type: 'error', msg: err instanceof Error ? err.message : '下达任务失败' });
     }
   };
 
@@ -163,6 +270,9 @@ export default function AdminTasks() {
           </p>
         </div>
         <div className="flex gap-1 shrink-0">
+          <IconButton onClick={fetchSyncStatus} color="primary" size="small" title="刷新同步状态">
+            <SyncIcon />
+          </IconButton>
           <IconButton onClick={fetchTasks} color="primary" size="small">
             <RefreshIcon />
           </IconButton>
@@ -170,17 +280,39 @@ export default function AdminTasks() {
             variant="contained"
             size="small"
             startIcon={<AddIcon />}
-            onClick={() => {
-              setForm({ ...defaultForm });
-              setFeedback(null);
-              setDialogOpen(true);
-            }}
+            onClick={openDialog}
             sx={{ borderRadius: '10px', textTransform: 'none', whiteSpace: 'nowrap' }}
           >
             新建任务
           </Button>
         </div>
       </div>
+
+      {/* 数据同步状态条 */}
+      {syncLoading && <Skeleton variant="rectangular" height={56} sx={{ borderRadius: 2 }} />}
+      {!syncLoading && syncStatus && (
+        <Alert
+          severity={syncStatus.isLatest ? 'success' : 'warning'}
+          sx={{ fontSize: '0.82rem', alignItems: 'center' }}
+        >
+          <strong>数据同步状态：</strong>
+          {syncStatus.isLatest ? '已是最新' : '未同步或非最新'}
+          {' · '}最后同步：{syncStatus.lastSyncTime ? new Date(syncStatus.lastSyncTime).toLocaleString('zh-CN') : '从未'}
+          {' · '}本地 {syncStatus.localCount} 行 / 视图 {syncStatus.viewCount} 行
+          {!syncStatus.isLatest && ' —— 请先到「资产对比同步」完成数据同步后再下达任务。'}
+        </Alert>
+      )}
+
+      {/* 下达任务反馈 */}
+      {dispatchMsg && (
+        <Alert
+          severity={dispatchMsg.type}
+          onClose={() => setDispatchMsg(null)}
+          sx={{ fontSize: '0.85rem' }}
+        >
+          {dispatchMsg.msg}
+        </Alert>
+      )}
 
       {/* 错误提示 */}
       {error && (
@@ -233,6 +365,7 @@ export default function AdminTasks() {
 
                   <div className="flex items-center gap-4 text-sm text-gray-500 mb-3 flex-wrap">
                     <span>范围：{scopeTypeOptions.find((o) => o.value === task.scopeType)?.label ?? task.scopeType}</span>
+                    {task.assetCount !== undefined && <span>资产：{task.assetCount}</span>}
                     {task.deadline && <span>截止：{new Date(task.deadline).toLocaleDateString('zh-CN')}</span>}
                     {task.needReview && <span>复盘 {(task.reviewRatio ?? 0.3) * 100}%</span>}
                   </div>
@@ -240,18 +373,23 @@ export default function AdminTasks() {
                   <div className="flex items-center justify-between text-xs text-gray-400">
                     <span>{task.createdBy || '--'}{task.createdAt ? ` · ${new Date(task.createdAt).toLocaleDateString('zh-CN')}` : ''}</span>
                     {task.status === 'draft' && (
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        startIcon={<PlayArrowIcon />}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleStart(task.id);
-                        }}
-                        sx={{ borderRadius: '8px', textTransform: 'none' }}
-                      >
-                        启动
-                      </Button>
+                      <Tooltip title={!syncReady ? '请先完成数据同步后再下达任务' : ''}>
+                        <span>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<SendIcon />}
+                            disabled={!syncReady}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDispatch(task.id);
+                            }}
+                            sx={{ borderRadius: '8px', textTransform: 'none' }}
+                          >
+                            下达任务
+                          </Button>
+                        </span>
+                      </Tooltip>
                     )}
                   </div>
                 </CardContent>
@@ -275,35 +413,81 @@ export default function AdminTasks() {
         <DialogContent sx={{ pt: '8px !important' }}>
           <Stack spacing={2}>
             <TextField
+              select
+              label="快速预设（可选）"
+              size="small"
+              value={form.preset}
+              onChange={(e) => {
+                const v = e.target.value;
+                setForm((f) => ({ ...f, preset: v, TaskName: v }));
+              }}
+              fullWidth
+            >
+              {presetNames.map((p) => (
+                <MenuItem key={p.value} value={p.value}>{p.label}</MenuItem>
+              ))}
+            </TextField>
+            <TextField
               label="任务名称"
               required
               size="small"
               value={form.TaskName}
-              onChange={(e) => setForm((f) => ({ ...f, TaskName: e.target.value }))}
+              onChange={(e) => setForm((f) => ({ ...f, TaskName: e.target.value, preset: '' }))}
               fullWidth
             />
+
             <TextField
               select
-              label="盘点范围"
+              label="盘点组织"
               size="small"
-              value={form.ScopeType}
-              onChange={(e) => setForm((f) => ({ ...f, ScopeType: e.target.value }))}
+              SelectProps={{
+                multiple: true,
+                renderValue: (selected) => `已选 ${(selected as string[]).length} 项`,
+              }}
+              value={form.orgCodes}
+              onChange={(e) => setForm((f) => ({ ...f, orgCodes: Array.isArray(e.target.value) ? e.target.value : [] }))}
               fullWidth
+              disabled={scopeLoading}
             >
-              {scopeTypeOptions.map((o) => (
-                <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
+              {scopeOptions.orgs.map((o) => (
+                <MenuItem key={o.code} value={o.code}>{o.name}</MenuItem>
               ))}
             </TextField>
             <TextField
-              label="范围配置（JSON，可选）"
+              select
+              label="盘点类别"
               size="small"
-              multiline
-              rows={2}
-              placeholder='{"orgCodes":["001","002"]}'
-              value={form.ScopeConfig}
-              onChange={(e) => setForm((f) => ({ ...f, ScopeConfig: e.target.value }))}
+              SelectProps={{
+                multiple: true,
+                renderValue: (selected) => `已选 ${(selected as string[]).length} 项`,
+              }}
+              value={form.categoryCodes}
+              onChange={(e) => setForm((f) => ({ ...f, categoryCodes: Array.isArray(e.target.value) ? e.target.value : [] }))}
               fullWidth
-            />
+              disabled={scopeLoading}
+            >
+              {scopeOptions.categories.map((o) => (
+                <MenuItem key={o.code} value={o.code}>{o.name}</MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              select
+              label="成本中心"
+              size="small"
+              SelectProps={{
+                multiple: true,
+                renderValue: (selected) => `已选 ${(selected as string[]).length} 项`,
+              }}
+              value={form.costCenterCodes}
+              onChange={(e) => setForm((f) => ({ ...f, costCenterCodes: Array.isArray(e.target.value) ? e.target.value : [] }))}
+              fullWidth
+              disabled={scopeLoading}
+            >
+              {scopeOptions.costCenters.map((o) => (
+                <MenuItem key={o.code} value={o.code}>{o.name}</MenuItem>
+              ))}
+            </TextField>
+
             <TextField
               label="截止日期"
               type="date"
@@ -316,9 +500,9 @@ export default function AdminTasks() {
             <TextField
               label="创建人"
               size="small"
-              placeholder="请输入创建人姓名"
               value={form.CreatedBy}
-              onChange={(e) => setForm((f) => ({ ...f, CreatedBy: e.target.value }))}
+              disabled
+              helperText="默认当前登录用户，不可修改"
               fullWidth
             />
             <FormControlLabel

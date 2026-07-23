@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607231050';
+export const APP_VERSION = 'v202607231132';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-23 10:50';
-export const RELEASE_NOTES = '修复任务详情页竖向时间轴被错误放置在页面底部的问题，将其调整至页面最顶部；修复资产对比同步模块差异对比/同步预览 Network Error：前端增加超长超时（120s），后端限制比对/预览结果明细数量并优化响应体大小；';
+export const RELEASE_TIME = '2026-07-23 11:32';
+export const RELEASE_NOTES = '盘点任务管理模块前端：任务管理页顶部新增数据同步状态条（未同步到最新时禁止下达任务并提示先同步）；任务名称按当前年份自动生成月度/季度/半年/年度/专项五类预设可选；盘点范围改为组织/类别/成本中心三维度多选筛选器（选项来自 GetScopeOptions）；创建人默认当前登录用户且只读；新增「下达任务」按钮（调用 DispatchTask，钉钉推送提醒）；新增 getSyncStatus/getScopeOptions/dispatchTask/getTaskAssetSummary 接口；';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607231132',
+    time: '2026-07-23 11:32',
+    notes: '盘点任务管理模块前端：任务管理页顶部新增数据同步状态条（未同步到最新时禁止下达任务并提示先同步）；任务名称按当前年份自动生成月度/季度/半年/年度/专项五类预设可选；盘点范围改为组织/类别/成本中心三维度多选筛选器（选项来自 GetScopeOptions）；创建人默认当前登录用户且只读；新增「下达任务」按钮（调用 DispatchTask，钉钉推送提醒）；新增 getSyncStatus/getScopeOptions/dispatchTask/getTaskAssetSummary 接口；',
+  },
   {
     version: 'v202607231050',
     time: '2026-07-23 10:50',
