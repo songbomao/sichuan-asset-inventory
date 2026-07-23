@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607231336';
+export const APP_VERSION = 'v202607231420';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-23 13:36';
-export const RELEASE_NOTES = '彻底修复资产对比/同步预览/同步 Network Error：compareAssets/previewSyncAssets/syncAssets 改为「启动任务→轮询结果」模式——先调后端 Start* 拿 jobId，再每隔数秒轮询 Get*Result 直到完成/失败，彻底绕开钉钉容器与网关对单次长连接的超时断连；轮询失败时抛出后端真实错误消息，不再统一显示 Network Error；';
+export const RELEASE_TIME = '2026-07-23 14:20';
+export const RELEASE_NOTES = '前端缓存根治：index.html 加 no-cache 头 + 构建产物 JS/CSS 资源引用追加 ?v=版本号 query，强制钉钉 WebView 每次拉取最新资源，彻底解决因 SPA 资源被强缓存导致反复加载旧前端（旧同步 CompareAssets 请求读 150 视图超时断连、误报 Network Error）的问题；后端 Start* 异步轮询接口已就绪（v202607231348），本次确保钉钉真正加载到新前端；';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607231420',
+    time: '2026-07-23 14:20',
+    notes: '前端缓存根治：index.html 加 no-cache 头 + 构建产物 JS/CSS 资源引用追加 ?v=版本号 query，强制钉钉 WebView 每次拉取最新资源，彻底解决因 SPA 资源被强缓存导致反复加载旧前端（旧同步 CompareAssets 请求读 150 视图超时断连、误报 Network Error）的问题；后端 Start* 异步轮询接口已就绪（v202607231348），本次确保钉钉真正加载到新前端；',
+  },
   {
     version: 'v202607231336',
     time: '2026-07-23 13:36',

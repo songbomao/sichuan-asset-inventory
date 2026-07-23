@@ -3,6 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <!-- 强制钉钉 WebView / CDN 不缓存 SPA 入口，避免反复加载旧前端（旧同步请求超时误报 Network Error） -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="theme-color" content="#1a237e" />
     <meta name="description" content="蜀资点兵 — 四川全省固定资产盘点系统" />
