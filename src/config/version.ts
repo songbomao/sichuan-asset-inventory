@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607231430';
+export const APP_VERSION = 'v202607231650';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-23 14:30';
-export const RELEASE_NOTES = '修复 GitHub Actions 构建失败：vite.config.ts 使用 fs/path/__dirname 做 cache-busting 时被 tsc -b 检查报错缺少 Node 类型；package.json 添加 @types/node，tsconfig.node.json 增加 types: ["node"]，npm install 同步 package-lock.json；功能与 v202607231420 一致（index.html no-cache + JS/CSS ?v=版本号 强制钉钉拉最新资源）；';
+export const RELEASE_TIME = '2026-07-23 16:50';
+export const RELEASE_NOTES = '彻底修复资产对比/同步预览/同步报 Network Error：根因是这些请求走 POST 且 action+_token 放在请求体 body 中，被前置 WAF(scwms.chinaccsscm.cn:8096) 拦截，请求从未到达后端（GatewayTrace 日志文件从未生成已印证）；前端请求拦截器改为将无大字段(如照片Base64)的网关 POST 请求自动转为 GET + query string(action/_token/参数放 URL)，与一直正常的任务列表 GetTaskList 走同一 WAF 放行路径；照片等大字段仍走 POST form body。后端零改动。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607231650',
+    time: '2026-07-23 16:50',
+    notes: '彻底修复资产对比/同步预览/同步报 Network Error：根因是这些请求走 POST 且 action+_token 放在请求体 body 中，被前置 WAF(scwms.chinaccsscm.cn:8096) 拦截，请求从未到达后端（GatewayTrace 日志文件从未生成已印证）；前端请求拦截器改为将无大字段(如照片Base64)的网关 POST 请求自动转为 GET + query string，与一直正常的任务列表 GetTaskList 走同一 WAF 放行路径；后端零改动。',
+  },
   {
     version: 'v202607231430',
     time: '2026-07-23 14:30',
