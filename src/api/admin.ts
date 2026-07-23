@@ -517,17 +517,47 @@ export interface CompareAssetsResult {
 }
 
 /**
- * 本地表 vs SAP 视图 差异对比
- * POST /api/Account/UniGetToken/CompareAssets
+ * 轮询式调用资产异步任务（对比/预览/同步）。
+ * 先发起 Start 拿到 jobId（毫秒级返回），再每 1s 轮询 Get 结果，直到 done 或超时。
+ * 彻底规避前置代理/防火墙对长连接与大传输的断连（原同步实现会触发 Network Error）。
+ */
+async function pollAssetJob(
+  startAction: string,
+  resultAction: string,
+  timeoutMs = 180000,
+): Promise<any> {
+  const { data: start } = await client.post<{ code: number; data: { jobId: string }; msg?: string; message?: string }>(
+    '/api/Account/UniGetToken',
+    { action: startAction },
+    { timeout: 30000 },
+  );
+  if (start.code !== 0 && start.code !== 200) throw new Error(start.msg || start.message || '启动任务失败');
+  const jobId = start.data?.jobId;
+  if (!jobId) throw new Error('未获取到任务ID');
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 1000));
+    const { data: r } = await client.post<{ code: number; data: any; msg?: string; message?: string }>(
+      '/api/Account/UniGetToken',
+      { action: resultAction, jobId },
+      { timeout: 30000 },
+    );
+    // 处理中：继续轮询
+    if (r.data && r.data.done === false) continue;
+    // 失败：抛出真实后端异常消息（便于定位，不再笼统显示 Network Error）
+    if (r.code !== 0 && r.code !== 200) throw new Error(r.msg || r.message || '任务执行失败');
+    return r.data;
+  }
+  throw new Error('任务处理超时，请稍后重试');
+}
+
+/**
+ * 本地表 vs SAP 视图 差异对比（异步任务 + 轮询）
+ * POST /api/Account/UniGetToken/StartCompareAssets → GetCompareResult
  */
 export async function compareAssets(): Promise<CompareAssetsResult> {
-  const { data } = await client.post<{ code: number; data: CompareAssetsResult; msg?: string; message?: string }>(
-    '/api/Account/UniGetToken',
-    { action: 'CompareAssets' },
-    { timeout: 120000 },
-  );
-  if (data.code === 0 || data.code === 200) return data.data;
-  throw new Error(data.msg || data.message || '差异对比失败');
+  const data = await pollAssetJob('StartCompareAssets', 'GetCompareResult');
+  return data as CompareAssetsResult;
 }
 
 /** 单条同步明细 */
@@ -550,17 +580,12 @@ export interface PreviewSyncResult {
 }
 
 /**
- * 视图 → 本地表 同步预览（不落库）
- * POST /api/Account/UniGetToken/PreviewSyncAssets
+ * 视图 → 本地表 同步预览（不落库，异步任务 + 轮询）
+ * POST /api/Account/UniGetToken/StartPreviewSyncAssets → GetPreviewResult
  */
 export async function previewSyncAssets(): Promise<PreviewSyncResult> {
-  const { data } = await client.post<{ code: number; data: PreviewSyncResult; msg?: string; message?: string }>(
-    '/api/Account/UniGetToken',
-    { action: 'PreviewSyncAssets' },
-    { timeout: 120000 },
-  );
-  if (data.code === 0 || data.code === 200) return data.data;
-  throw new Error(data.msg || data.message || '同步预览失败');
+  const data = await pollAssetJob('StartPreviewSyncAssets', 'GetPreviewResult');
+  return data as PreviewSyncResult;
 }
 
 /** 执行同步结果 */
@@ -573,15 +598,10 @@ export interface SyncAssetsResult {
 }
 
 /**
- * 执行同步（视图 → 本地表，覆盖本地快照）
- * POST /api/Account/UniGetToken/SyncAssets
+ * 执行同步（视图 → 本地表，覆盖本地快照，异步任务 + 轮询）
+ * POST /api/Account/UniGetToken/StartSyncAssets → GetSyncResult
  */
 export async function syncAssets(): Promise<SyncAssetsResult> {
-  const { data } = await client.post<{ code: number; data: SyncAssetsResult; msg?: string; message?: string }>(
-    '/api/Account/UniGetToken',
-    { action: 'SyncAssets' },
-    { timeout: 180000 },
-  );
-  if (data.code === 0 || data.code === 200) return data.data;
-  throw new Error(data.msg || data.message || '同步失败');
+  const data = await pollAssetJob('StartSyncAssets', 'GetSyncResult', 180000);
+  return data as SyncAssetsResult;
 }
