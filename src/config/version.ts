@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607241234';
+export const APP_VERSION = 'v202607241412';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-24 12:34';
-export const RELEASE_NOTES = '重构资产对比同步页：差异卡片箭头修正为「视图 → 本地」方向；字段显示改为中文备注名；新增三步骤 Stepper（差异对比/同步预览/确认同步）梳理交互流程；搜索与导出功能下移至本地资产表附近；同步成功后自动重新执行差异对比并展示最新结果；';
+export const RELEASE_TIME = '2026-07-24 14:12';
+export const RELEASE_NOTES = '资产对比同步页对接后端 v202607241352：资产表默认展示 SAP 实时视图并支持切换本地快照；搜索新增「责任人」模式（searchField）；表格补全地址/责任人/部门/成本中心列；差异对比改为 Tab 切换 + 分类内搜索 + 加载更多（一次加载三类数据）；修复钉钉 WebView 导出 PDF 不调起问题（延迟触发 window.print）；新增全量 CSV 导出（ExportAssets）并加 BOM 防乱码；';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607241412',
+    time: '2026-07-24 14:12',
+    notes: '资产对比同步页对接后端 v202607241352：资产表默认展示 SAP 实时视图并支持切换本地快照；搜索新增「责任人」模式（searchField）；表格补全地址/责任人/部门/成本中心列；差异对比改为 Tab 切换 + 分类内搜索 + 加载更多（一次加载三类数据）；修复钉钉 WebView 导出 PDF 不调起问题（延迟触发 window.print）；新增全量 CSV 导出（ExportAssets）并加 BOM 防乱码；',
+  },
   {
     version: 'v202607241234',
     time: '2026-07-24 12:34',

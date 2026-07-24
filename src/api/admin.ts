@@ -443,7 +443,7 @@ export async function getServerVersion(): Promise<ServerVersion> {
  * 后端网关 action，沿用统一 UniGetToken 网关 + _token 机制
  * ============================================================ */
 
-/** 本地资产表（sai_assets）单条记录 */
+/** 本地资产表（sai_assets）单条记录 / SAP 实时视图单条记录 */
 export interface AssetTableItem {
   assetCode: string;
   assetName: string;
@@ -456,6 +456,14 @@ export interface AssetTableItem {
   deptName?: string;
   companyName?: string;
   standard?: string;
+  /** 地址（后端 GetAssetTable 新增） */
+  location?: string;
+  /** 责任人 / 使用人（后端 GetAssetTable 新增） */
+  userName?: string;
+  /** 成本中心名称（后端 GetAssetTable 新增） */
+  costCenterName?: string;
+  /** 数据来源：sap=实时视图，local=本地快照 */
+  viewSource?: string;
 }
 
 /** 资产表分页结果 */
@@ -467,13 +475,17 @@ export interface AssetTableResult {
 }
 
 /**
- * 读取本地资产表（分页 + 关键字搜索）
+ * 读取资产表（分页 + 关键字搜索）
+ * viewSource: 'sap' 实时 SAP 视图；'local' 本地 sai_assets 快照（默认 sap）
+ * searchField: 'all' 搜索资产编号/名称/责任人；'responsible' 仅按责任人搜索（默认 all）
  * POST /api/Account/UniGetToken/GetAssetTable
  */
 export async function getAssetTable(params: {
   keyword?: string;
   page: number;
   pageSize: number;
+  viewSource?: 'sap' | 'local';
+  searchField?: 'all' | 'responsible';
 }): Promise<AssetTableResult> {
   const { data } = await client.post<{ code: number; data: AssetTableResult; msg?: string; message?: string }>(
     '/api/Account/UniGetToken',
@@ -482,10 +494,37 @@ export async function getAssetTable(params: {
       keyword: params.keyword ?? '',
       page: params.page,
       pageSize: params.pageSize,
+      viewSource: params.viewSource ?? 'sap',
+      searchField: params.searchField ?? 'all',
     },
   );
   if (data.code === 0 || data.code === 200) return data.data;
   throw new Error(data.msg || data.message || '获取资产表失败');
+}
+
+/** 导出资产全量 CSV 返回 */
+export interface ExportAssetsResult {
+  csvContent: string;
+  filename: string;
+}
+
+/**
+ * 导出资产全量 CSV（资产编号/名称/地址/责任人/部门/成本中心等全部字段）
+ * viewSource: 'local' 导出本地快照；'sap' 导出实时视图（默认 local）
+ * POST /api/Account/UniGetToken/ExportAssets
+ */
+export async function exportAssets(params: {
+  viewSource?: 'sap' | 'local';
+} = {}): Promise<ExportAssetsResult> {
+  const { data } = await client.post<{ code: number; data: ExportAssetsResult; msg?: string; message?: string }>(
+    '/api/Account/UniGetToken',
+    {
+      action: 'ExportAssets',
+      viewSource: params.viewSource ?? 'local',
+    },
+  );
+  if (data.code === 0 || data.code === 200) return data.data;
+  throw new Error(data.msg || data.message || '导出资产失败');
 }
 
 /** 单条差异字段 */

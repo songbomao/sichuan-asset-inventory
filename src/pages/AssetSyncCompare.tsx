@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
@@ -16,9 +16,6 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogActions from '@mui/material/DialogActions';
-import Accordion from '@mui/material/Accordion';
-import AccordionSummary from '@mui/material/AccordionSummary';
-import AccordionDetails from '@mui/material/AccordionDetails';
 import Alert from '@mui/material/Alert';
 import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
@@ -30,16 +27,21 @@ import Stepper from '@mui/material/Stepper';
 import Step from '@mui/material/Step';
 import StepLabel from '@mui/material/StepLabel';
 import CircularProgress from '@mui/material/CircularProgress';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import SearchIcon from '@mui/icons-material/Search';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import SyncIcon from '@mui/icons-material/Sync';
 import PrintIcon from '@mui/icons-material/Print';
+import DownloadIcon from '@mui/icons-material/Download';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import {
   getAssetTable,
+  exportAssets,
   compareAssets,
   previewSyncAssets,
   syncAssets,
@@ -50,12 +52,16 @@ import {
   type SyncDetail,
 } from '../api/admin';
 
-/** 表格列定义 */
+/** 表格列定义（含地址 / 责任人 / 部门 / 成本中心） */
 const COLUMNS: { key: keyof AssetTableItem; label: string; numeric?: boolean }[] = [
   { key: 'assetCode', label: '资产编号' },
   { key: 'assetName', label: '名称' },
   { key: 'categoryName', label: '类别' },
   { key: 'useStatus', label: '状态' },
+  { key: 'location', label: '地址' },
+  { key: 'userName', label: '责任人' },
+  { key: 'deptName', label: '部门' },
+  { key: 'costCenterName', label: '成本中心' },
   { key: 'originalValue', label: '原值', numeric: true },
   { key: 'netValue', label: '净值', numeric: true },
 ];
@@ -80,8 +86,11 @@ const FIELD_NAME_MAP: Record<string, string> = {
   useStatus: '状态',
   originalValue: '原值',
   netValue: '净值',
+  location: '地址',
+  userName: '责任人',
   deptName: '部门',
   companyName: '公司',
+  costCenterName: '成本中心',
   standard: '规格',
 };
 
@@ -96,15 +105,27 @@ function fmt(v: string | number | null | undefined): string {
   return String(v);
 }
 
+/** 差异对比三个分类的展示元数据 */
+const DIFF_TABS = [
+  { key: 'onlyInTable' as const, label: '仅本地表', color: 'error' as const },
+  { key: 'onlyInView' as const, label: '仅视图', color: 'success' as const },
+  { key: 'different' as const, label: '字段不一致', color: 'warning' as const },
+];
+
 /**
  * 固定资产对比与同步（仅管理员）
- * - 本地表数据表格 + 搜索 + 分页
- * - 差异对比（本地表 / 视图 / 不一致）
- * - 手动同步（预览 → 二次确认 → 执行）
- * - 导出 PDF（浏览器打印方案，保证中文不乱码）
+ * - 资产表默认展示 SAP 实时视图，可切换本地快照
+ * - 搜索支持资产编号/名称 与 责任人 两种模式
+ * - 差异对比改为「Tab 切换 + 搜索 + 加载更多」统一视图
+ * - 同步流程（差异对比 → 同步预览 → 确认同步）保持不变
+ * - 导出 PDF（浏览器打印方案，保证中文不乱码）+ 全量 CSV 导出
  */
 export default function AssetSyncCompare() {
   /* ---------- 表格 + 搜索 + 分页 ---------- */
+  // 默认展示 SAP 实时视图
+  const [viewSource, setViewSource] = useState<'sap' | 'local'>('sap');
+  // 搜索字段：全部（编号/名称/责任人）或仅责任人
+  const [searchMode, setSearchMode] = useState<'all' | 'responsible'>('all');
   const [keyword, setKeyword] = useState('');
   const [debounced, setDebounced] = useState('');
   const [page, setPage] = useState(0); // MUI TablePagination 从 0 开始
@@ -116,11 +137,24 @@ export default function AssetSyncCompare() {
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchTable = useCallback(
-    async (kw: string, p: number, ps: number) => {
+    async (
+      kw: string,
+      p: number,
+      ps: number,
+      vs: 'sap' | 'local',
+      sf: 'all' | 'responsible',
+    ) => {
       setLoading(true);
       setError(null);
       try {
-        const res = await getAssetTable({ keyword: kw, page: p + 1, pageSize: ps }); // 后端从 1 开始
+        // 后端从 1 开始分页；viewSource 默认 sap，searchField 默认 all
+        const res = await getAssetTable({
+          keyword: kw,
+          page: p + 1,
+          pageSize: ps,
+          viewSource: vs,
+          searchField: sf,
+        });
         setRows(res.list || []);
         setTotal(res.total || 0);
       } catch (err) {
@@ -143,17 +177,27 @@ export default function AssetSyncCompare() {
     };
   }, [keyword]);
 
-  // 关键字变化后回到第一页并重新拉取
+  // 关键字 / 每页条数 / 视图来源 / 搜索字段变化后回到第一页并重新拉取
   useEffect(() => {
     setPage(0);
-    fetchTable(debounced, 0, pageSize);
+    fetchTable(debounced, 0, pageSize, viewSource, searchMode);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debounced, pageSize]);
+  }, [debounced, pageSize, viewSource, searchMode]);
 
   /* ---------- 差异对比 ---------- */
   const [compare, setCompare] = useState<CompareAssetsResult | null>(null);
   const [compareLoading, setCompareLoading] = useState(false);
   const [compareError, setCompareError] = useState<string | null>(null);
+
+  // 差异分类 Tab + 分类内搜索 + 懒加载（加载更多）
+  const [diffTab, setDiffTab] = useState(0);
+  const [diffKeyword, setDiffKeyword] = useState('');
+  const [diffVisible, setDiffVisible] = useState(50);
+
+  // 切换分类时重置已展开的条数
+  useEffect(() => {
+    setDiffVisible(50);
+  }, [diffTab]);
 
   const handleCompare = async () => {
     setCompareLoading(true);
@@ -206,7 +250,7 @@ export default function AssetSyncCompare() {
       setPreview(null);
       setCompare(null);
       setActiveStep(0);
-      fetchTable(debounced, page, pageSize);
+      fetchTable(debounced, page, pageSize, viewSource, searchMode);
       handleCompare();
     } catch (err) {
       setSyncResult({
@@ -242,7 +286,61 @@ export default function AssetSyncCompare() {
   };
 
   /* ---------- 导出 PDF（浏览器打印） ---------- */
-  const handlePrint = () => window.print();
+  // 钉钉 WebView 中直接 window.print() 偶发不调起，延迟一帧再触发以提升成功率
+  const handlePrint = () => {
+    window.requestAnimationFrame(() => {
+      setTimeout(() => {
+        window.print();
+      }, 120);
+    });
+  };
+
+  /* ---------- 导出全量 CSV ---------- */
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportCsv = async () => {
+    setExporting(true);
+    try {
+      const res = await exportAssets({ viewSource });
+      // 前置 BOM，保证 Excel 打开中文不乱码
+      const blob = new Blob(['\uFEFF' + res.csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = res.filename || `assets_${viewSource}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '导出CSV失败');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  /* ---------- 差异对比分类数据（一次加载，按需筛选） ---------- */
+  const rawActive =
+    compare == null
+      ? []
+      : diffTab === 0
+        ? compare.onlyInTable
+        : diffTab === 1
+          ? compare.onlyInView
+          : compare.different;
+
+  const filteredActive = useMemo(() => {
+    const kw = diffKeyword.trim().toLowerCase();
+    if (!kw) return rawActive;
+    return rawActive.filter((it: any) => {
+      const code = (it.assetCode || '').toLowerCase();
+      const name = (it.assetName || '').toLowerCase();
+      return code.includes(kw) || name.includes(kw);
+    });
+  }, [rawActive, diffKeyword]);
+
+  const visibleItems = filteredActive.slice(0, diffVisible);
+  const hasMore = filteredActive.length > diffVisible;
 
   return (
     <div className="space-y-4">
@@ -289,74 +387,78 @@ export default function AssetSyncCompare() {
                 本地表 {compare.summary.localCount} 条 · 视图 {compare.summary.viewCount} 条
               </Alert>
 
-              {/* 仅本地表存在 */}
-              <Accordion disableGutters elevation={0} sx={{ borderRadius: 2, '&:before': { display: 'none' } }}>
-                <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ bgcolor: 'rgba(244,67,54,0.06)' }}>
-                  <Typography sx={{ fontWeight: 600, fontSize: '0.9rem' }} color="error">
-                    仅本地表存在（{compare.summary.onlyInTableCount} 条）
-                  </Typography>
-                </AccordionSummary>
-                <AccordionDetails sx={{ p: 0 }}>
-                  <DiffList
-                    items={compare.onlyInTable.map((i) => ({ assetCode: i.assetCode, assetName: i.assetName }))}
-                    emptyText="无：本地表记录均能在视图中找到"
-                  />
-                </AccordionDetails>
-              </Accordion>
+              {/* 三个分类 Tab 切换（数据已一次加载，仅在前端做筛选） */}
+              <Tabs
+                value={diffTab}
+                onChange={(_e, v) => setDiffTab(v)}
+                variant="fullWidth"
+                sx={{ minHeight: 36, '& .MuiTab-root': { minHeight: 36, fontSize: '0.8rem', textTransform: 'none' } }}
+              >
+                {DIFF_TABS.map((t, i) => (
+                  <Tab key={t.key} label={`${t.label} (${i === 0 ? compare.summary.onlyInTableCount : i === 1 ? compare.summary.onlyInViewCount : compare.summary.differentCount})`} />
+                ))}
+              </Tabs>
 
-              {/* 仅视图存在 */}
-              <Accordion disableGutters elevation={0} sx={{ borderRadius: 2, '&:before': { display: 'none' } }}>
-                <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ bgcolor: 'rgba(76,175,80,0.06)' }}>
-                  <Typography sx={{ fontWeight: 600, fontSize: '0.9rem' }} color="success.main">
-                    仅视图存在（{compare.summary.onlyInViewCount} 条）
-                  </Typography>
-                </AccordionSummary>
-                <AccordionDetails sx={{ p: 0 }}>
-                  <DiffList
-                    items={compare.onlyInView.map((i) => ({ assetCode: i.assetCode, assetName: i.assetName }))}
-                    emptyText="无：视图记录均已同步到本地表"
-                  />
-                </AccordionDetails>
-              </Accordion>
+              {/* 分类内搜索（按资产编号 / 名称） */}
+              <TextField
+                size="small"
+                fullWidth
+                placeholder="按资产编号 / 名称 筛选当前分类"
+                value={diffKeyword}
+                onChange={(e) => setDiffKeyword(e.target.value)}
+                InputProps={{ startAdornment: <SearchIcon fontSize="small" className="text-gray-400 mr-1" /> }}
+                sx={{ borderRadius: 2 }}
+              />
 
-              {/* 字段不一致 */}
-              <Accordion defaultExpanded disableGutters elevation={0} sx={{ borderRadius: 2, '&:before': { display: 'none' } }}>
-                <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ bgcolor: 'rgba(255,152,0,0.06)' }}>
-                  <Typography sx={{ fontWeight: 600, fontSize: '0.9rem' }} color="warning.main">
-                    字段不一致（{compare.summary.differentCount} 条）
+              {/* 分类明细列表（懒加载：加载更多） */}
+              <Box sx={{ maxHeight: 360, overflow: 'auto' }}>
+                {filteredActive.length === 0 ? (
+                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.82rem', p: 1 }}>
+                    无匹配记录
                   </Typography>
-                </AccordionSummary>
-                <AccordionDetails sx={{ p: 1 }}>
-                  {compare.different.length === 0 ? (
-                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.82rem' }}>
-                      无：两边字段值完全一致
-                    </Typography>
-                  ) : (
-                    <Stack spacing={1.5}>
-                      {compare.different.map((d) => (
-                        <Paper key={d.assetCode} variant="outlined" sx={{ p: 1.5, borderRadius: 2 }}>
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="font-mono text-xs text-gray-700">{d.assetCode}</span>
-                            <span className="text-sm font-medium text-gray-900 truncate ml-2">{d.assetName}</span>
+                ) : (
+                  <Stack spacing={1}>
+                    {diffTab !== 2
+                      ? visibleItems.map((it: any) => (
+                          <div key={it.assetCode} className="flex items-center gap-2 text-xs">
+                            <span className="font-mono text-gray-600">{it.assetCode}</span>
+                            <span className="text-gray-800 truncate">{it.assetName}</span>
                           </div>
-                          <Stack spacing={0.5}>
-                            {d.diffs.map((f, idx) => (
-                              <div key={idx} className="flex items-center gap-2 text-xs flex-wrap">
-                                <Chip label={fieldLabel(f)} size="small" variant="outlined" sx={{ height: 20, fontSize: '0.7rem' }} />
-                                <span className="text-gray-400">视图</span>
-                                <span className="font-medium" style={{ color: '#2e7d32' }}>{fmt(f.viewValue)}</span>
-                                <span className="text-gray-400">→</span>
-                                <span className="text-gray-400">本地</span>
-                                <span className="font-medium" style={{ color: '#d32f2f' }}>{fmt(f.tableValue)}</span>
-                              </div>
-                            ))}
-                          </Stack>
-                        </Paper>
-                      ))}
-                    </Stack>
-                  )}
-                </AccordionDetails>
-              </Accordion>
+                        ))
+                      : visibleItems.map((d: any) => (
+                          <Paper key={d.assetCode} variant="outlined" sx={{ p: 1.5, borderRadius: 2 }}>
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-mono text-xs text-gray-700">{d.assetCode}</span>
+                              <span className="text-sm font-medium text-gray-900 truncate ml-2">{d.assetName}</span>
+                            </div>
+                            <Stack spacing={0.5}>
+                              {d.diffs.map((f: any, idx: number) => (
+                                <div key={idx} className="flex items-center gap-2 text-xs flex-wrap">
+                                  <Chip label={fieldLabel(f)} size="small" variant="outlined" sx={{ height: 20, fontSize: '0.7rem' }} />
+                                  <span className="text-gray-400">视图</span>
+                                  <span className="font-medium" style={{ color: '#2e7d32' }}>{fmt(f.viewValue)}</span>
+                                  <span className="text-gray-400">→</span>
+                                  <span className="text-gray-400">本地</span>
+                                  <span className="font-medium" style={{ color: '#d32f2f' }}>{fmt(f.tableValue)}</span>
+                                </div>
+                              ))}
+                            </Stack>
+                          </Paper>
+                        ))}
+                  </Stack>
+                )}
+              </Box>
+
+              {hasMore && (
+                <Button
+                  variant="text"
+                  size="small"
+                  onClick={() => setDiffVisible((v) => v + 50)}
+                  sx={{ borderRadius: '10px', textTransform: 'none', alignSelf: 'center', fontSize: '0.8rem' }}
+                >
+                  加载更多（已显示 {visibleItems.length} / {filteredActive.length}）
+                </Button>
+              )}
 
               <Button
                 variant="outlined"
@@ -468,40 +570,72 @@ export default function AssetSyncCompare() {
         </Alert>
       )}
 
-      {/* 资产表（搜索 / 刷新 / 导出PDF 已移入卡片头部） */}
+      {/* 资产表（搜索 / 刷新 / 导出PDF / 导出CSV 已移入卡片头部） */}
       <Card className="glow-border">
         <CardContent sx={{ p: '8px !important' }}>
+          {/* 头部：标题 + 视图来源切换 */}
           <div className="flex items-center justify-between px-2 pt-2 pb-2 flex-wrap gap-2">
             <div className="flex items-center gap-2">
               <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
                 本地资产表
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                共 {total} 条
+                共 {total} 条 · {viewSource === 'sap' ? 'SAP实时视图' : '本地快照'}
               </Typography>
             </div>
-            <div className="flex items-center gap-1">
-              <TextField
-                size="small"
-                placeholder="搜索资产编号 / 名称"
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-                InputProps={{ startAdornment: <SearchIcon fontSize="small" className="text-gray-400 mr-1" /> }}
-                sx={{ width: 180, borderRadius: 2 }}
-              />
-              <IconButton onClick={() => fetchTable(debounced, page, pageSize)} color="primary" size="small" disabled={loading}>
-                <RefreshIcon className={loading ? 'animate-spin-refresh' : ''} />
-              </IconButton>
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={<PrintIcon />}
-                onClick={handlePrint}
-                sx={{ borderRadius: '10px', textTransform: 'none', whiteSpace: 'nowrap' }}
-              >
-                导出PDF
-              </Button>
-            </div>
+            <ToggleButtonGroup
+              size="small"
+              value={viewSource}
+              exclusive
+              onChange={(_e, v) => v && setViewSource(v)}
+              sx={{ flexWrap: 'wrap' }}
+            >
+              <ToggleButton value="sap" sx={{ px: 1.5, py: 0.5, fontSize: '0.75rem', textTransform: 'none' }}>SAP视图</ToggleButton>
+              <ToggleButton value="local" sx={{ px: 1.5, py: 0.5, fontSize: '0.75rem', textTransform: 'none' }}>本地快照</ToggleButton>
+            </ToggleButtonGroup>
+          </div>
+
+          {/* 头部：搜索 + 搜索字段切换 + 刷新 + 导出 */}
+          <div className="flex items-center gap-1 px-2 pb-2 flex-wrap">
+            <TextField
+              size="small"
+              placeholder={searchMode === 'responsible' ? '搜索责任人姓名' : '搜索资产编号 / 名称'}
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              InputProps={{ startAdornment: <SearchIcon fontSize="small" className="text-gray-400 mr-1" /> }}
+              sx={{ width: 180, borderRadius: 2 }}
+            />
+            <ToggleButtonGroup
+              size="small"
+              value={searchMode}
+              exclusive
+              onChange={(_e, v) => v && setSearchMode(v)}
+            >
+              <ToggleButton value="all" sx={{ px: 1, py: 0.5, fontSize: '0.72rem', textTransform: 'none' }}>全部</ToggleButton>
+              <ToggleButton value="responsible" sx={{ px: 1, py: 0.5, fontSize: '0.72rem', textTransform: 'none' }}>责任人</ToggleButton>
+            </ToggleButtonGroup>
+            <IconButton onClick={() => fetchTable(debounced, page, pageSize, viewSource, searchMode)} color="primary" size="small" disabled={loading}>
+              <RefreshIcon className={loading ? 'animate-spin-refresh' : ''} />
+            </IconButton>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<PrintIcon />}
+              onClick={handlePrint}
+              sx={{ borderRadius: '10px', textTransform: 'none', whiteSpace: 'nowrap' }}
+            >
+              导出PDF
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<DownloadIcon />}
+              onClick={handleExportCsv}
+              disabled={exporting}
+              sx={{ borderRadius: '10px', textTransform: 'none', whiteSpace: 'nowrap' }}
+            >
+              {exporting ? '导出中...' : '下载全量CSV'}
+            </Button>
           </div>
 
           {loading && (
@@ -565,7 +699,7 @@ export default function AssetSyncCompare() {
               page={page}
               onPageChange={(_e, newPage) => {
                 setPage(newPage);
-                fetchTable(debounced, newPage, pageSize);
+                fetchTable(debounced, newPage, pageSize, viewSource, searchMode);
               }}
               rowsPerPage={pageSize}
               onRowsPerPageChange={(e) => {
@@ -601,7 +735,7 @@ export default function AssetSyncCompare() {
 
       {/* 打印区域（平时隐藏，打印时显示，纯 HTML 表格保证中文正常） */}
       <div className="print-area">
-        <h2 style={{ textAlign: 'center', margin: '8px 0 12px' }}>固定资产表</h2>
+        <h2 style={{ textAlign: 'center', margin: '8px 0 12px' }}>固定资产表（{viewSource === 'sap' ? 'SAP实时视图' : '本地快照'}）</h2>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
           <thead>
             <tr>
@@ -632,34 +766,5 @@ export default function AssetSyncCompare() {
         </p>
       </div>
     </div>
-  );
-}
-
-/** 简单的「仅本地表 / 仅视图」列表 */
-function DiffList({
-  items,
-  emptyText,
-}: {
-  items: { assetCode: string; assetName: string }[];
-  emptyText: string;
-}) {
-  if (items.length === 0) {
-    return (
-      <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.82rem', p: 1 }}>
-        {emptyText}
-      </Typography>
-    );
-  }
-  return (
-    <Box sx={{ maxHeight: 200, overflow: 'auto', p: 1 }}>
-      <Stack spacing={0.5}>
-        {items.map((i) => (
-          <div key={i.assetCode} className="flex items-center gap-2 text-xs">
-            <span className="font-mono text-gray-600">{i.assetCode}</span>
-            <span className="text-gray-800 truncate">{i.assetName}</span>
-          </div>
-        ))}
-      </Stack>
-    </Box>
   );
 }
