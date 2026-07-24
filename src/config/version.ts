@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607241730';
+export const APP_VERSION = 'v202607241805';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-24 17:30';
-export const RELEASE_NOTES = '修复同步预览统计展示与确认按钮样式（含弹窗内确认按钮）；固资查询仅保留本地快照并移除导出PDF；修复移动端钉钉CSV下载兼容性。';
+export const RELEASE_TIME = '2026-07-24 18:05';
+export const RELEASE_NOTES = '固资查询移除全部/责任人切换，统一按编号/名称/责任人搜索；移动端CSV下载改为后端文件流直连，适配钉钉原生下载。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607241805',
+    time: '2026-07-24 18:05',
+    notes: '固资查询移除全部/责任人切换，统一按编号/名称/责任人搜索；移动端CSV下载改为后端文件流直连，适配钉钉原生下载。',
+  },
   {
     version: 'v202607241730',
     time: '2026-07-24 17:30',

@@ -17,8 +17,6 @@ import Stack from '@mui/material/Stack';
 import Box from '@mui/material/Box';
 import Skeleton from '@mui/material/Skeleton';
 import IconButton from '@mui/material/IconButton';
-import ToggleButton from '@mui/material/ToggleButton';
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Snackbar from '@mui/material/Snackbar';
 import SearchIcon from '@mui/icons-material/Search';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -26,6 +24,7 @@ import DownloadIcon from '@mui/icons-material/Download';
 import {
   getAssetTable,
   exportAssets,
+  buildExportAssetsFileUrl,
   type AssetTableItem,
 } from '../api/admin';
 import { exportAndDownloadCsv } from '../utils/download';
@@ -53,13 +52,11 @@ function fmt(v: string | number | null | undefined): string {
 /**
  * 固定资产查询（本地资产表）
  * - 资产表固定使用本地快照（viewSource = 'local'）
- * - 搜索支持资产编号/名称 与 责任人 两种模式
+ * - 搜索按资产编号 / 名称 / 责任人三字段模糊匹配
  * - 全量 CSV 导出（移动端钉钉兼容，见 utils/download）
  */
 export default function AssetLocalTable() {
   /* ---------- 表格 + 搜索 + 分页 ---------- */
-  // 搜索字段：全部（编号/名称/责任人）或仅责任人
-  const [searchMode, setSearchMode] = useState<'all' | 'responsible'>('all');
   const [keyword, setKeyword] = useState('');
   const [debounced, setDebounced] = useState('');
   const [page, setPage] = useState(0); // MUI TablePagination 从 0 开始
@@ -76,18 +73,17 @@ export default function AssetLocalTable() {
       p: number,
       ps: number,
       vs: 'sap' | 'local',
-      sf: 'all' | 'responsible',
     ) => {
       setLoading(true);
       setError(null);
       try {
-        // 后端从 1 开始分页；viewSource 默认 sap，searchField 默认 all
+        // 后端从 1 开始分页；viewSource 默认 sap，searchField 固定 all（编号/名称/责任人三字段）
         const res = await getAssetTable({
           keyword: kw,
           page: p + 1,
           pageSize: ps,
           viewSource: vs,
-          searchField: sf,
+          searchField: 'all',
         });
         setRows(res.list || []);
         setTotal(res.total || 0);
@@ -111,12 +107,12 @@ export default function AssetLocalTable() {
     };
   }, [keyword]);
 
-  // 关键字 / 每页条数 / 搜索字段变化后回到第一页并重新拉取（固定使用本地快照）
+  // 关键字 / 每页条数变化后回到第一页并重新拉取（固定使用本地快照）
   useEffect(() => {
     setPage(0);
-    fetchTable(debounced, 0, pageSize, 'local', searchMode);
+    fetchTable(debounced, 0, pageSize, 'local');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debounced, pageSize, searchMode]);
+  }, [debounced, pageSize]);
 
   /* ---------- 导出全量 CSV ---------- */
   const [exporting, setExporting] = useState(false);
@@ -125,8 +121,8 @@ export default function AssetLocalTable() {
   const handleExportCsv = async () => {
     setExporting(true);
     try {
-      await exportAndDownloadCsv(() => exportAssets({ viewSource: 'local' }));
-      setSnackbar({ open: true, message: 'CSV 已导出', severity: 'success' });
+      await exportAndDownloadCsv(() => exportAssets({ viewSource: 'local' }), buildExportAssetsFileUrl('local'));
+      setSnackbar({ open: true, message: 'CSV 导出已开始，请留意钉钉下载/预览窗口', severity: 'success' });
     } catch (err) {
       setError(err instanceof Error ? err.message : '导出CSV失败');
       setSnackbar({ open: true, message: '导出CSV失败', severity: 'error' });
@@ -155,26 +151,17 @@ export default function AssetLocalTable() {
             </div>
           </div>
 
-          {/* 头部：搜索 + 搜索字段切换 + 刷新 + 导出 */}
+          {/* 头部：搜索 + 刷新 + 导出 */}
           <div className="flex items-center gap-1 px-2 pb-2 flex-wrap">
             <TextField
               size="small"
-              placeholder={searchMode === 'responsible' ? '搜索责任人姓名' : '搜索资产编号 / 名称'}
+              placeholder="搜索资产编号 / 名称 / 责任人"
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               InputProps={{ startAdornment: <SearchIcon fontSize="small" className="text-gray-400 mr-1" /> }}
               sx={{ width: 180, borderRadius: 2 }}
             />
-            <ToggleButtonGroup
-              size="small"
-              value={searchMode}
-              exclusive
-              onChange={(_e, v) => v && setSearchMode(v)}
-            >
-              <ToggleButton value="all" sx={{ px: 1, py: 0.5, fontSize: '0.72rem', textTransform: 'none' }}>全部</ToggleButton>
-              <ToggleButton value="responsible" sx={{ px: 1, py: 0.5, fontSize: '0.72rem', textTransform: 'none' }}>责任人</ToggleButton>
-            </ToggleButtonGroup>
-            <IconButton onClick={() => fetchTable(debounced, page, pageSize, 'local', searchMode)} color="primary" size="small" disabled={loading}>
+            <IconButton onClick={() => fetchTable(debounced, page, pageSize, 'local')} color="primary" size="small" disabled={loading}>
               <RefreshIcon className={loading ? 'animate-spin-refresh' : ''} />
             </IconButton>
             <Button
@@ -250,7 +237,7 @@ export default function AssetLocalTable() {
               page={page}
               onPageChange={(_e, newPage) => {
                 setPage(newPage);
-                fetchTable(debounced, newPage, pageSize, 'local', searchMode);
+                fetchTable(debounced, newPage, pageSize, 'local');
               }}
               rowsPerPage={pageSize}
               onRowsPerPageChange={(e) => {

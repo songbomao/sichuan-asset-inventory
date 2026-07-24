@@ -527,6 +527,17 @@ export async function exportAssets(params: {
   throw new Error(data.msg || data.message || '导出资产失败');
 }
 
+/**
+ * 构造资产 CSV 文件流下载 URL（后端直接返回 text/csv 附件，适配钉钉移动端原生下载）
+ * GET /api/Account/UniGetToken?action=ExportAssetsFile&viewSource=local&_token=...
+ */
+export function buildExportAssetsFileUrl(viewSource: 'sap' | 'local' = 'local'): string {
+  const base = import.meta.env.VITE_API_BASE_URL || window.location.origin;
+  const token = localStorage.getItem('auth_token') || '';
+  const qs = new URLSearchParams({ action: 'ExportAssetsFile', viewSource, _token: token });
+  return `${base}/api/Account/UniGetToken?${qs.toString()}`;
+}
+
 /** 单条差异字段 */
 export interface AssetDiffField {
   field: string;
