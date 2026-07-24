@@ -19,10 +19,17 @@ import Skeleton from '@mui/material/Skeleton';
 import Alert from '@mui/material/Alert';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
+import Box from '@mui/material/Box';
+import Autocomplete from '@mui/material/Autocomplete';
+import CircularProgress from '@mui/material/CircularProgress';
+import Divider from '@mui/material/Divider';
 import AddIcon from '@mui/icons-material/Add';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import SendIcon from '@mui/icons-material/Send';
 import SyncIcon from '@mui/icons-material/Sync';
+import CloseIcon from '@mui/icons-material/Close';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import {
@@ -31,10 +38,13 @@ import {
   dispatchTask,
   getSyncStatus,
   getInventoryOptions,
+  getDingtalkDepartments,
+  getDingtalkSubDepartments,
   type AdminTaskItem,
   type CreateTaskParams,
   type InventoryOptionsResult,
   type SyncStatusResult,
+  type DingtalkDepartmentNode,
 } from '../api/admin';
 import { useAuth } from '../contexts/AuthContext';
 import AssetSyncCompare from './AssetSyncCompare';
@@ -70,13 +80,12 @@ function buildPresetNames(year: number): { value: string; label: string }[] {
 
 /** 新建任务 Dialog 本地表单（比提交参数多几个维度字段） */
 interface DialogForm {
+  /** 任务名称（可选，允许为空，空时后端生成默认名） */
   TaskName: string;
-  /** 当前选中的预设（仅用于回填空文本，不直接提交） */
-  preset: string;
   /** 盘点方式：by_dept | by_category */
   method: 'by_dept' | 'by_category' | '';
-  /** 选中的范围值（部门名或类别名） */
-  scopeValue: string;
+  /** 选中的盘点类别名称（by_category 时使用） */
+  categories: string[];
   NeedReview: boolean;
   ReviewRatio: number;
   Deadline: string;
@@ -85,9 +94,8 @@ interface DialogForm {
 
 const defaultForm: DialogForm = {
   TaskName: '',
-  preset: '',
   method: '',
-  scopeValue: '',
+  categories: [],
   NeedReview: false,
   ReviewRatio: 0.3,
   Deadline: '',
@@ -125,6 +133,168 @@ export default function AdminTasks() {
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
   const [inventoryOptions, setInventoryOptions] = useState<InventoryOptionsResult>({ departments: [], categories: [] });
   const [optionsLoading, setOptionsLoading] = useState(false);
+
+  /* 盘点部门组织树（多选 + 懒加载 + 级联勾选） */
+  const [deptDialogOpen, setDeptDialogOpen] = useState(false);
+  const [deptTree, setDeptTree] = useState<DingtalkDepartmentNode[]>([]);
+  const [expandedDepts, setExpandedDepts] = useState<Set<number>>(new Set());
+  const [loadingDeptTree, setLoadingDeptTree] = useState(false);
+  const [deptBusy, setDeptBusy] = useState(false);
+  /** 选中的部门：deptId(number) -> name(string) */
+  const [selectedDeptMap, setSelectedDeptMap] = useState<Record<number, string>>({});
+
+  /** 递归更新部门树中某节点的 children（用于懒加载后回填） */
+  const updateDeptChildren = (
+    nodes: DingtalkDepartmentNode[],
+    targetDeptId: number,
+    children: DingtalkDepartmentNode[],
+  ): DingtalkDepartmentNode[] =>
+    nodes.map((n) => {
+      if (n.deptId === targetDeptId) return { ...n, children };
+      if (n.children && n.children.length > 0) {
+        return { ...n, children: updateDeptChildren(n.children, targetDeptId, children) };
+      }
+      return n;
+    });
+
+  /** 递归收集子树所有 deptId */
+  const collectDeptIds = (nodes: DingtalkDepartmentNode[]): number[] => {
+    const ids: number[] = [];
+    const walk = (ns: DingtalkDepartmentNode[]) =>
+      ns.forEach((n) => {
+        ids.push(n.deptId);
+        walk(n.children);
+      });
+    walk(nodes);
+    return ids;
+  };
+
+  /** 递归把子树节点写入选中 Map */
+  const addNodesToMap = (nodes: DingtalkDepartmentNode[], map: Record<number, string>) => {
+    const walk = (ns: DingtalkDepartmentNode[]) =>
+      ns.forEach((n) => {
+        map[n.deptId] = n.name;
+        walk(n.children);
+      });
+    walk(nodes);
+  };
+
+  /** 懒加载某部门的完整子树（递归调用 getDingtalkSubDepartments） */
+  const loadSubtree = async (deptId: number): Promise<DingtalkDepartmentNode[]> => {
+    const subs = await getDingtalkSubDepartments(deptId);
+    const children: DingtalkDepartmentNode[] = [];
+    for (const s of subs) {
+      const grand = await loadSubtree(s.deptId);
+      children.push({ deptId: s.deptId, name: s.name, parentId: s.parentId, children: grand });
+    }
+    return children;
+  };
+
+  /** 展开/收起部门（首次展开时懒加载直接子部门） */
+  const toggleExpand = async (node: DingtalkDepartmentNode) => {
+    if (expandedDepts.has(node.deptId)) {
+      setExpandedDepts((prev) => {
+        const next = new Set(prev);
+        next.delete(node.deptId);
+        return next;
+      });
+      return;
+    }
+    if (node.children.length === 0) {
+      try {
+        const subs = await getDingtalkSubDepartments(node.deptId);
+        const children = subs.map((s) => ({ deptId: s.deptId, name: s.name, parentId: s.parentId, children: [] }));
+        setDeptTree((prev) => updateDeptChildren(prev, node.deptId, children));
+      } catch {
+        // 加载失败保持为空，下次可重试
+      }
+    }
+    setExpandedDepts((prev) => new Set(prev).add(node.deptId));
+  };
+
+  /** 勾选/取消勾选部门（级联选中/取消其全部后代部门） */
+  const toggleDept = async (node: DingtalkDepartmentNode) => {
+    const isSelected = Object.prototype.hasOwnProperty.call(selectedDeptMap, node.deptId);
+    const next = { ...selectedDeptMap };
+    setDeptBusy(true);
+    try {
+      if (isSelected) {
+        const subtree = await loadSubtree(node.deptId);
+        [node.deptId, ...collectDeptIds(subtree)].forEach((id) => {
+          delete next[id];
+        });
+      } else {
+        next[node.deptId] = node.name;
+        const subtree = await loadSubtree(node.deptId);
+        addNodesToMap(subtree, next);
+        setDeptTree((prev) => updateDeptChildren(prev, node.deptId, subtree));
+        setExpandedDepts((prev) => new Set(prev).add(node.deptId));
+      }
+      setSelectedDeptMap(next);
+    } finally {
+      setDeptBusy(false);
+    }
+  };
+
+  /** 移除单个已选部门（Chip 删除） */
+  const removeDept = (deptId: number) => {
+    setSelectedDeptMap((prev) => {
+      const next = { ...prev };
+      delete next[deptId];
+      return next;
+    });
+  };
+
+  /** 递归渲染部门树节点（带勾选框 + 展开） */
+  const renderDeptNode = (node: DingtalkDepartmentNode, depth: number) => {
+    const checked = Object.prototype.hasOwnProperty.call(selectedDeptMap, node.deptId);
+    const hasChildren = node.children.length > 0;
+    const selectedChildCount = node.children.filter((c) =>
+      Object.prototype.hasOwnProperty.call(selectedDeptMap, c.deptId),
+    ).length;
+    const indeterminate = !checked && selectedChildCount > 0;
+    const expanded = expandedDepts.has(node.deptId);
+    return (
+      <Box key={node.deptId}>
+        <Stack direction="row" alignItems="center" sx={{ pl: depth * 2 }}>
+          <Checkbox
+            checked={checked}
+            indeterminate={indeterminate}
+            onChange={() => void toggleDept(node)}
+            disabled={deptBusy}
+          />
+          <Typography variant="body2" sx={{ flex: 1, fontSize: '0.85rem' }}>{node.name}</Typography>
+          {hasChildren && (
+            <IconButton size="small" onClick={() => void toggleExpand(node)}>
+              {expanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+            </IconButton>
+          )}
+        </Stack>
+        {expanded && hasChildren && (
+          <Box>
+            {node.children.map((c) => renderDeptNode(c, depth + 1))}
+          </Box>
+        )}
+      </Box>
+    );
+  };
+
+  /** 打开部门树弹窗时加载根部门 */
+  useEffect(() => {
+    if (!deptDialogOpen) return;
+    const load = async () => {
+      setLoadingDeptTree(true);
+      try {
+        const tree = await getDingtalkDepartments();
+        setDeptTree(tree);
+      } catch {
+        setDeptTree([]);
+      } finally {
+        setLoadingDeptTree(false);
+      }
+    };
+    void load();
+  }, [deptDialogOpen]);
 
   const presetNames = buildPresetNames(new Date().getFullYear());
 
@@ -166,6 +336,9 @@ export default function AdminTasks() {
     setForm({ ...defaultForm, CreatedBy: user?.name ?? '' });
     setFeedback(null);
     setDialogOpen(true);
+    setSelectedDeptMap({});
+    setDeptTree([]);
+    setExpandedDepts(new Set());
     setOptionsLoading(true);
     getInventoryOptions()
       .then(setInventoryOptions)
@@ -175,22 +348,26 @@ export default function AdminTasks() {
 
   /** 提交新建任务 */
   const handleCreate = async () => {
-    if (!form.TaskName.trim()) {
-      setFeedback({ type: 'error', msg: '任务名称不能为空' });
-      return;
-    }
     if (!form.method) {
       setFeedback({ type: 'error', msg: '请选择盘点方式' });
       return;
     }
-    if (!form.scopeValue) {
-      setFeedback({ type: 'error', msg: form.method === 'by_dept' ? '请选择盘点部门' : '请选择盘点类别' });
+    if (form.method === 'by_dept' && Object.keys(selectedDeptMap).length === 0) {
+      setFeedback({ type: 'error', msg: '请选择盘点部门' });
+      return;
+    }
+    if (form.method === 'by_category' && form.categories.length === 0) {
+      setFeedback({ type: 'error', msg: '请选择盘点类别' });
       return;
     }
     setSubmitting(true);
     setFeedback(null);
     try {
-      const scopeConfig = JSON.stringify({ scopeType: form.method, scopeValue: form.scopeValue });
+      const scopeValues: number[] | string[] =
+        form.method === 'by_dept'
+          ? Object.keys(selectedDeptMap).map(Number)
+          : form.categories;
+      const scopeConfig = JSON.stringify({ scopeType: form.method, scopeValues });
       const body: CreateTaskParams = {
         TaskName: form.TaskName.trim(),
         ScopeType: form.method,
@@ -207,6 +384,7 @@ export default function AdminTasks() {
       setTimeout(() => {
         setDialogOpen(false);
         setForm({ ...defaultForm });
+        setSelectedDeptMap({});
         fetchTasks();
       }, 1500);
     } catch (err) {
@@ -406,27 +584,15 @@ export default function AdminTasks() {
         <DialogTitle sx={{ fontWeight: 700, fontSize: '1.1rem', pb: 1 }}>新建盘点任务</DialogTitle>
         <DialogContent sx={{ pt: '8px !important' }}>
           <Stack spacing={2}>
-            <TextField
-              select
-              label="快速预设（可选）"
-              size="small"
-              value={form.preset}
-              onChange={(e) => {
-                const v = e.target.value;
-                setForm((f) => ({ ...f, preset: v, TaskName: v }));
-              }}
-              fullWidth
-            >
-              {presetNames.map((p) => (
-                <MenuItem key={p.value} value={p.value}>{p.label}</MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              label="任务名称"
-              required
-              size="small"
+            <Autocomplete
+              freeSolo
+              options={presetNames.map((p) => p.value)}
               value={form.TaskName}
-              onChange={(e) => setForm((f) => ({ ...f, TaskName: e.target.value, preset: '' }))}
+              onChange={(_e, val) => setForm((f) => ({ ...f, TaskName: val ?? '' }))}
+              onInputChange={(_e, val) => setForm((f) => ({ ...f, TaskName: val ?? '' }))}
+              renderInput={(params) => (
+                <TextField {...params} label="任务名称（可选）" size="small" placeholder="留空则由系统生成默认名称" />
+              )}
               fullWidth
             />
 
@@ -436,27 +602,64 @@ export default function AdminTasks() {
               required
               size="small"
               value={form.method}
-              onChange={(e) => setForm((f) => ({ ...f, method: e.target.value as 'by_dept' | 'by_category', scopeValue: '' }))}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  method: e.target.value as 'by_dept' | 'by_category',
+                  categories: [],
+                }))
+              }
               fullWidth
             >
               <MenuItem value="by_dept">按盘点部门</MenuItem>
               <MenuItem value="by_category">按盘点类别</MenuItem>
             </TextField>
-            {form.method && (
-              <TextField
-                select
-                label={form.method === 'by_dept' ? '盘点部门' : '盘点类别'}
-                required
-                size="small"
-                value={form.scopeValue}
-                onChange={(e) => setForm((f) => ({ ...f, scopeValue: e.target.value }))}
-                fullWidth
+
+            {form.method === 'by_dept' && (
+              <>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => setDeptDialogOpen(true)}
+                  disabled={deptBusy}
+                  sx={{ alignSelf: 'flex-start', borderRadius: '8px', textTransform: 'none' }}
+                >
+                  {Object.keys(selectedDeptMap).length > 0
+                    ? `已选盘点部门（${Object.keys(selectedDeptMap).length}）`
+                    : '选择盘点部门'}
+                </Button>
+                {Object.keys(selectedDeptMap).length > 0 && (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                    {Object.entries(selectedDeptMap).map(([id, name]) => (
+                      <Chip
+                        key={id}
+                        label={name}
+                        size="small"
+                        onDelete={() => removeDept(Number(id))}
+                      />
+                    ))}
+                  </Box>
+                )}
+              </>
+            )}
+
+            {form.method === 'by_category' && (
+              <Autocomplete
+                multiple
+                options={inventoryOptions.categories.map((c) => c.name)}
+                value={form.categories}
+                onChange={(_e, val) => setForm((f) => ({ ...f, categories: val }))}
+                renderInput={(params) => (
+                  <TextField {...params} label="盘点类别" size="small" placeholder="可多选" />
+                )}
+                renderTags={(value, getTagProps) =>
+                  value.map((option, index) => (
+                    <Chip label={option} size="small" {...getTagProps({ index })} key={option} />
+                  ))
+                }
                 disabled={optionsLoading}
-              >
-                {(form.method === 'by_dept' ? inventoryOptions.departments : inventoryOptions.categories).map((o) => (
-                  <MenuItem key={o.code} value={o.code}>{o.name}</MenuItem>
-                ))}
-              </TextField>
+                fullWidth
+              />
             )}
 
             <TextField
@@ -516,6 +719,64 @@ export default function AdminTasks() {
             {submitting ? '创建中...' : '确认创建'}
           </Button>
         </DialogActions>
+      </Dialog>
+
+      {/* 盘点部门组织树（多选 / 懒加载 / 级联勾选） */}
+      <Dialog
+        open={deptDialogOpen}
+        onClose={() => setDeptDialogOpen(false)}
+        fullScreen
+        PaperProps={{ sx: { bgcolor: 'background.paper' } }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1.5 }}>
+            <Typography variant="subtitle1" fontWeight={700}>选择盘点部门</Typography>
+            <Stack direction="row" spacing={1} alignItems="center">
+              {deptBusy && <CircularProgress size={18} />}
+              <IconButton onClick={() => setDeptDialogOpen(false)} size="small">
+                <CloseIcon />
+              </IconButton>
+            </Stack>
+          </Box>
+          <Divider />
+          <Box sx={{ overflowY: 'auto', flexGrow: 1, py: 1, px: 1.5 }}>
+            {loadingDeptTree ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                <CircularProgress size={24} />
+              </Box>
+            ) : deptTree.length === 0 ? (
+              <Typography color="text.secondary" sx={{ p: 2, fontSize: '0.85rem' }}>暂无部门数据</Typography>
+            ) : (
+              <Stack spacing={0.5}>
+                {deptTree.map((d) => renderDeptNode(d, 0))}
+              </Stack>
+            )}
+          </Box>
+          <Divider />
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1.5, gap: 1 }}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, flex: 1 }}>
+              {Object.keys(selectedDeptMap).length === 0 ? (
+                <Typography variant="caption" color="text.secondary">尚未选择部门</Typography>
+              ) : (
+                Object.entries(selectedDeptMap).map(([id, name]) => (
+                  <Chip
+                    key={id}
+                    label={name}
+                    size="small"
+                    onDelete={() => removeDept(Number(id))}
+                  />
+                ))
+              )}
+            </Box>
+            <Button
+              variant="contained"
+              onClick={() => setDeptDialogOpen(false)}
+              sx={{ borderRadius: '10px', textTransform: 'none', whiteSpace: 'nowrap' }}
+            >
+              确定（{Object.keys(selectedDeptMap).length}）
+            </Button>
+          </Box>
+        </Box>
       </Dialog>
       </>
       )}

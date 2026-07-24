@@ -4,10 +4,21 @@ import client from './client';
  * 盘点任务（后端网关 action，已在网关层做管理员门控）
  * ============================================================ */
 
-/** 创建任务参数（新流程：ScopeType = by_dept | by_category，ScopeConfig = JSON 含 scopeType/scopeValue） */
+/** 盘点范围配置（提交给后端 createTask 的 ScopeConfig JSON 内容）
+ *  - by_dept:     scopeValues 为部门 deptId 数组（number[]）
+ *  - by_category:  scopeValues 为类别名称数组（string[]）
+ */
+export interface ScopeConfigPayload {
+  scopeType: 'by_dept' | 'by_category';
+  scopeValues: number[] | string[];
+}
+
+/** 创建任务参数（新流程：ScopeType = by_dept | by_category，ScopeConfig = JSON 含 scopeType/scopeValues） */
 export interface CreateTaskParams {
-  TaskName: string;
+  /** 任务名称，允许为空字符串（后端会生成默认名 "资产盘点任务_YYYYMMDD"） */
+  TaskName?: string;
   ScopeType: string;
+  /** JSON 序列化后的 ScopeConfigPayload */
   ScopeConfig?: string;
   NeedReview?: boolean;
   ReviewRatio?: number;

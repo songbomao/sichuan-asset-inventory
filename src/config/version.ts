@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607241951';
+export const APP_VERSION = 'v202607242045';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-24 19:51';
-export const RELEASE_NOTES = '新建盘点任务改造：按部门/类别单维度筛选，创建后即时按责任人推送钉钉消息。';
+export const RELEASE_TIME = '2026-07-24 20:45';
+export const RELEASE_NOTES = '新建盘点任务交互改造：任务名称合并为单个可选输入框（留空用默认名）；盘点部门改为钉钉组织架构树形多选（含子部门级联）；盘点类别改为多选；后端人员匹配容错增强（部门名分隔符拆分+姓名归一化兜底，by_category 放宽部门匹配），修复"宋伯茂"等人推送未匹配问题。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607242045',
+    time: '2026-07-24 20:45',
+    notes: '新建盘点任务交互改造：任务名称合并为单个可选输入框（留空用默认名）；盘点部门改为钉钉组织架构树形多选（含子部门级联）；盘点类别改为多选；后端人员匹配容错增强，修复"宋伯茂"等人推送未匹配问题。',
+  },
   {
     version: 'v202607241951',
     time: '2026-07-24 19:51',
