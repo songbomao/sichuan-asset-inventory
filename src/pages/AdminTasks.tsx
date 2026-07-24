@@ -38,6 +38,7 @@ import {
 } from '../api/admin';
 import { useAuth } from '../contexts/AuthContext';
 import AssetSyncCompare from './AssetSyncCompare';
+import AssetLocalTable from './AssetLocalTable';
 
 const scopeTypeOptions = [
   { value: 'all', label: '全部资产' },
@@ -106,7 +107,7 @@ export default function AdminTasks() {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<'tasks' | 'sync'>('tasks');
+  const [tab, setTab] = useState<'tasks' | 'sync' | 'asset'>('tasks');
 
   // 数据同步状态（下达任务前置校验）
   const [syncStatus, setSyncStatus] = useState<SyncStatusResult | null>(null);
@@ -255,8 +256,9 @@ export default function AdminTasks() {
         variant="fullWidth"
         sx={{ mb: 1, minHeight: 40, '& .MuiTab-root': { minHeight: 40, textTransform: 'none', fontSize: '0.9rem' } }}
       >
-        <Tab value="tasks" label="任务管理" />
+        <Tab value="tasks" label="盘点任务管理" />
         <Tab value="sync" label="资产对比同步" />
+        <Tab value="asset" label="固资查询" />
       </Tabs>
 
       {tab === 'tasks' && (
@@ -550,6 +552,7 @@ export default function AdminTasks() {
       )}
 
       {tab === 'sync' && <AssetSyncCompare />}
+      {tab === 'asset' && <AssetLocalTable />}
     </div>
   );
 }

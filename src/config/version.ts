@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607241412';
+export const APP_VERSION = 'v202607241543';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-24 14:12';
-export const RELEASE_NOTES = '资产对比同步页对接后端 v202607241352：资产表默认展示 SAP 实时视图并支持切换本地快照；搜索新增「责任人」模式（searchField）；表格补全地址/责任人/部门/成本中心列；差异对比改为 Tab 切换 + 分类内搜索 + 加载更多（一次加载三类数据）；修复钉钉 WebView 导出 PDF 不调起问题（延迟触发 window.print）；新增全量 CSV 导出（ExportAssets）并加 BOM 防乱码；';
+export const RELEASE_TIME = '2026-07-24 15:43';
+export const RELEASE_NOTES = '管理员页面重构为三个标签页：盘点任务管理、资产对比同步、固资查询；将「资产对比同步」中的「本地资产表」模块拆分为独立「固资查询」页（AssetLocalTable），保留 SAP/本地视图切换、全部/责任人搜索、刷新、分页、导出PDF、全量CSV 及打印功能；资产对比同步页仅保留差异对比→同步预览→确认同步流程；各页功能与交互布局保持一致。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607241543',
+    time: '2026-07-24 15:43',
+    notes: '管理员页面重构为三个标签页：盘点任务管理、资产对比同步、固资查询；将「资产对比同步」中的「本地资产表」模块拆分为独立「固资查询」页（AssetLocalTable），保留 SAP/本地视图切换、全部/责任人搜索、刷新、分页、导出PDF、全量CSV 及打印功能；资产对比同步页仅保留差异对比→同步预览→确认同步流程；各页功能与交互布局保持一致。',
+  },
   {
     version: 'v202607241412',
     time: '2026-07-24 14:12',
