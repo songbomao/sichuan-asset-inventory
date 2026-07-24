@@ -300,7 +300,7 @@ export default function AdminTasks() {
           <strong>数据同步状态：</strong>
           {syncStatus.isLatest ? '已是最新' : '未同步或非最新'}
           {' · '}最后同步：{syncStatus.lastSyncTime ? new Date(syncStatus.lastSyncTime).toLocaleString('zh-CN') : '从未'}
-          {' · '}本地 {syncStatus.localCount} 行 / 视图 {syncStatus.viewCount} 行
+          {' · '}本地 {syncStatus.localCount} 行 / SAP视图 {syncStatus.viewCount} 行
           {!syncStatus.isLatest && ' —— 请先到「资产对比同步」完成数据同步后再下达任务。'}
         </Alert>
       )}

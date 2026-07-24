@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607241543';
+export const APP_VERSION = 'v202607241705';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-24 15:43';
-export const RELEASE_NOTES = '管理员页面重构为三个标签页：盘点任务管理、资产对比同步、固资查询；将「资产对比同步」中的「本地资产表」模块拆分为独立「固资查询」页（AssetLocalTable），保留 SAP/本地视图切换、全部/责任人搜索、刷新、分页、导出PDF、全量CSV 及打印功能；资产对比同步页仅保留差异对比→同步预览→确认同步流程；各页功能与交互布局保持一致。';
+export const RELEASE_TIME = '2026-07-24 17:05';
+export const RELEASE_NOTES = '修复资产对比统计总数口径；统一界面"视图"文案为"SAP视图"。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -17,9 +17,14 @@ export const VERSION_HISTORY: Array<{
   notes: string;
 }> = [
   {
+    version: 'v202607241705',
+    time: '2026-07-24 17:05',
+    notes: '修复资产对比统计总数口径；统一界面"视图"文案为"SAP视图"。',
+  },
+  {
     version: 'v202607241543',
     time: '2026-07-24 15:43',
-    notes: '管理员页面重构为三个标签页：盘点任务管理、资产对比同步、固资查询；将「资产对比同步」中的「本地资产表」模块拆分为独立「固资查询」页（AssetLocalTable），保留 SAP/本地视图切换、全部/责任人搜索、刷新、分页、导出PDF、全量CSV 及打印功能；资产对比同步页仅保留差异对比→同步预览→确认同步流程；各页功能与交互布局保持一致。',
+    notes: '管理员页面重构为三个标签页：盘点任务管理、资产对比同步、固资查询；将「资产对比同步」中的「本地资产表」模块拆分为独立「固资查询」页（AssetLocalTable），保留 SAP视图/本地快照切换、全部/责任人搜索、刷新、分页、导出PDF、全量CSV 及打印功能；资产对比同步页仅保留差异对比→同步预览→确认同步流程；各页功能与交互布局保持一致。',
   },
   {
     version: 'v202607241412',
@@ -29,7 +34,7 @@ export const VERSION_HISTORY: Array<{
   {
     version: 'v202607241234',
     time: '2026-07-24 12:34',
-    notes: '重构资产对比同步页：差异卡片箭头修正为「视图 → 本地」方向；字段显示改为中文备注名；新增三步骤 Stepper（差异对比/同步预览/确认同步）梳理交互流程；搜索与导出功能下移至本地资产表附近；同步成功后自动重新执行差异对比并展示最新结果；',
+    notes: '重构资产对比同步页：差异卡片箭头修正为「SAP视图 → 本地」方向；字段显示改为中文备注名；新增三步骤 Stepper（差异对比/同步预览/确认同步）梳理交互流程；搜索与导出功能下移至本地资产表附近；同步成功后自动重新执行差异对比并展示最新结果；',
   },
   {
     version: 'v202607231811',
@@ -49,7 +54,7 @@ export const VERSION_HISTORY: Array<{
   {
     version: 'v202607231420',
     time: '2026-07-23 14:20',
-    notes: '前端缓存根治：index.html 加 no-cache 头 + 构建产物 JS/CSS 资源引用追加 ?v=版本号 query，强制钉钉 WebView 每次拉取最新资源，彻底解决因 SPA 资源被强缓存导致反复加载旧前端（旧同步 CompareAssets 请求读 150 视图超时断连、误报 Network Error）的问题；后端 Start* 异步轮询接口已就绪（v202607231348），本次确保钉钉真正加载到新前端；',
+    notes: '前端缓存根治：index.html 加 no-cache 头 + 构建产物 JS/CSS 资源引用追加 ?v=版本号 query，强制钉钉 WebView 每次拉取最新资源，彻底解决因 SPA 资源被强缓存导致反复加载旧前端（旧同步 CompareAssets 请求读 150 SAP视图超时断连、误报 Network Error）的问题；后端 Start* 异步轮询接口已就绪（v202607231348），本次确保钉钉真正加载到新前端；',
   },
   {
     version: 'v202607231336',
@@ -79,7 +84,7 @@ export const VERSION_HISTORY: Array<{
   {
     version: 'v202607221131',
     time: '2026-07-22 11:31',
-    notes: 'sai_assets 对接真实固定资产视图（SAP 视图库，双库分离），适配视图全部字符串字段（原值/净值/转资日期等）；资产全生命周期页展示规格型号/使用部门/利润中心/供应商/制造商等真实字段，原值净值显示做 Number 容错；',
+    notes: 'sai_assets 对接真实 SAP 固定资产视图（SAP 视图库，双库分离），适配 SAP 视图全部字符串字段（原值/净值/转资日期等）；资产全生命周期页展示规格型号/使用部门/利润中心/供应商/制造商等真实字段，原值净值显示做 Number 容错；',
   },
   {
     version: 'v202607221045',

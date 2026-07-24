@@ -82,7 +82,7 @@ function fmt(v: string | number | null | undefined): string {
 /** 差异对比三个分类的展示元数据 */
 const DIFF_TABS = [
   { key: 'onlyInTable' as const, label: '仅本地表', color: 'error' as const },
-  { key: 'onlyInView' as const, label: '仅视图', color: 'success' as const },
+  { key: 'onlyInView' as const, label: '仅SAP视图', color: 'success' as const },
   { key: 'different' as const, label: '字段不一致', color: 'warning' as const },
 ];
 
@@ -251,7 +251,7 @@ export default function AssetSyncCompare() {
           {compare && (
             <>
               <Alert severity="info" sx={{ fontSize: '0.8rem' }}>
-                本地表 {compare.summary.localCount} 条 · 视图 {compare.summary.viewCount} 条
+                本地表 {compare.summary.localCount} 条 · SAP视图 {compare.summary.viewCount} 条
               </Alert>
 
               {/* 三个分类 Tab 切换（数据已一次加载，仅在前端做筛选） */}
@@ -302,7 +302,7 @@ export default function AssetSyncCompare() {
                               {d.diffs.map((f: any, idx: number) => (
                                 <div key={idx} className="flex items-center gap-2 text-xs flex-wrap">
                                   <Chip label={fieldLabel(f)} size="small" variant="outlined" sx={{ height: 20, fontSize: '0.7rem' }} />
-                                  <span className="text-gray-400">视图</span>
+                                  <span className="text-gray-400">SAP视图</span>
                                   <span className="font-medium" style={{ color: '#2e7d32' }}>{fmt(f.viewValue)}</span>
                                   <span className="text-gray-400">→</span>
                                   <span className="text-gray-400">本地</span>
@@ -369,7 +369,7 @@ export default function AssetSyncCompare() {
             <Card className="glow-border">
               <CardContent>
                 <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
-                  同步预览（视图 → 本地表）
+                  同步预览（SAP视图 → 本地表）
                 </Typography>
                 <Stack direction="row" spacing={1} className="mb-3">
                   <Chip color="success" size="small" label={`新增 ${preview.summary.insertCount}`} />
@@ -405,7 +405,7 @@ export default function AssetSyncCompare() {
                   </Box>
                 ) : (
                   <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.82rem', mb: 1 }}>
-                    无变更：本地表已与视图一致
+                    无变更：本地表已与 SAP 视图一致
                   </Typography>
                 )}
 
