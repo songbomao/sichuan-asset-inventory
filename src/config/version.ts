@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607241805';
+export const APP_VERSION = 'v202607241810';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-24 18:05';
-export const RELEASE_NOTES = '固资查询移除全部/责任人切换，统一按编号/名称/责任人搜索；移动端CSV下载改为后端文件流直连，适配钉钉原生下载。';
+export const RELEASE_TIME = '2026-07-24 18:10';
+export const RELEASE_NOTES = '资产对比页增加诊断统计展示（原始行数、空编码数、重复编码数），辅助排查数量与差异识别异常。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607241810',
+    time: '2026-07-24 18:10',
+    notes: '资产对比页增加诊断统计展示（原始行数、空编码数、重复编码数），辅助排查数量与差异识别异常。',
+  },
   {
     version: 'v202607241805',
     time: '2026-07-24 18:05',

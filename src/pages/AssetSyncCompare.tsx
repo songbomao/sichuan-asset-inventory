@@ -251,7 +251,18 @@ export default function AssetSyncCompare() {
           {compare && (
             <>
               <Alert severity="info" sx={{ fontSize: '0.8rem' }}>
-                本地表 {compare.summary.localCount} 条 · SAP视图 {compare.summary.viewCount} 条
+                <Box>
+                  <div>本地表 {compare.summary.localCount} 条 · SAP视图 {compare.summary.viewCount} 条</div>
+                  {(compare.summary.rawLocalCount !== undefined || compare.summary.rawViewCount !== undefined) && (
+                    <div style={{ marginTop: 4, color: '#ed6c02', fontSize: '0.75rem' }}>
+                      原始数据：本地 {compare.summary.rawLocalCount ?? compare.summary.localCount} 行 / SAP视图 {compare.summary.rawViewCount ?? compare.summary.viewCount} 行
+                      {((compare.summary.emptyLocalCodeCount ?? 0) > 0 || (compare.summary.emptyViewCodeCount ?? 0) > 0) &&
+                        ` · 空编码：本地 ${compare.summary.emptyLocalCodeCount ?? 0} / SAP视图 ${compare.summary.emptyViewCodeCount ?? 0}`}
+                      {((compare.summary.duplicateLocalCodeCount ?? 0) > 0 || (compare.summary.duplicateViewCodeCount ?? 0) > 0) &&
+                        ` · 重复编码：本地 ${compare.summary.duplicateLocalCodeCount ?? 0} / SAP视图 ${compare.summary.duplicateViewCodeCount ?? 0}`}
+                    </div>
+                  )}
+                </Box>
               </Alert>
 
               {/* 三个分类 Tab 切换（数据已一次加载，仅在前端做筛选） */}
