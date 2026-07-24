@@ -491,6 +491,8 @@ export async function getAssetTable(params: {
 /** 单条差异字段 */
 export interface AssetDiffField {
   field: string;
+  /** 后端 ComputeCompareResult 新增的中文备注名（优先显示） */
+  fieldName?: string;
   tableValue: string | number | null;
   viewValue: string | number | null;
 }

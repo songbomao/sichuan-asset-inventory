@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607231811';
+export const APP_VERSION = 'v202607241234';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-23 18:11';
-export const RELEASE_NOTES = '基于 sai_assets 新结构重设计盘点资产详情页：新增 AssetDetailTabs 组件，顶部突出资产编号与名称，下方采用 Tab 标签页分区展示（基本信息、位置信息、使用信息、财务信息、维护/供应商、历史变更）；切换资产时实时调用 GetAssetByCode 拉取 SAP 视图完整字段、调用 GetLifecycle 拉取盘点历史时间线；字段按类别归属清晰，核心字段优先，移动端横向滚动 Tab 适配；';
+export const RELEASE_TIME = '2026-07-24 12:34';
+export const RELEASE_NOTES = '重构资产对比同步页：差异卡片箭头修正为「视图 → 本地」方向；字段显示改为中文备注名；新增三步骤 Stepper（差异对比/同步预览/确认同步）梳理交互流程；搜索与导出功能下移至本地资产表附近；同步成功后自动重新执行差异对比并展示最新结果；';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607241234',
+    time: '2026-07-24 12:34',
+    notes: '重构资产对比同步页：差异卡片箭头修正为「视图 → 本地」方向；字段显示改为中文备注名；新增三步骤 Stepper（差异对比/同步预览/确认同步）梳理交互流程；搜索与导出功能下移至本地资产表附近；同步成功后自动重新执行差异对比并展示最新结果；',
+  },
   {
     version: 'v202607231811',
     time: '2026-07-23 18:11',

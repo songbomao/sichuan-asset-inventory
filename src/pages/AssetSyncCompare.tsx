@@ -26,6 +26,10 @@ import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import Skeleton from '@mui/material/Skeleton';
 import IconButton from '@mui/material/IconButton';
+import Stepper from '@mui/material/Stepper';
+import Step from '@mui/material/Step';
+import StepLabel from '@mui/material/StepLabel';
+import CircularProgress from '@mui/material/CircularProgress';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SearchIcon from '@mui/icons-material/Search';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -67,6 +71,24 @@ const CHANGE_COLOR: Record<string, 'success' | 'warning' | 'error'> = {
   update: 'warning',
   delete: 'error',
 };
+
+/** 字段中文名兜底映射（与 COLUMNS 标签保持一致），后端未返回 fieldName 时使用 */
+const FIELD_NAME_MAP: Record<string, string> = {
+  assetCode: '资产编号',
+  assetName: '名称',
+  categoryName: '类别',
+  useStatus: '状态',
+  originalValue: '原值',
+  netValue: '净值',
+  deptName: '部门',
+  companyName: '公司',
+  standard: '规格',
+};
+
+/** 取差异字段的中文名：优先 fieldName，其次前端常量映射，最后回退到原字段 key */
+function fieldLabel(f: { field: string; fieldName?: string }): string {
+  return f.fieldName?.trim() || FIELD_NAME_MAP[f.field] || f.field;
+}
 
 /** 把值转成可读字符串（空值显示 --） */
 function fmt(v: string | number | null | undefined): string {
@@ -164,6 +186,10 @@ export default function AssetSyncCompare() {
     }
   };
 
+  /* ---------- 三步骤流程（Stepper）---------- */
+  // 0 = 差异对比，1 = 同步预览，2 = 确认同步（弹窗）
+  const [activeStep, setActiveStep] = useState(0);
+
   /* ---------- 确认同步 ---------- */
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -176,10 +202,12 @@ export default function AssetSyncCompare() {
       const res = await syncAssets();
       setSyncResult(res);
       setConfirmOpen(false);
-      // 同步成功后刷新表格与对比
+      // 同步成功后：清空预览/对比、刷新表格、回到第一步并自动重新差异对比
       setPreview(null);
       setCompare(null);
+      setActiveStep(0);
       fetchTable(debounced, page, pageSize);
+      handleCompare();
     } catch (err) {
       setSyncResult({
         inserted: 0,
@@ -194,213 +222,238 @@ export default function AssetSyncCompare() {
     }
   };
 
+  /** 进入下一步：同步预览 */
+  const goToPreview = () => {
+    setActiveStep(1);
+    handlePreview();
+  };
+
+  /** 打开二次确认（进入第三步） */
+  const openConfirm = () => {
+    setActiveStep(2);
+    setConfirmOpen(true);
+  };
+
+  /** 取消二次确认，回到第二步预览 */
+  const closeConfirm = () => {
+    if (syncing) return;
+    setConfirmOpen(false);
+    setActiveStep(1);
+  };
+
   /* ---------- 导出 PDF（浏览器打印） ---------- */
   const handlePrint = () => window.print();
 
   return (
     <div className="space-y-4">
-      {/* 操作工具条 */}
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <TextField
-          size="small"
-          placeholder="搜索资产编号 / 名称"
-          value={keyword}
-          onChange={(e) => setKeyword(e.target.value)}
-          InputProps={{ startAdornment: <SearchIcon fontSize="small" className="text-gray-400 mr-1" /> }}
-          sx={{ flex: 1, minWidth: 160, borderRadius: 2 }}
-        />
-        <div className="flex gap-1 shrink-0">
-          <IconButton onClick={() => fetchTable(debounced, page, pageSize)} color="primary" size="small" disabled={loading}>
-            <RefreshIcon className={loading ? 'animate-spin-refresh' : ''} />
-          </IconButton>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<PrintIcon />}
-            onClick={handlePrint}
-            sx={{ borderRadius: '10px', textTransform: 'none', whiteSpace: 'nowrap' }}
-          >
-            导出PDF
-          </Button>
-        </div>
-      </div>
+      {/* 页面标题 */}
+      <Typography variant="h6" sx={{ fontWeight: 700 }}>
+        资产对比同步
+      </Typography>
 
-      {/* 对比 / 同步 入口 */}
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
-        <Button
-          variant="contained"
-          size="small"
-          startIcon={<CompareArrowsIcon />}
-          onClick={handleCompare}
-          disabled={compareLoading}
-          sx={{ borderRadius: '10px', textTransform: 'none', flex: 1 }}
-        >
-          {compareLoading ? '对比中...' : '差异对比'}
-        </Button>
-        <Button
-          variant="outlined"
-          size="small"
-          startIcon={<SyncIcon />}
-          onClick={handlePreview}
-          disabled={previewLoading}
-          sx={{ borderRadius: '10px', textTransform: 'none', flex: 1 }}
-        >
-          {previewLoading ? '预览中...' : '同步预览'}
-        </Button>
-      </Stack>
+      {/* 三步骤 Stepper：①差异对比 ②同步预览 ③确认同步 */}
+      <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 1 }}>
+        <Step><StepLabel>差异对比</StepLabel></Step>
+        <Step><StepLabel>同步预览</StepLabel></Step>
+        <Step><StepLabel>确认同步</StepLabel></Step>
+      </Stepper>
 
-      {/* 错误提示 */}
+      {/* 表格加载错误 */}
       {error && (
         <Alert severity="error" onClose={() => setError(null)} sx={{ fontSize: '0.85rem' }}>
           {error}
         </Alert>
       )}
 
-      {/* 差异对比结果 */}
-      {compareError && (
-        <Alert severity="error" sx={{ fontSize: '0.85rem' }}>
-          {compareError}
-        </Alert>
-      )}
-      {compare && (
+      {/* ===== 步骤一：差异对比 ===== */}
+      {activeStep === 0 && (
         <Stack spacing={1.5}>
-          <Alert severity="info" sx={{ fontSize: '0.8rem' }}>
-            本地表 {compare.summary.localCount} 条 · 视图 {compare.summary.viewCount} 条
-          </Alert>
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={<CompareArrowsIcon />}
+            onClick={handleCompare}
+            disabled={compareLoading}
+            sx={{ borderRadius: '10px', textTransform: 'none', alignSelf: 'flex-start' }}
+          >
+            {compareLoading ? '对比中...' : '差异对比'}
+          </Button>
 
-          {/* 仅本地表存在 */}
-          <Accordion disableGutters elevation={0} sx={{ borderRadius: 2, '&:before': { display: 'none' } }}>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ bgcolor: 'rgba(244,67,54,0.06)' }}>
-              <Typography sx={{ fontWeight: 600, fontSize: '0.9rem' }} color="error">
-                仅本地表存在（{compare.summary.onlyInTableCount} 条）
-              </Typography>
-            </AccordionSummary>
-            <AccordionDetails sx={{ p: 0 }}>
-              <DiffList
-                items={compare.onlyInTable.map((i) => ({ assetCode: i.assetCode, assetName: i.assetName }))}
-                emptyText="无：本地表记录均能在视图中找到"
-              />
-            </AccordionDetails>
-          </Accordion>
+          {compareError && (
+            <Alert severity="error" sx={{ fontSize: '0.85rem' }}>{compareError}</Alert>
+          )}
 
-          {/* 仅视图存在 */}
-          <Accordion disableGutters elevation={0} sx={{ borderRadius: 2, '&:before': { display: 'none' } }}>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ bgcolor: 'rgba(76,175,80,0.06)' }}>
-              <Typography sx={{ fontWeight: 600, fontSize: '0.9rem' }} color="success.main">
-                仅视图存在（{compare.summary.onlyInViewCount} 条）
-              </Typography>
-            </AccordionSummary>
-            <AccordionDetails sx={{ p: 0 }}>
-              <DiffList
-                items={compare.onlyInView.map((i) => ({ assetCode: i.assetCode, assetName: i.assetName }))}
-                emptyText="无：视图记录均已同步到本地表"
-              />
-            </AccordionDetails>
-          </Accordion>
+          {compare && (
+            <>
+              <Alert severity="info" sx={{ fontSize: '0.8rem' }}>
+                本地表 {compare.summary.localCount} 条 · 视图 {compare.summary.viewCount} 条
+              </Alert>
 
-          {/* 字段不一致 */}
-          <Accordion defaultExpanded disableGutters elevation={0} sx={{ borderRadius: 2, '&:before': { display: 'none' } }}>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ bgcolor: 'rgba(255,152,0,0.06)' }}>
-              <Typography sx={{ fontWeight: 600, fontSize: '0.9rem' }} color="warning.main">
-                字段不一致（{compare.summary.differentCount} 条）
-              </Typography>
-            </AccordionSummary>
-            <AccordionDetails sx={{ p: 1 }}>
-              {compare.different.length === 0 ? (
-                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.82rem' }}>
-                  无：两边字段值完全一致
-                </Typography>
-              ) : (
-                <Stack spacing={1.5}>
-                  {compare.different.map((d) => (
-                    <Paper key={d.assetCode} variant="outlined" sx={{ p: 1.5, borderRadius: 2 }}>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-mono text-xs text-gray-700">{d.assetCode}</span>
-                        <span className="text-sm font-medium text-gray-900 truncate ml-2">{d.assetName}</span>
-                      </div>
-                      <Stack spacing={0.5}>
-                        {d.diffs.map((f, idx) => (
-                          <div key={idx} className="flex items-center gap-2 text-xs flex-wrap">
-                            <Chip label={f.field} size="small" variant="outlined" sx={{ height: 20, fontSize: '0.7rem' }} />
-                            <span className="text-gray-400">本地</span>
-                            <span className="font-medium" style={{ color: '#d32f2f' }}>{fmt(f.tableValue)}</span>
-                            <span className="text-gray-400">→</span>
-                            <span className="text-gray-400">视图</span>
-                            <span className="font-medium" style={{ color: '#2e7d32' }}>{fmt(f.viewValue)}</span>
+              {/* 仅本地表存在 */}
+              <Accordion disableGutters elevation={0} sx={{ borderRadius: 2, '&:before': { display: 'none' } }}>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ bgcolor: 'rgba(244,67,54,0.06)' }}>
+                  <Typography sx={{ fontWeight: 600, fontSize: '0.9rem' }} color="error">
+                    仅本地表存在（{compare.summary.onlyInTableCount} 条）
+                  </Typography>
+                </AccordionSummary>
+                <AccordionDetails sx={{ p: 0 }}>
+                  <DiffList
+                    items={compare.onlyInTable.map((i) => ({ assetCode: i.assetCode, assetName: i.assetName }))}
+                    emptyText="无：本地表记录均能在视图中找到"
+                  />
+                </AccordionDetails>
+              </Accordion>
+
+              {/* 仅视图存在 */}
+              <Accordion disableGutters elevation={0} sx={{ borderRadius: 2, '&:before': { display: 'none' } }}>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ bgcolor: 'rgba(76,175,80,0.06)' }}>
+                  <Typography sx={{ fontWeight: 600, fontSize: '0.9rem' }} color="success.main">
+                    仅视图存在（{compare.summary.onlyInViewCount} 条）
+                  </Typography>
+                </AccordionSummary>
+                <AccordionDetails sx={{ p: 0 }}>
+                  <DiffList
+                    items={compare.onlyInView.map((i) => ({ assetCode: i.assetCode, assetName: i.assetName }))}
+                    emptyText="无：视图记录均已同步到本地表"
+                  />
+                </AccordionDetails>
+              </Accordion>
+
+              {/* 字段不一致 */}
+              <Accordion defaultExpanded disableGutters elevation={0} sx={{ borderRadius: 2, '&:before': { display: 'none' } }}>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ bgcolor: 'rgba(255,152,0,0.06)' }}>
+                  <Typography sx={{ fontWeight: 600, fontSize: '0.9rem' }} color="warning.main">
+                    字段不一致（{compare.summary.differentCount} 条）
+                  </Typography>
+                </AccordionSummary>
+                <AccordionDetails sx={{ p: 1 }}>
+                  {compare.different.length === 0 ? (
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.82rem' }}>
+                      无：两边字段值完全一致
+                    </Typography>
+                  ) : (
+                    <Stack spacing={1.5}>
+                      {compare.different.map((d) => (
+                        <Paper key={d.assetCode} variant="outlined" sx={{ p: 1.5, borderRadius: 2 }}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-mono text-xs text-gray-700">{d.assetCode}</span>
+                            <span className="text-sm font-medium text-gray-900 truncate ml-2">{d.assetName}</span>
                           </div>
-                        ))}
-                      </Stack>
-                    </Paper>
-                  ))}
-                </Stack>
-              )}
-            </AccordionDetails>
-          </Accordion>
+                          <Stack spacing={0.5}>
+                            {d.diffs.map((f, idx) => (
+                              <div key={idx} className="flex items-center gap-2 text-xs flex-wrap">
+                                <Chip label={fieldLabel(f)} size="small" variant="outlined" sx={{ height: 20, fontSize: '0.7rem' }} />
+                                <span className="text-gray-400">视图</span>
+                                <span className="font-medium" style={{ color: '#2e7d32' }}>{fmt(f.viewValue)}</span>
+                                <span className="text-gray-400">→</span>
+                                <span className="text-gray-400">本地</span>
+                                <span className="font-medium" style={{ color: '#d32f2f' }}>{fmt(f.tableValue)}</span>
+                              </div>
+                            ))}
+                          </Stack>
+                        </Paper>
+                      ))}
+                    </Stack>
+                  )}
+                </AccordionDetails>
+              </Accordion>
+
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<SyncIcon />}
+                onClick={goToPreview}
+                disabled={previewLoading}
+                sx={{ borderRadius: '10px', textTransform: 'none', alignSelf: 'flex-start' }}
+              >
+                {previewLoading ? '预览中...' : '下一步：同步预览'}
+              </Button>
+            </>
+          )}
         </Stack>
       )}
 
-      {/* 同步预览结果 */}
-      {previewError && (
-        <Alert severity="error" sx={{ fontSize: '0.85rem' }}>
-          {previewError}
-        </Alert>
-      )}
-      {preview && (
-        <Card className="glow-border">
-          <CardContent>
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
-              同步预览（视图 → 本地表）
-            </Typography>
-            <Stack direction="row" spacing={1} className="mb-3">
-              <Chip color="success" size="small" label={`新增 ${preview.summary.insertCount}`} />
-              <Chip color="warning" size="small" label={`更新 ${preview.summary.updateCount}`} />
-              <Chip color="error" size="small" label={`删除 ${preview.summary.deleteCount}`} />
-            </Stack>
-
-            {preview.details.length > 0 ? (
-              <Box sx={{ maxHeight: 220, overflow: 'auto' }}>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell sx={{ fontSize: '0.72rem', py: 0.5 }}>资产编号</TableCell>
-                      <TableCell sx={{ fontSize: '0.72rem', py: 0.5 }}>变更类型</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {preview.details.map((d: SyncDetail, i) => (
-                      <TableRow key={`${d.assetCode}-${i}`}>
-                        <TableCell sx={{ fontSize: '0.75rem', fontFamily: 'monospace', py: 0.5 }}>{d.assetCode}</TableCell>
-                        <TableCell sx={{ py: 0.5 }}>
-                          <Chip
-                            size="small"
-                            label={CHANGE_LABEL[d.changeType] ?? d.changeType}
-                            color={CHANGE_COLOR[d.changeType] ?? 'default'}
-                            sx={{ height: 20, fontSize: '0.7rem' }}
-                          />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </Box>
-            ) : (
-              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.82rem', mb: 1 }}>
-                无变更：本地表已与视图一致
-              </Typography>
-            )}
-
-            <Button
-              variant="contained"
-              fullWidth
-              startIcon={<SyncIcon />}
-              onClick={() => setConfirmOpen(true)}
-              disabled={syncing || (preview.summary.insertCount + preview.summary.updateCount + preview.summary.deleteCount === 0)}
-              sx={{ borderRadius: '10px', textTransform: 'none', mt: 1 }}
+      {/* ===== 步骤二：同步预览 ===== */}
+      {activeStep === 1 && (
+        <Stack spacing={1.5}>
+          {previewError && (
+            <Alert
+              severity="error"
+              sx={{ fontSize: '0.85rem' }}
+              action={
+                <Button size="small" color="inherit" onClick={handlePreview} sx={{ textTransform: 'none' }}>
+                  重新预览
+                </Button>
+              }
             >
-              确认同步
-            </Button>
-          </CardContent>
-        </Card>
+              {previewError}
+            </Alert>
+          )}
+
+          {previewLoading && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+              <CircularProgress size={24} />
+            </Box>
+          )}
+
+          {preview && (
+            <Card className="glow-border">
+              <CardContent>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
+                  同步预览（视图 → 本地表）
+                </Typography>
+                <Stack direction="row" spacing={1} className="mb-3">
+                  <Chip color="success" size="small" label={`新增 ${preview.summary.insertCount}`} />
+                  <Chip color="warning" size="small" label={`更新 ${preview.summary.updateCount}`} />
+                  <Chip color="error" size="small" label={`删除 ${preview.summary.deleteCount}`} />
+                </Stack>
+
+                {preview.details.length > 0 ? (
+                  <Box sx={{ maxHeight: 220, overflow: 'auto' }}>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell sx={{ fontSize: '0.72rem', py: 0.5 }}>资产编号</TableCell>
+                          <TableCell sx={{ fontSize: '0.72rem', py: 0.5 }}>变更类型</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {preview.details.map((d: SyncDetail, i) => (
+                          <TableRow key={`${d.assetCode}-${i}`}>
+                            <TableCell sx={{ fontSize: '0.75rem', fontFamily: 'monospace', py: 0.5 }}>{d.assetCode}</TableCell>
+                            <TableCell sx={{ py: 0.5 }}>
+                              <Chip
+                                size="small"
+                                label={CHANGE_LABEL[d.changeType] ?? d.changeType}
+                                color={CHANGE_COLOR[d.changeType] ?? 'default'}
+                                sx={{ height: 20, fontSize: '0.7rem' }}
+                              />
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </Box>
+                ) : (
+                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.82rem', mb: 1 }}>
+                    无变更：本地表已与视图一致
+                  </Typography>
+                )}
+
+                <Button
+                  variant="contained"
+                  fullWidth
+                  startIcon={<SyncIcon />}
+                  onClick={openConfirm}
+                  disabled={syncing || (preview.summary.insertCount + preview.summary.updateCount + preview.summary.deleteCount === 0)}
+                  sx={{ borderRadius: '10px', textTransform: 'none', mt: 1 }}
+                >
+                  确认同步
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </Stack>
       )}
 
       {/* 同步结果 */}
@@ -415,16 +468,40 @@ export default function AssetSyncCompare() {
         </Alert>
       )}
 
-      {/* 资产表 */}
+      {/* 资产表（搜索 / 刷新 / 导出PDF 已移入卡片头部） */}
       <Card className="glow-border">
         <CardContent sx={{ p: '8px !important' }}>
-          <div className="flex items-center justify-between px-2 pt-1 pb-2">
-            <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-              本地资产表
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              共 {total} 条
-            </Typography>
+          <div className="flex items-center justify-between px-2 pt-2 pb-2 flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                本地资产表
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                共 {total} 条
+              </Typography>
+            </div>
+            <div className="flex items-center gap-1">
+              <TextField
+                size="small"
+                placeholder="搜索资产编号 / 名称"
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                InputProps={{ startAdornment: <SearchIcon fontSize="small" className="text-gray-400 mr-1" /> }}
+                sx={{ width: 180, borderRadius: 2 }}
+              />
+              <IconButton onClick={() => fetchTable(debounced, page, pageSize)} color="primary" size="small" disabled={loading}>
+                <RefreshIcon className={loading ? 'animate-spin-refresh' : ''} />
+              </IconButton>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<PrintIcon />}
+                onClick={handlePrint}
+                sx={{ borderRadius: '10px', textTransform: 'none', whiteSpace: 'nowrap' }}
+              >
+                导出PDF
+              </Button>
+            </div>
           </div>
 
           {loading && (
@@ -505,7 +582,7 @@ export default function AssetSyncCompare() {
       </Card>
 
       {/* 二次确认 Dialog */}
-      <Dialog open={confirmOpen} onClose={() => !syncing && setConfirmOpen(false)} fullWidth maxWidth="xs">
+      <Dialog open={confirmOpen} onClose={closeConfirm} fullWidth maxWidth="xs">
         <DialogTitle sx={{ fontWeight: 700, fontSize: '1.05rem' }}>确认同步</DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ fontSize: '0.9rem' }}>
@@ -513,7 +590,7 @@ export default function AssetSyncCompare() {
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={{ px: 2, pb: 2 }}>
-          <Button onClick={() => setConfirmOpen(false)} color="inherit" disabled={syncing} sx={{ textTransform: 'none' }}>
+          <Button onClick={closeConfirm} color="inherit" disabled={syncing} sx={{ textTransform: 'none' }}>
             取消
           </Button>
           <Button onClick={handleConfirmSync} variant="contained" disabled={syncing} sx={{ borderRadius: '10px', textTransform: 'none' }}>
