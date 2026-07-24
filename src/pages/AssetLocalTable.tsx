@@ -140,7 +140,7 @@ export default function AssetLocalTable() {
       {/* 页面标题 */}
       <Typography variant="h6" sx={{ fontWeight: 700 }}>固资查询</Typography>
 
-      {/* 资产表（搜索 / 刷新 / 导出PDF / 导出CSV 已移入卡片头部） */}
+      {/* 资产表（搜索 / 刷新 / 导出CSV 已移入卡片头部） */}
       <Card className="glow-border">
         <CardContent sx={{ p: '8px !important' }}>
           {/* 头部：标题 + 视图来源说明 */}

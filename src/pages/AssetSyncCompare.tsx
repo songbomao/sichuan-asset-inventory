@@ -468,7 +468,20 @@ export default function AssetSyncCompare() {
           <Button onClick={closeConfirm} color="inherit" disabled={syncing} sx={{ textTransform: 'none' }}>
             取消
           </Button>
-          <Button onClick={handleConfirmSync} variant="contained" disabled={syncing} sx={{ borderRadius: '10px', textTransform: 'none' }}>
+          <Button
+            onClick={handleConfirmSync}
+            variant="contained"
+            disabled={syncing}
+            sx={{
+              borderRadius: '10px',
+              textTransform: 'none',
+              backgroundColor: '#6a1b9a',
+              color: '#fff',
+              fontWeight: 600,
+              '&:hover': { backgroundColor: '#4a148c' },
+              '&:disabled': { backgroundColor: '#e0e0e0', color: '#9e9e9e' },
+            }}
+          >
             {syncing ? '同步中...' : '确认同步'}
           </Button>
         </DialogActions>
