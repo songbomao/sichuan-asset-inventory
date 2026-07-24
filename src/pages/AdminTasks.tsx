@@ -30,10 +30,10 @@ import {
   createTask,
   dispatchTask,
   getSyncStatus,
-  getScopeOptions,
+  getInventoryOptions,
   type AdminTaskItem,
   type CreateTaskParams,
-  type ScopeOptionsResult,
+  type InventoryOptionsResult,
   type SyncStatusResult,
 } from '../api/admin';
 import { useAuth } from '../contexts/AuthContext';
@@ -42,8 +42,9 @@ import AssetLocalTable from './AssetLocalTable';
 
 const scopeTypeOptions = [
   { value: 'all', label: '全部资产' },
+  { value: 'by_dept', label: '按盘点部门' },
+  { value: 'by_category', label: '按盘点类别' },
   { value: 'by_org', label: '按组织' },
-  { value: 'by_category', label: '按类别' },
   { value: 'by_cost_center', label: '按成本中心' },
 ];
 
@@ -67,22 +68,15 @@ function buildPresetNames(year: number): { value: string; label: string }[] {
   ];
 }
 
-/** 根据三维度选中情况推导 ScopeType（兼容旧字段） */
-function deriveScopeType(org: string[], cat: string[], cc: string[]): string {
-  if (org.length) return 'by_org';
-  if (cat.length) return 'by_category';
-  if (cc.length) return 'by_cost_center';
-  return 'all';
-}
-
 /** 新建任务 Dialog 本地表单（比提交参数多几个维度字段） */
 interface DialogForm {
   TaskName: string;
   /** 当前选中的预设（仅用于回填空文本，不直接提交） */
   preset: string;
-  orgCodes: string[];
-  categoryCodes: string[];
-  costCenterCodes: string[];
+  /** 盘点方式：by_dept | by_category */
+  method: 'by_dept' | 'by_category' | '';
+  /** 选中的范围值（部门名或类别名） */
+  scopeValue: string;
   NeedReview: boolean;
   ReviewRatio: number;
   Deadline: string;
@@ -92,9 +86,8 @@ interface DialogForm {
 const defaultForm: DialogForm = {
   TaskName: '',
   preset: '',
-  orgCodes: [],
-  categoryCodes: [],
-  costCenterCodes: [],
+  method: '',
+  scopeValue: '',
   NeedReview: false,
   ReviewRatio: 0.3,
   Deadline: '',
@@ -130,8 +123,8 @@ export default function AdminTasks() {
   const [form, setForm] = useState<DialogForm>({ ...defaultForm });
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
-  const [scopeOptions, setScopeOptions] = useState<ScopeOptionsResult>({ orgs: [], categories: [], costCenters: [] });
-  const [scopeLoading, setScopeLoading] = useState(false);
+  const [inventoryOptions, setInventoryOptions] = useState<InventoryOptionsResult>({ departments: [], categories: [] });
+  const [optionsLoading, setOptionsLoading] = useState(false);
 
   const presetNames = buildPresetNames(new Date().getFullYear());
 
@@ -160,18 +153,6 @@ export default function AdminTasks() {
     }
   }, []);
 
-  const fetchScopeOptions = useCallback(async () => {
-    setScopeLoading(true);
-    try {
-      const o = await getScopeOptions();
-      setScopeOptions(o);
-    } catch {
-      setScopeOptions({ orgs: [], categories: [], costCenters: [] });
-    } finally {
-      setScopeLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
     fetchTasks();
     fetchSyncStatus();
@@ -185,7 +166,11 @@ export default function AdminTasks() {
     setForm({ ...defaultForm, CreatedBy: user?.name ?? '' });
     setFeedback(null);
     setDialogOpen(true);
-    fetchScopeOptions();
+    setOptionsLoading(true);
+    getInventoryOptions()
+      .then(setInventoryOptions)
+      .catch(() => setInventoryOptions({ departments: [], categories: [] }))
+      .finally(() => setOptionsLoading(false));
   };
 
   /** 提交新建任务 */
@@ -194,17 +179,21 @@ export default function AdminTasks() {
       setFeedback({ type: 'error', msg: '任务名称不能为空' });
       return;
     }
+    if (!form.method) {
+      setFeedback({ type: 'error', msg: '请选择盘点方式' });
+      return;
+    }
+    if (!form.scopeValue) {
+      setFeedback({ type: 'error', msg: form.method === 'by_dept' ? '请选择盘点部门' : '请选择盘点类别' });
+      return;
+    }
     setSubmitting(true);
     setFeedback(null);
     try {
-      const scopeConfig = JSON.stringify({
-        orgCodes: form.orgCodes,
-        categoryCodes: form.categoryCodes,
-        costCenterCodes: form.costCenterCodes,
-      });
+      const scopeConfig = JSON.stringify({ scopeType: form.method, scopeValue: form.scopeValue });
       const body: CreateTaskParams = {
         TaskName: form.TaskName.trim(),
-        ScopeType: deriveScopeType(form.orgCodes, form.categoryCodes, form.costCenterCodes),
+        ScopeType: form.method,
         ScopeConfig: scopeConfig,
         NeedReview: form.NeedReview,
         CreatedBy: form.CreatedBy.trim(),
@@ -212,11 +201,14 @@ export default function AdminTasks() {
       if (form.NeedReview && form.ReviewRatio) body.ReviewRatio = form.ReviewRatio;
       if (form.Deadline) body.Deadline = form.Deadline;
 
-      await createTask(body);
-      setFeedback({ type: 'success', msg: '任务创建成功！' });
-      setDialogOpen(false);
-      setForm({ ...defaultForm });
-      fetchTasks();
+      const r = await createTask(body);
+      const failedText = r.failedUserNames?.length ? `；${r.failedUserNames.length} 人未匹配到钉钉（${r.failedUserNames.join('、')}）` : '';
+      setFeedback({ type: 'success', msg: `任务创建成功，覆盖 ${r.assetCount} 项资产，已通知 ${r.dispatchedUsers} 人${failedText}` });
+      setTimeout(() => {
+        setDialogOpen(false);
+        setForm({ ...defaultForm });
+        fetchTasks();
+      }, 1500);
     } catch (err) {
       setFeedback({ type: 'error', msg: err instanceof Error ? err.message : '创建失败' });
     } finally {
@@ -440,55 +432,32 @@ export default function AdminTasks() {
 
             <TextField
               select
-              label="盘点组织"
+              label="盘点方式"
+              required
               size="small"
-              SelectProps={{
-                multiple: true,
-                renderValue: (selected) => `已选 ${(selected as string[]).length} 项`,
-              }}
-              value={form.orgCodes}
-              onChange={(e) => setForm((f) => ({ ...f, orgCodes: Array.isArray(e.target.value) ? e.target.value : [] }))}
+              value={form.method}
+              onChange={(e) => setForm((f) => ({ ...f, method: e.target.value as 'by_dept' | 'by_category', scopeValue: '' }))}
               fullWidth
-              disabled={scopeLoading}
             >
-              {scopeOptions.orgs.map((o) => (
-                <MenuItem key={o.code} value={o.code}>{o.name}</MenuItem>
-              ))}
+              <MenuItem value="by_dept">按盘点部门</MenuItem>
+              <MenuItem value="by_category">按盘点类别</MenuItem>
             </TextField>
-            <TextField
-              select
-              label="盘点类别"
-              size="small"
-              SelectProps={{
-                multiple: true,
-                renderValue: (selected) => `已选 ${(selected as string[]).length} 项`,
-              }}
-              value={form.categoryCodes}
-              onChange={(e) => setForm((f) => ({ ...f, categoryCodes: Array.isArray(e.target.value) ? e.target.value : [] }))}
-              fullWidth
-              disabled={scopeLoading}
-            >
-              {scopeOptions.categories.map((o) => (
-                <MenuItem key={o.code} value={o.code}>{o.name}</MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              select
-              label="成本中心"
-              size="small"
-              SelectProps={{
-                multiple: true,
-                renderValue: (selected) => `已选 ${(selected as string[]).length} 项`,
-              }}
-              value={form.costCenterCodes}
-              onChange={(e) => setForm((f) => ({ ...f, costCenterCodes: Array.isArray(e.target.value) ? e.target.value : [] }))}
-              fullWidth
-              disabled={scopeLoading}
-            >
-              {scopeOptions.costCenters.map((o) => (
-                <MenuItem key={o.code} value={o.code}>{o.name}</MenuItem>
-              ))}
-            </TextField>
+            {form.method && (
+              <TextField
+                select
+                label={form.method === 'by_dept' ? '盘点部门' : '盘点类别'}
+                required
+                size="small"
+                value={form.scopeValue}
+                onChange={(e) => setForm((f) => ({ ...f, scopeValue: e.target.value }))}
+                fullWidth
+                disabled={optionsLoading}
+              >
+                {(form.method === 'by_dept' ? inventoryOptions.departments : inventoryOptions.categories).map((o) => (
+                  <MenuItem key={o.code} value={o.code}>{o.name}</MenuItem>
+                ))}
+              </TextField>
+            )}
 
             <TextField
               label="截止日期"

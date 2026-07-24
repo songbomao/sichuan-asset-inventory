@@ -4,7 +4,7 @@ import client from './client';
  * 盘点任务（后端网关 action，已在网关层做管理员门控）
  * ============================================================ */
 
-/** 创建任务参数 */
+/** 创建任务参数（新流程：ScopeType = by_dept | by_category，ScopeConfig = JSON 含 scopeType/scopeValue） */
 export interface CreateTaskParams {
   TaskName: string;
   ScopeType: string;
@@ -18,16 +18,16 @@ export interface CreateTaskParams {
 /** 创建任务响应 */
 interface CreateTaskResponse {
   code: number;
-  data: { Id: number; TaskName: string; Status: string };
+  data: { Id: number; TaskName: string; Status: string; assetCount: number; dispatchedUsers: number; failedUserNames: string[] };
   message: string;
   msg?: string;
 }
 
 /**
- * 创建盘点任务（仅管理员）
+ * 创建盘点任务（仅管理员，创建后即时按责任人推送钉钉）
  * POST /api/Account/UniGetToken/CreateTask
  */
-export async function createTask(params: CreateTaskParams): Promise<{ Id: number; TaskName: string; Status: string }> {
+export async function createTask(params: CreateTaskParams): Promise<{ Id: number; TaskName: string; Status: string; assetCount: number; dispatchedUsers: number; failedUserNames: string[] }> {
   const { data } = await client.post<CreateTaskResponse>('/api/Account/UniGetToken', {
     action: 'CreateTask',
     ...params,
@@ -186,6 +186,26 @@ export async function getScopeOptions(): Promise<ScopeOptionsResult> {
   );
   if (data.code === 0 || data.code === 200) return data.data;
   throw new Error(data.msg || data.message || '获取范围筛选项失败');
+}
+
+/** 盘点方式与范围选项（部门 / 类别） */
+export interface InventoryOptionsResult {
+  departments: ScopeOption[];
+  categories: ScopeOption[];
+}
+
+/**
+ * 获取盘点方式可选项（部门 / 类别）
+ * POST /api/Account/UniGetToken/GetInventoryOptions
+ */
+export async function getInventoryOptions(): Promise<InventoryOptionsResult> {
+  const { data } = await client.post<{ code: number; data: InventoryOptionsResult; msg?: string; message?: string }>(
+    '/api/Account/UniGetToken',
+    { action: 'GetInventoryOptions' },
+    { timeout: 60000 },
+  );
+  if (data.code === 0 || data.code === 200) return data.data;
+  throw new Error(data.msg || data.message || '获取盘点范围选项失败');
 }
 
 /** 任务下达结果 */
