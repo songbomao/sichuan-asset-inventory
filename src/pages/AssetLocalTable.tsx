@@ -19,15 +19,16 @@ import Skeleton from '@mui/material/Skeleton';
 import IconButton from '@mui/material/IconButton';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import Snackbar from '@mui/material/Snackbar';
 import SearchIcon from '@mui/icons-material/Search';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import PrintIcon from '@mui/icons-material/Print';
 import DownloadIcon from '@mui/icons-material/Download';
 import {
   getAssetTable,
   exportAssets,
   type AssetTableItem,
 } from '../api/admin';
+import { exportAndDownloadCsv } from '../utils/download';
 
 /** 表格列定义（含地址 / 责任人 / 部门 / 成本中心） */
 const COLUMNS: { key: keyof AssetTableItem; label: string; numeric?: boolean }[] = [
@@ -51,14 +52,12 @@ function fmt(v: string | number | null | undefined): string {
 
 /**
  * 固定资产查询（本地资产表）
- * - 资产表默认展示 SAP 实时视图，可切换本地快照
+ * - 资产表固定使用本地快照（viewSource = 'local'）
  * - 搜索支持资产编号/名称 与 责任人 两种模式
- * - 导出 PDF（浏览器打印方案，保证中文不乱码）+ 全量 CSV 导出
+ * - 全量 CSV 导出（移动端钉钉兼容，见 utils/download）
  */
 export default function AssetLocalTable() {
   /* ---------- 表格 + 搜索 + 分页 ---------- */
-  // 默认展示 SAP 实时视图
-  const [viewSource, setViewSource] = useState<'sap' | 'local'>('sap');
   // 搜索字段：全部（编号/名称/责任人）或仅责任人
   const [searchMode, setSearchMode] = useState<'all' | 'responsible'>('all');
   const [keyword, setKeyword] = useState('');
@@ -112,42 +111,25 @@ export default function AssetLocalTable() {
     };
   }, [keyword]);
 
-  // 关键字 / 每页条数 / 视图来源 / 搜索字段变化后回到第一页并重新拉取
+  // 关键字 / 每页条数 / 搜索字段变化后回到第一页并重新拉取（固定使用本地快照）
   useEffect(() => {
     setPage(0);
-    fetchTable(debounced, 0, pageSize, viewSource, searchMode);
+    fetchTable(debounced, 0, pageSize, 'local', searchMode);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debounced, pageSize, viewSource, searchMode]);
-
-  /* ---------- 导出 PDF（浏览器打印） ---------- */
-  // 钉钉 WebView 中直接 window.print() 偶发不调起，延迟一帧再触发以提升成功率
-  const handlePrint = () => {
-    window.requestAnimationFrame(() => {
-      setTimeout(() => {
-        window.print();
-      }, 120);
-    });
-  };
+  }, [debounced, pageSize, searchMode]);
 
   /* ---------- 导出全量 CSV ---------- */
   const [exporting, setExporting] = useState(false);
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({ open: false, message: '', severity: 'success' });
 
   const handleExportCsv = async () => {
     setExporting(true);
     try {
-      const res = await exportAssets({ viewSource });
-      // 前置 BOM，保证 Excel 打开中文不乱码
-      const blob = new Blob(['\uFEFF' + res.csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = res.filename || `assets_${viewSource}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      await exportAndDownloadCsv(() => exportAssets({ viewSource: 'local' }));
+      setSnackbar({ open: true, message: 'CSV 已导出', severity: 'success' });
     } catch (err) {
       setError(err instanceof Error ? err.message : '导出CSV失败');
+      setSnackbar({ open: true, message: '导出CSV失败', severity: 'error' });
     } finally {
       setExporting(false);
     }
@@ -161,26 +143,16 @@ export default function AssetLocalTable() {
       {/* 资产表（搜索 / 刷新 / 导出PDF / 导出CSV 已移入卡片头部） */}
       <Card className="glow-border">
         <CardContent sx={{ p: '8px !important' }}>
-          {/* 头部：标题 + 视图来源切换 */}
+          {/* 头部：标题 + 视图来源说明 */}
           <div className="flex items-center justify-between px-2 pt-2 pb-2 flex-wrap gap-2">
             <div className="flex items-center gap-2">
               <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
                 本地资产表
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                共 {total} 条 · {viewSource === 'sap' ? 'SAP实时视图' : '本地快照'}
+                共 {total} 条 · 本地快照
               </Typography>
             </div>
-            <ToggleButtonGroup
-              size="small"
-              value={viewSource}
-              exclusive
-              onChange={(_e, v) => v && setViewSource(v)}
-              sx={{ flexWrap: 'wrap' }}
-            >
-              <ToggleButton value="sap" sx={{ px: 1.5, py: 0.5, fontSize: '0.75rem', textTransform: 'none' }}>SAP视图</ToggleButton>
-              <ToggleButton value="local" sx={{ px: 1.5, py: 0.5, fontSize: '0.75rem', textTransform: 'none' }}>本地快照</ToggleButton>
-            </ToggleButtonGroup>
           </div>
 
           {/* 头部：搜索 + 搜索字段切换 + 刷新 + 导出 */}
@@ -202,18 +174,9 @@ export default function AssetLocalTable() {
               <ToggleButton value="all" sx={{ px: 1, py: 0.5, fontSize: '0.72rem', textTransform: 'none' }}>全部</ToggleButton>
               <ToggleButton value="responsible" sx={{ px: 1, py: 0.5, fontSize: '0.72rem', textTransform: 'none' }}>责任人</ToggleButton>
             </ToggleButtonGroup>
-            <IconButton onClick={() => fetchTable(debounced, page, pageSize, viewSource, searchMode)} color="primary" size="small" disabled={loading}>
+            <IconButton onClick={() => fetchTable(debounced, page, pageSize, 'local', searchMode)} color="primary" size="small" disabled={loading}>
               <RefreshIcon className={loading ? 'animate-spin-refresh' : ''} />
             </IconButton>
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<PrintIcon />}
-              onClick={handlePrint}
-              sx={{ borderRadius: '10px', textTransform: 'none', whiteSpace: 'nowrap' }}
-            >
-              导出PDF
-            </Button>
             <Button
               variant="outlined"
               size="small"
@@ -287,7 +250,7 @@ export default function AssetLocalTable() {
               page={page}
               onPageChange={(_e, newPage) => {
                 setPage(newPage);
-                fetchTable(debounced, newPage, pageSize, viewSource, searchMode);
+                fetchTable(debounced, newPage, pageSize, 'local', searchMode);
               }}
               rowsPerPage={pageSize}
               onRowsPerPageChange={(e) => {
@@ -303,38 +266,16 @@ export default function AssetLocalTable() {
         </CardContent>
       </Card>
 
-      {/* 打印区域（平时隐藏，打印时显示，纯 HTML 表格保证中文正常） */}
-      <div className="print-area">
-        <h2 style={{ textAlign: 'center', margin: '8px 0 12px' }}>固定资产表（{viewSource === 'sap' ? 'SAP实时视图' : '本地快照'}）</h2>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
-          <thead>
-            <tr>
-              {COLUMNS.map((c) => (
-                <th
-                  key={c.key}
-                  style={{ border: '1px solid #999', padding: '4px 6px', textAlign: c.numeric ? 'right' : 'left', background: '#f0f0f0' }}
-                >
-                  {c.label}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={row.assetCode}>
-                {COLUMNS.map((c) => (
-                  <td key={c.key} style={{ border: '1px solid #ccc', padding: '4px 6px', textAlign: c.numeric ? 'right' : 'left' }}>
-                    {fmt(row[c.key])}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <p style={{ fontSize: '11px', color: '#666', marginTop: 8 }}>
-          共 {rows.length} 条（当前页）· 导出时间 {new Date().toLocaleString('zh-CN')}
-        </p>
-      </div>
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity={snackbar.severity} onClose={() => setSnackbar((s) => ({ ...s, open: false }))}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </div>
   );
 }

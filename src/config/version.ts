@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607241705';
+export const APP_VERSION = 'v202607241726';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-24 17:05';
-export const RELEASE_NOTES = '修复资产对比统计总数口径；统一界面"视图"文案为"SAP视图"。';
+export const RELEASE_TIME = '2026-07-24 17:26';
+export const RELEASE_NOTES = '修复同步预览统计展示与确认按钮样式；固资查询仅保留本地快照并移除导出PDF；修复移动端钉钉CSV下载兼容性。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607241726',
+    time: '2026-07-24 17:26',
+    notes: '修复同步预览统计展示与确认按钮样式；固资查询仅保留本地快照并移除导出PDF；修复移动端钉钉CSV下载兼容性。',
+  },
   {
     version: 'v202607241705',
     time: '2026-07-24 17:05',

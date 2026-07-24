@@ -365,7 +365,10 @@ export default function AssetSyncCompare() {
             </Box>
           )}
 
-          {preview && (
+          {preview && (() => {
+            const totalChanges =
+              preview.summary.insertCount + preview.summary.updateCount + preview.summary.deleteCount;
+            return (
             <Card className="glow-border">
               <CardContent>
                 <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
@@ -377,7 +380,11 @@ export default function AssetSyncCompare() {
                   <Chip color="error" size="small" label={`删除 ${preview.summary.deleteCount}`} />
                 </Stack>
 
-                {preview.details.length > 0 ? (
+                {totalChanges === 0 ? (
+                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.82rem', mb: 1 }}>
+                    无变更：本地表已与 SAP 视图一致
+                  </Typography>
+                ) : (
                   <Box sx={{ maxHeight: 220, overflow: 'auto' }}>
                     <Table size="small">
                       <TableHead>
@@ -403,10 +410,6 @@ export default function AssetSyncCompare() {
                       </TableBody>
                     </Table>
                   </Box>
-                ) : (
-                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.82rem', mb: 1 }}>
-                    无变更：本地表已与 SAP 视图一致
-                  </Typography>
                 )}
 
                 <Button
@@ -414,14 +417,24 @@ export default function AssetSyncCompare() {
                   fullWidth
                   startIcon={<SyncIcon />}
                   onClick={openConfirm}
-                  disabled={syncing || (preview.summary.insertCount + preview.summary.updateCount + preview.summary.deleteCount === 0)}
-                  sx={{ borderRadius: '10px', textTransform: 'none', mt: 1 }}
+                  disabled={syncing || totalChanges === 0}
+                  sx={{
+                    borderRadius: '10px',
+                    textTransform: 'none',
+                    mt: 1,
+                    backgroundColor: '#6a1b9a',
+                    color: '#fff',
+                    fontWeight: 600,
+                    '&:hover': { backgroundColor: '#4a148c' },
+                    '&:disabled': { backgroundColor: '#e0e0e0', color: '#9e9e9e' },
+                  }}
                 >
                   确认同步
                 </Button>
               </CardContent>
             </Card>
-          )}
+            );
+          })()}
         </Stack>
       )}
 
@@ -441,9 +454,15 @@ export default function AssetSyncCompare() {
       <Dialog open={confirmOpen} onClose={closeConfirm} fullWidth maxWidth="xs">
         <DialogTitle sx={{ fontWeight: 700, fontSize: '1.05rem' }}>确认同步</DialogTitle>
         <DialogContent>
-          <DialogContentText sx={{ fontSize: '0.9rem' }}>
-            确认将 SAP 视图数据同步至本地资产表？此操作会覆盖本地快照。
-          </DialogContentText>
+          {preview ? (
+            <DialogContentText sx={{ fontSize: '0.9rem' }}>
+              确认将 SAP 视图数据同步至本地资产表？本次将新增 {preview.summary.insertCount} 条、更新 {preview.summary.updateCount} 条、删除 {preview.summary.deleteCount} 条。此操作会覆盖本地快照。
+            </DialogContentText>
+          ) : (
+            <DialogContentText sx={{ fontSize: '0.9rem' }}>
+              确认将 SAP 视图数据同步至本地资产表？此操作会覆盖本地快照。
+            </DialogContentText>
+          )}
         </DialogContent>
         <DialogActions sx={{ px: 2, pb: 2 }}>
           <Button onClick={closeConfirm} color="inherit" disabled={syncing} sx={{ textTransform: 'none' }}>
