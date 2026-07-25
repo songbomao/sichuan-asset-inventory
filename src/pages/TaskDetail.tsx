@@ -107,16 +107,17 @@ export default function TaskDetailPage() {
     color: 'border-l-4 border-l-primary',
   };
 
-  // 看板 / 复盘 / 报告 仅管理员可见
+  // 进度看板：所有责任人可见；复盘管理 / 盘点报告：仅管理员可见
+  const progressMenu = {
+    title: '进度看板',
+    desc: `完成率 ${progress.percentage}%`,
+    icon: <AssessmentIcon sx={{ fontSize: 32, color: '#7c4dff' }} />,
+    path: `/tasks/${taskId}/dashboard`,
+    color: 'border-l-4 border-l-purple-500',
+  };
+
   const adminMenus = user?.isAdmin
     ? [
-        {
-          title: '进度看板',
-          desc: `完成率 ${progress.percentage}%`,
-          icon: <AssessmentIcon sx={{ fontSize: 32, color: '#7c4dff' }} />,
-          path: `/tasks/${taskId}/dashboard`,
-          color: 'border-l-4 border-l-purple-500',
-        },
         {
           title: '复盘管理',
           desc: '查看和提交复盘任务',
@@ -134,7 +135,7 @@ export default function TaskDetailPage() {
       ]
     : [];
 
-  const menus = [inventoryMenu, ...adminMenus];
+  const menus = [inventoryMenu, progressMenu, ...adminMenus];
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">

@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607252329';
+export const APP_VERSION = 'v202607260013';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-25 23:29';
-export const RELEASE_NOTES = '修复三处问题：①进度监控页面跳转崩溃（后端全局看板字段名 byDepartment/byCategory 对齐前端 deptStats/categoryStats）；②盘点报告 AI 生成误报"AI 服务暂不可用"——api/ai.ts 在 code=200 但 data=null（AI 降级）时抛后端真实文案，Report.tsx 判空双保险并展示后端文案；③我的任务仅展示"责任人为当前登录用户 + 状态为未盘点(pending)"的新任务：getTaskList(true) 走 onlyMine 后端过滤，移除待办/已办分段。';
+export const RELEASE_TIME = '2026-07-26 00:13';
+export const RELEASE_NOTES = '修复四问题：①AI 报告生成 API 网关异常——Program.cs 中 AiService 原误用 AddHttpClient<AiService>()（typed-client 要求构造函数首参为 HttpClient），改为 AddHttpClient() 注册 IHttpClientFactory + AddScoped<AiService>()，与 AiService(IConfiguration, IHttpClientFactory) 构造函数对齐；②移除「我的」页左上角冗余的「我的」标题；③盘点任务管理页 3 个 Tab（盘点任务管理/资产对比同步/固资查询）维持 RequireAdmin 路由级 + 页面级双重门控，仅管理员和超级管理员可见；④恢复责任人的进度看板与盘点页访问——全局进度监控仍仅管理员可见，任务级进度看板对所有责任人开放（任务详情页「进度看板」卡片移出仅管理员区）。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607260013',
+    time: '2026-07-26 00:13',
+    notes: '修复四问题：①AI 报告生成 API 网关异常——Program.cs 中 AiService 原误用 AddHttpClient<AiService>()（typed-client 要求构造函数首参为 HttpClient），改为 AddHttpClient() 注册 IHttpClientFactory + AddScoped<AiService>()，与 AiService(IConfiguration, IHttpClientFactory) 构造函数对齐；②移除「我的」页左上角冗余的「我的」标题；③盘点任务管理页 3 个 Tab（盘点任务管理/资产对比同步/固资查询）维持 RequireAdmin 路由级 + 页面级双重门控，仅管理员和超级管理员可见；④恢复责任人的进度看板与盘点页访问——全局进度监控仍仅管理员可见，任务级进度看板对所有责任人开放（任务详情页「进度看板」卡片移出仅管理员区）。',
+  },
   {
     version: 'v202607252329',
     time: '2026-07-25 23:29',

@@ -98,9 +98,6 @@ export default function ProfilePage() {
 
   return (
     <div className="p-4 space-y-4">
-      {/* 头部 */}
-      <Typography variant="h5" fontWeight={700} sx={{ px: 1 }}>我的</Typography>
-
       {/* 用户信息卡片 */}
       <Card sx={{ overflow: 'hidden', borderRadius: 3 }}>
         {/* 背景 */}

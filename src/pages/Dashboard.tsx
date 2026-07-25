@@ -60,10 +60,11 @@ export default function DashboardPage() {
     fetchData();
   }, [fetchData]);
 
-  if (!user?.isAdmin) {
+  // 全局聚合视图（任务级看板 taskId 存在）仅管理员可见；任务级进度看板对所有责任人开放
+  if (isGlobal && !user?.isAdmin) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gray-50">
-        <Alert severity="warning" sx={{ mb: 2, width: '100%', maxWidth: 360 }}>无权限：仅管理员可查看进度看板。</Alert>
+        <Alert severity="warning" sx={{ mb: 2, width: '100%', maxWidth: 360 }}>无权限：仅管理员可查看全局进度监控。</Alert>
         <Button variant="outlined" onClick={() => navigate(-1)}>返回</Button>
       </div>
     );
