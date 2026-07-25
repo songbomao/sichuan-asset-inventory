@@ -92,6 +92,8 @@ export default function ProfilePage() {
   };
 
   const isSuper = adminInfo?.isSuper ?? user?.isSuper ?? false;
+  /** 配置管理员权限：超级管理员与（普通）管理员均可见入口，具体增删改由后端按角色门控 */
+  const canConfigAdmin = adminInfo?.isAdmin ?? user?.isAdmin ?? false;
   const role = user?.role ?? '';
 
   return (
@@ -167,8 +169,8 @@ export default function ProfilePage() {
         </Button>
       )}
 
-      {/* 管理员配置（仅超级管理员可见） */}
-      {isSuper && (
+      {/* 配置管理员（超级管理员与管理员均可见；实际增删改由后端按角色门控） */}
+      {canConfigAdmin && (
         <Button
           variant="outlined"
           fullWidth
@@ -176,7 +178,7 @@ export default function ProfilePage() {
           onClick={() => setAdminDialogOpen(true)}
           sx={{ py: 1.3, borderRadius: '12px', textTransform: 'none' }}
         >
-          管理员配置
+          配置管理员
         </Button>
       )}
 
@@ -192,14 +194,11 @@ export default function ProfilePage() {
         退出登录
       </Button>
 
-      {/* 底部版本信息 */}
-      <Typography variant="caption" color="text.disabled" textAlign="center" display="block">
-        {APP_VERSION}（前端）
+      {/* 底部版本信息：前端/后端版本号合并同一行展示 */}
+      <Typography variant="caption" color="text.disabled" textAlign="center" display="block" sx={{ mt: 1 }}>
+        前端 {APP_VERSION}　·　后端 {backendVersion || '获取中…'}
       </Typography>
-      <Typography variant="caption" color="text.disabled" textAlign="center" display="block" sx={{ opacity: 0.8 }}>
-        {backendVersion ? `${backendVersion}（后端）` : '后端版本获取中…'}
-      </Typography>
-      <Typography variant="caption" color="text.disabled" textAlign="center" display="block" sx={{ opacity: 0.6 }}>
+      <Typography variant="caption" color="text.disabled" textAlign="center" display="block" sx={{ opacity: 0.6, mt: 0.5 }}>
         {RELEASE_NOTES}
       </Typography>
       <Typography variant="caption" color="text.disabled" textAlign="center" display="block" sx={{ mt: 1, opacity: 0.5 }}>

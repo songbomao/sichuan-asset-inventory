@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607252020';
+export const APP_VERSION = 'v202607252300';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-25 20:20';
-export const RELEASE_NOTES = '重新部署验证前端缓存策略：vite.config 已对 assets/*.js|css 引用追加 ?v=版本号 强制刷新；本次仅升版本号触发 GitHub Pages 重新部署，确保钉钉 WebView 加载到最新构建产物（含 v202607251900 的角色化重构 + P0 三项 AI）。';
+export const RELEASE_TIME = '2026-07-25 23:00';
+export const RELEASE_NOTES = '信息架构重构：移除顶部角色 Tab 切换器，按后端 user.isAdmin 自动判定角色并渲染对应底部导航（管理员：盘点任务/进度监控/盘点报告/我的；责任人：我的任务/资产档案/我的），无需手动切换；"我的"页作为通用页对所有角色展示，配置管理员按钮对超级管理员与管理员均可见；前端与后端版本号合并同一行展示。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607252300',
+    time: '2026-07-25 23:00',
+    notes: '信息架构重构：移除顶部角色 Tab 切换器，按后端 user.isAdmin 自动判定角色并渲染对应底部导航（管理员：盘点任务/进度监控/盘点报告/我的；责任人：我的任务/资产档案/我的），无需手动切换；"我的"页作为通用页对所有角色展示，配置管理员按钮对超级管理员与管理员均可见；前端与后端版本号合并同一行展示。',
+  },
   {
     version: 'v202607252020',
     time: '2026-07-25 20:20',

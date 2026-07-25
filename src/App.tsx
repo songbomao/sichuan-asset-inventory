@@ -24,11 +24,17 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-/** 已登录自动跳转首页 */
+/** 按当前用户角色落地首页：管理员进入盘点控制台，责任人进入我的任务 */
+function RoleHome() {
+  const { isAdmin } = useAuth();
+  return <Navigate to={isAdmin ? '/admin/tasks' : '/tasks'} replace />;
+}
+
+/** 已登录自动跳转首页（按角色） */
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const { token } = useAuth();
   if (token) {
-    return <Navigate to="/tasks" replace />;
+    return <RoleHome />;
   }
   return <>{children}</>;
 }
@@ -150,8 +156,8 @@ export default function App() {
         }
       />
 
-      {/* 默认重定向 */}
-      <Route path="*" element={<Navigate to="/tasks" replace />} />
+      {/* 默认重定向（按角色落地首页） */}
+      <Route path="*" element={<RoleHome />} />
     </Routes>
   );
 }

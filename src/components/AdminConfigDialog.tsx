@@ -387,7 +387,7 @@ export default function AdminConfigDialog({ open, onClose, onChanged }: Props) {
         maxWidth="xs"
         sx={{ '& .MuiDialog-paper': { margin: { xs: 2, sm: 4 } } }}
       >
-      <DialogTitle sx={{ fontWeight: 700, fontSize: '1.1rem', pb: 1 }}>管理员配置（超级管理员）</DialogTitle>
+      <DialogTitle sx={{ fontWeight: 700, fontSize: '1.1rem', pb: 1 }}>配置管理员</DialogTitle>
       <DialogContent sx={{ pt: '8px !important' }}>
         <Stack spacing={2}>
           {/* 设为超级管理员 */}
