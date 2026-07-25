@@ -55,6 +55,11 @@ const client = axios.create({
   headers: {
     'Content-Type': 'application/x-www-form-urlencoded',
   },
+  // 数组参数使用 repeat 风格：categoryNames=a&categoryNames=b
+  // 避免默认 brackets 风格生成 categoryNames[]=a，后端 query 合并时丢失
+  paramsSerializer: {
+    indexes: null,
+  },
 });
 
 /** 请求拦截器：将所有业务请求统一路由到 UniGetToken 网关 */

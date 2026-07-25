@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607251254';
+export const APP_VERSION = 'v202607251333';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-25 12:54';
-export const RELEASE_NOTES = '修复盘点预览数量为空的问题：前端简单请求把数组 JSON.stringify 进 query，后端网关新增 ParseStringList/ParseLongList 兼容解析 JSON 数组字符串与逗号分隔字符串，恢复按类别预览资产、按部门预览人员；预览按钮文案改为显示已选部门/类别数量，避免与弹窗内精确多选计数混淆。';
+export const RELEASE_TIME = '2026-07-25 13:33';
+export const RELEASE_NOTES = '修复部门人员预览不完整与部门加载慢：后端 GetPersonnelByDepartments 改为由钉钉通讯录人员驱动，按部门 ID 递归取全部子部门人员，再关联 sai_assets 统计资产数（无资产人员也显示 assetCount=0），彻底解决部门名与 sai_assets.DeptName 不一致导致的人员丢失；前端勾选部门不再递归预加载整棵子树，由后端统一递归处理，大幅提升部门选择响应速度。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,16 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607251333',
+    time: '2026-07-25 13:33',
+    notes: '修复部门人员预览不完整与部门加载慢：后端 GetPersonnelByDepartments 改为由钉钉通讯录人员驱动，按部门 ID 递归取全部子部门人员，再关联 sai_assets 统计资产数（无资产人员也显示 assetCount=0），彻底解决部门名与 sai_assets.DeptName 不一致导致的人员丢失；前端勾选部门不再递归预加载整棵子树，由后端统一递归处理，大幅提升部门选择响应速度。',
+  },
+  {
+    version: 'v202607251312',
+    time: '2026-07-25 13:12',
+    notes: '修复盘点预览数量/人员仍为空：前端 axios 配置 paramsSerializer: { indexes: null }，使数组参数使用 repeat 风格（categoryNames=a&categoryNames=b），避免 brackets 风格（categoryNames[]=a）导致后端 query 解析丢失；后端 UniGetToken 合并 query string 时把多值还原为 JArray（兼容 brackets 与 repeat 两种风格）。',
+  },
   {
     version: 'v202607251254',
     time: '2026-07-25 12:54',

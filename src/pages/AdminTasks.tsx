@@ -246,39 +246,6 @@ export default function AdminTasks() {
       return n;
     });
 
-  /** 递归收集子树所有 deptId */
-  const collectDeptIds = (nodes: DingtalkDepartmentNode[]): number[] => {
-    const ids: number[] = [];
-    const walk = (ns: DingtalkDepartmentNode[]) =>
-      ns.forEach((n) => {
-        ids.push(n.deptId);
-        walk(n.children);
-      });
-    walk(nodes);
-    return ids;
-  };
-
-  /** 递归把子树节点写入选中 Map */
-  const addNodesToMap = (nodes: DingtalkDepartmentNode[], map: Record<number, string>) => {
-    const walk = (ns: DingtalkDepartmentNode[]) =>
-      ns.forEach((n) => {
-        map[n.deptId] = n.name;
-        walk(n.children);
-      });
-    walk(nodes);
-  };
-
-  /** 懒加载某部门的完整子树（递归调用 getDingtalkSubDepartments） */
-  const loadSubtree = async (deptId: number): Promise<DingtalkDepartmentNode[]> => {
-    const subs = await getDingtalkSubDepartments(deptId);
-    const children: DingtalkDepartmentNode[] = [];
-    for (const s of subs) {
-      const grand = await loadSubtree(s.deptId);
-      children.push({ deptId: s.deptId, name: s.name, parentId: s.parentId, children: grand });
-    }
-    return children;
-  };
-
   /** 展开/收起部门（首次展开时懒加载直接子部门） */
   const toggleExpand = async (node: DingtalkDepartmentNode) => {
     if (expandedDepts.has(node.deptId)) {
@@ -301,28 +268,17 @@ export default function AdminTasks() {
     setExpandedDepts((prev) => new Set(prev).add(node.deptId));
   };
 
-  /** 勾选/取消勾选部门（级联选中/取消其全部后代部门） */
-  const toggleDept = async (node: DingtalkDepartmentNode) => {
+  /** 勾选/取消勾选部门（仅操作当前节点，避免递归加载整棵子树导致性能极差）。
+   * 人员预览/任务创建由后端按部门 ID 递归子部门处理，无需前端预先展开全部后代。 */
+  const toggleDept = (node: DingtalkDepartmentNode) => {
     const isSelected = Object.prototype.hasOwnProperty.call(selectedDeptMap, node.deptId);
     const next = { ...selectedDeptMap };
-    setDeptBusy(true);
-    try {
-      if (isSelected) {
-        const subtree = await loadSubtree(node.deptId);
-        [node.deptId, ...collectDeptIds(subtree)].forEach((id) => {
-          delete next[id];
-        });
-      } else {
-        next[node.deptId] = node.name;
-        const subtree = await loadSubtree(node.deptId);
-        addNodesToMap(subtree, next);
-        setDeptTree((prev) => updateDeptChildren(prev, node.deptId, subtree));
-        setExpandedDepts((prev) => new Set(prev).add(node.deptId));
-      }
-      setSelectedDeptMap(next);
-    } finally {
-      setDeptBusy(false);
+    if (isSelected) {
+      delete next[node.deptId];
+    } else {
+      next[node.deptId] = node.name;
     }
+    setSelectedDeptMap(next);
   };
 
   /** 移除单个已选部门（Chip 删除） */
