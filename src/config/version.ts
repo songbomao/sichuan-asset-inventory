@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607242045';
+export const APP_VERSION = 'v202607250841';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-24 20:45';
-export const RELEASE_NOTES = '新建盘点任务交互改造：任务名称合并为单个可选输入框（留空用默认名）；盘点部门改为钉钉组织架构树形多选（含子部门级联）；盘点类别改为多选；后端人员匹配容错增强（部门名分隔符拆分+姓名归一化兜底，by_category 放宽部门匹配），修复"宋伯茂"等人推送未匹配问题。';
+export const RELEASE_TIME = '2026-07-25 08:41';
+export const RELEASE_NOTES = '新建盘点任务支持精确选择：按类别筛选后可预览资产清单（编码+名称+责任人/部门）并勾选特定资产；按部门选择后可预览该部门及子部门下的人员及其负责资产数并勾选特定人员；两类方式均实时显示已选/总数统计。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607250841',
+    time: '2026-07-25 08:41',
+    notes: '新建盘点任务支持精确选择：按类别筛选后可预览资产清单（编码+名称+责任人/部门）并勾选特定资产；按部门选择后可预览该部门及子部门下的人员及其负责资产数并勾选特定人员；两类方式均实时显示已选/总数统计。',
+  },
   {
     version: 'v202607242045',
     time: '2026-07-24 20:45',

@@ -11,6 +11,8 @@ import client from './client';
 export interface ScopeConfigPayload {
   scopeType: 'by_dept' | 'by_category';
   scopeValues: number[] | string[];
+  selectedAssetCodes?: string[];      // by_category 精确选中的资产编码
+  selectedPersonNames?: string[];     // by_dept 精确选中的人员姓名
 }
 
 /** 创建任务参数（新流程：ScopeType = by_dept | by_category，ScopeConfig = JSON 含 scopeType/scopeValues） */
@@ -47,6 +49,63 @@ export async function createTask(params: CreateTaskParams): Promise<{ Id: number
     return data.data;
   }
   throw new Error(data.msg || data.message || '创建任务失败');
+}
+
+/** 资产预览单条 */
+export interface PreviewAssetItem {
+  assetCode: string;
+  assetName: string;
+  categoryName: string;
+  deptName: string;
+  userName: string;
+}
+
+/**
+ * 按类别预览资产（实时搜索 + 精确多选）
+ * POST /api/Account/UniGetToken/PreviewAssetsByCategories
+ */
+export async function previewAssetsByCategories(params: {
+  categoryNames: string[];
+  keyword?: string;
+  page?: number;
+  pageSize?: number;
+}): Promise<{ total: number; list: PreviewAssetItem[] }> {
+  const { data } = await client.post<{ code: number; data: { total: number; list: PreviewAssetItem[] }; msg?: string; message?: string }>(
+    '/api/Account/UniGetToken',
+    {
+      action: 'PreviewAssetsByCategories',
+      categoryNames: params.categoryNames,
+      keyword: params.keyword ?? '',
+      page: params.page ?? 1,
+      pageSize: params.pageSize ?? 50,
+    },
+  );
+  if (data.code === 0 || data.code === 200) return data.data;
+  throw new Error(data.msg || data.message || '预览资产失败');
+}
+
+/** 人员预览单条 */
+export interface PreviewPersonnelItem {
+  name: string;
+  assetCount: number;
+}
+
+/**
+ * 按部门预览人员（精确多选）
+ * POST /api/Account/UniGetToken/GetPersonnelByDepartments
+ */
+export async function previewPersonnelByDepartments(params: {
+  deptIds: number[];
+}): Promise<{ total: number; list: PreviewPersonnelItem[] }> {
+  const { data } = await client.post<{ code: number; data: { total: number; list: PreviewPersonnelItem[] }; msg?: string; message?: string }>(
+    '/api/Account/UniGetToken',
+    {
+      action: 'GetPersonnelByDepartments',
+      deptIds: params.deptIds,
+    },
+  );
+  if (data.code === 0 || data.code === 200) return data.data;
+  throw new Error(data.msg || data.message || '预览人员失败');
 }
 
 /** 启动任务响应 */

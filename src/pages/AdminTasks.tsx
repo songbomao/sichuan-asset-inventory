@@ -40,11 +40,15 @@ import {
   getInventoryOptions,
   getDingtalkDepartments,
   getDingtalkSubDepartments,
+  previewAssetsByCategories,
+  previewPersonnelByDepartments,
   type AdminTaskItem,
   type CreateTaskParams,
   type InventoryOptionsResult,
   type SyncStatusResult,
   type DingtalkDepartmentNode,
+  type PreviewAssetItem,
+  type PreviewPersonnelItem,
 } from '../api/admin';
 import { useAuth } from '../contexts/AuthContext';
 import AssetSyncCompare from './AssetSyncCompare';
@@ -86,6 +90,10 @@ interface DialogForm {
   method: 'by_dept' | 'by_category' | '';
   /** 选中的盘点类别名称（by_category 时使用） */
   categories: string[];
+  /** by_category 精确选中的资产编码（关闭预览时清空，空数组视为"全选"） */
+  selectedAssetCodes: string[];
+  /** by_dept 精确选中的人员姓名（关闭预览时清空，空数组视为"全选"） */
+  selectedPersonNames: string[];
   NeedReview: boolean;
   ReviewRatio: number;
   Deadline: string;
@@ -96,6 +104,8 @@ const defaultForm: DialogForm = {
   TaskName: '',
   method: '',
   categories: [],
+  selectedAssetCodes: [],
+  selectedPersonNames: [],
   NeedReview: false,
   ReviewRatio: 0.3,
   Deadline: '',
@@ -142,6 +152,80 @@ export default function AdminTasks() {
   const [deptBusy, setDeptBusy] = useState(false);
   /** 选中的部门：deptId(number) -> name(string) */
   const [selectedDeptMap, setSelectedDeptMap] = useState<Record<number, string>>({});
+
+  /* 类别资产预览（全屏 Dialog + 精确多选） */
+  const [assetPreviewOpen, setAssetPreviewOpen] = useState(false);
+  const [assetKeyword, setAssetKeyword] = useState('');
+  const [assetList, setAssetList] = useState<PreviewAssetItem[]>([]);
+  const [assetTotal, setAssetTotal] = useState(0);
+  const [assetLoading, setAssetLoading] = useState(false);
+  const [assetSelected, setAssetSelected] = useState<Set<string>>(new Set());
+  const [assetPage, setAssetPage] = useState(1);
+  const ASSET_PAGE_SIZE = 50;
+
+  /** 拉取资产预览列表（按类别 + 关键字过滤，重置到第一页） */
+  const fetchAssetPreview = useCallback(
+    async (keyword?: string, page = 1) => {
+      if (form.categories.length === 0) return;
+      setAssetLoading(true);
+      try {
+        const res = await previewAssetsByCategories({
+          categoryNames: form.categories,
+          keyword,
+          page,
+          pageSize: ASSET_PAGE_SIZE,
+        });
+        setAssetList(res.list ?? []);
+        setAssetTotal(res.total ?? 0);
+        setAssetPage(page);
+      } catch {
+        setAssetList([]);
+        setAssetTotal(0);
+      } finally {
+        setAssetLoading(false);
+      }
+    },
+    [form.categories],
+  );
+
+  /** 打开资产预览时初始化选中集合（回显已选） */
+  const openAssetPreview = () => {
+    setAssetSelected(new Set(form.selectedAssetCodes));
+    setAssetKeyword('');
+    setAssetPreviewOpen(true);
+    void fetchAssetPreview('', 1);
+  };
+
+  /* 部门人员预览（全屏 Dialog + 精确多选） */
+  const [personPreviewOpen, setPersonPreviewOpen] = useState(false);
+  const [personList, setPersonList] = useState<PreviewPersonnelItem[]>([]);
+  const [personTotal, setPersonTotal] = useState(0);
+  const [personLoading, setPersonLoading] = useState(false);
+  const [personSelected, setPersonSelected] = useState<Set<string>>(new Set());
+
+  /** 拉取人员预览列表（按已选部门） */
+  const fetchPersonPreview = useCallback(async () => {
+    const deptIds = Object.keys(selectedDeptMap).map(Number);
+    if (deptIds.length === 0) return;
+    setPersonLoading(true);
+    try {
+      const res = await previewPersonnelByDepartments({ deptIds });
+      setPersonList(res.list ?? []);
+      setPersonTotal(res.total ?? 0);
+    } catch {
+      setPersonList([]);
+      setPersonTotal(0);
+    } finally {
+      setPersonLoading(false);
+    }
+  }, [selectedDeptMap]);
+
+  /** 打开人员预览时初始化选中集合（回显已选） */
+  const openPersonPreview = () => {
+    setPersonSelected(new Set(form.selectedPersonNames));
+    setPersonPreviewOpen(true);
+    void fetchPersonPreview();
+  };
 
   /** 递归更新部门树中某节点的 children（用于懒加载后回填） */
   const updateDeptChildren = (
@@ -367,7 +451,12 @@ export default function AdminTasks() {
         form.method === 'by_dept'
           ? Object.keys(selectedDeptMap).map(Number)
           : form.categories;
-      const scopeConfig = JSON.stringify({ scopeType: form.method, scopeValues });
+      const scopeConfig = JSON.stringify({
+        scopeType: form.method,
+        scopeValues,
+        selectedAssetCodes: form.method === 'by_category' ? form.selectedAssetCodes : undefined,
+        selectedPersonNames: form.method === 'by_dept' ? form.selectedPersonNames : undefined,
+      });
       const body: CreateTaskParams = {
         TaskName: form.TaskName.trim(),
         ScopeType: form.method,
@@ -607,6 +696,8 @@ export default function AdminTasks() {
                   ...f,
                   method: e.target.value as 'by_dept' | 'by_category',
                   categories: [],
+                  selectedAssetCodes: [],
+                  selectedPersonNames: [],
                 }))
               }
               fullWidth
@@ -640,26 +731,76 @@ export default function AdminTasks() {
                     ))}
                   </Box>
                 )}
+                {Object.keys(selectedDeptMap).length > 0 && (
+                  <Box>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={openPersonPreview}
+                      sx={{ alignSelf: 'flex-start', borderRadius: '8px', textTransform: 'none', mr: 1 }}
+                    >
+                      预览人员（已选 {form.selectedPersonNames.length}）
+                    </Button>
+                    {form.selectedPersonNames.length === 0 ? (
+                      <Typography variant="caption" color="text.secondary">
+                        已选 {Object.keys(selectedDeptMap).length} 个部门，点击预览人员
+                      </Typography>
+                    ) : (
+                      <Chip
+                        size="small"
+                        color="primary"
+                        label={`已选 ${form.selectedPersonNames.length} 名人员`}
+                        onDelete={() => setForm((f) => ({ ...f, selectedPersonNames: [] }))}
+                      />
+                    )}
+                  </Box>
+                )}
               </>
             )}
 
             {form.method === 'by_category' && (
-              <Autocomplete
-                multiple
-                options={inventoryOptions.categories.map((c) => c.name)}
-                value={form.categories}
-                onChange={(_e, val) => setForm((f) => ({ ...f, categories: val }))}
-                renderInput={(params) => (
-                  <TextField {...params} label="盘点类别" size="small" placeholder="可多选" />
+              <>
+                <Autocomplete
+                  multiple
+                  options={inventoryOptions.categories.map((c) => c.name)}
+                  value={form.categories}
+                  onChange={(_e, val) => setForm((f) => ({ ...f, categories: val, selectedAssetCodes: [] }))}
+                  renderInput={(params) => (
+                    <TextField {...params} label="盘点类别" size="small" placeholder="可多选" />
+                  )}
+                  renderTags={(value, getTagProps) =>
+                    value.map((option, index) => (
+                      <Chip label={option} size="small" {...getTagProps({ index })} key={option} />
+                    ))
+                  }
+                  disabled={optionsLoading}
+                  fullWidth
+                />
+                {form.categories.length > 0 && (
+                  <Box>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={openAssetPreview}
+                      sx={{ alignSelf: 'flex-start', borderRadius: '8px', textTransform: 'none', mr: 1 }}
+                    >
+                      预览资产（已选 {form.selectedAssetCodes.length}）
+                    </Button>
+                    {form.selectedAssetCodes.length === 0 ? (
+                      <Typography variant="caption" color="text.secondary">
+                        已选 {form.categories.length} 个类别，点击预览资产
+                      </Typography>
+                    ) : (
+                      <Chip
+                        size="small"
+                        color="primary"
+                        label={`已选 ${form.selectedAssetCodes.length} 项资产`}
+                        onDelete={() => setForm((f) => ({ ...f, selectedAssetCodes: [] }))}
+                      />
+                    )}
+                  </Box>
                 )}
-                renderTags={(value, getTagProps) =>
-                  value.map((option, index) => (
-                    <Chip label={option} size="small" {...getTagProps({ index })} key={option} />
-                  ))
-                }
-                disabled={optionsLoading}
-                fullWidth
-              />
+              </>
             )}
 
             <TextField
@@ -774,6 +915,193 @@ export default function AdminTasks() {
               sx={{ borderRadius: '10px', textTransform: 'none', whiteSpace: 'nowrap' }}
             >
               确定（{Object.keys(selectedDeptMap).length}）
+            </Button>
+          </Box>
+        </Box>
+      </Dialog>
+
+      {/* 资产预览（按类别，精确多选） */}
+      <Dialog
+        open={assetPreviewOpen}
+        onClose={() => setAssetPreviewOpen(false)}
+        fullScreen
+        PaperProps={{ sx: { bgcolor: 'background.paper' } }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1.5 }}>
+            <Typography variant="subtitle1" fontWeight={700}>
+              资产预览（已选 {assetSelected.size} / 共 {assetTotal}）
+            </Typography>
+            <IconButton onClick={() => setAssetPreviewOpen(false)} size="small">
+              <CloseIcon />
+            </IconButton>
+          </Box>
+          <Divider />
+          <Box sx={{ px: 2, py: 1.5 }}>
+            <TextField
+              fullWidth
+              size="small"
+              label="按资产编码 / 名称搜索"
+              value={assetKeyword}
+              onChange={(e) => {
+                setAssetKeyword(e.target.value);
+                void fetchAssetPreview(e.target.value, 1);
+              }}
+            />
+          </Box>
+          <Divider />
+          <Box sx={{ overflowY: 'auto', flexGrow: 1, py: 1, px: 1.5 }}>
+            {assetLoading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                <CircularProgress size={24} />
+              </Box>
+            ) : assetList.length === 0 ? (
+              <Typography color="text.secondary" sx={{ p: 2, fontSize: '0.85rem' }}>暂无资产数据</Typography>
+            ) : (
+              <Stack spacing={0.5}>
+                {assetList.map((item) => {
+                  const checked = assetSelected.has(item.assetCode);
+                  return (
+                    <Box
+                      key={item.assetCode}
+                      onClick={() =>
+                        setAssetSelected((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(item.assetCode)) next.delete(item.assetCode);
+                          else next.add(item.assetCode);
+                          return next;
+                        })
+                      }
+                      sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1, py: 1, borderRadius: 1, cursor: 'pointer' }}
+                    >
+                      <Checkbox checked={checked} onChange={() => {}} sx={{ p: 0.5 }} />
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography variant="body2" sx={{ fontSize: '0.9rem' }}>
+                          <strong>{item.assetCode}</strong> {item.assetName}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {item.userName || '无责任人'} · {item.deptName || '无部门'} · {item.categoryName}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  );
+                })}
+              </Stack>
+            )}
+          </Box>
+          <Divider />
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1.5, gap: 1 }}>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button
+                size="small"
+                onClick={() => setAssetSelected(new Set(assetList.map((i) => i.assetCode)))}
+                sx={{ textTransform: 'none' }}
+              >
+                全选
+              </Button>
+              <Button
+                size="small"
+                onClick={() => setAssetSelected(new Set())}
+                sx={{ textTransform: 'none' }}
+              >
+                取消全选
+              </Button>
+            </Box>
+            <Button
+              variant="contained"
+              onClick={() => {
+                setForm((f) => ({ ...f, selectedAssetCodes: Array.from(assetSelected) }));
+                setAssetPreviewOpen(false);
+              }}
+              sx={{ borderRadius: '10px', textTransform: 'none', whiteSpace: 'nowrap' }}
+            >
+              确定（{assetSelected.size}）
+            </Button>
+          </Box>
+        </Box>
+      </Dialog>
+
+      {/* 人员预览（按部门，精确多选） */}
+      <Dialog
+        open={personPreviewOpen}
+        onClose={() => setPersonPreviewOpen(false)}
+        fullScreen
+        PaperProps={{ sx: { bgcolor: 'background.paper' } }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1.5 }}>
+            <Typography variant="subtitle1" fontWeight={700}>
+              人员预览（已选 {personSelected.size} / 共 {personTotal}）
+            </Typography>
+            <IconButton onClick={() => setPersonPreviewOpen(false)} size="small">
+              <CloseIcon />
+            </IconButton>
+          </Box>
+          <Divider />
+          <Box sx={{ overflowY: 'auto', flexGrow: 1, py: 1, px: 1.5 }}>
+            {personLoading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                <CircularProgress size={24} />
+              </Box>
+            ) : personList.length === 0 ? (
+              <Typography color="text.secondary" sx={{ p: 2, fontSize: '0.85rem' }}>暂无人员数据</Typography>
+            ) : (
+              <Stack spacing={0.5}>
+                {personList.map((item) => {
+                  const checked = personSelected.has(item.name);
+                  return (
+                    <Box
+                      key={item.name}
+                      onClick={() =>
+                        setPersonSelected((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(item.name)) next.delete(item.name);
+                          else next.add(item.name);
+                          return next;
+                        })
+                      }
+                      sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1, py: 1, borderRadius: 1, cursor: 'pointer' }}
+                    >
+                      <Checkbox checked={checked} onChange={() => {}} sx={{ p: 0.5 }} />
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="body2" sx={{ fontSize: '0.9rem' }}>{item.name}</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          负责 {item.assetCount} 项资产
+                        </Typography>
+                      </Box>
+                    </Box>
+                  );
+                })}
+              </Stack>
+            )}
+          </Box>
+          <Divider />
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1.5, gap: 1 }}>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button
+                size="small"
+                onClick={() => setPersonSelected(new Set(personList.map((i) => i.name)))}
+                sx={{ textTransform: 'none' }}
+              >
+                全选
+              </Button>
+              <Button
+                size="small"
+                onClick={() => setPersonSelected(new Set())}
+                sx={{ textTransform: 'none' }}
+              >
+                取消全选
+              </Button>
+            </Box>
+            <Button
+              variant="contained"
+              onClick={() => {
+                setForm((f) => ({ ...f, selectedPersonNames: Array.from(personSelected) }));
+                setPersonPreviewOpen(false);
+              }}
+              sx={{ borderRadius: '10px', textTransform: 'none', whiteSpace: 'nowrap' }}
+            >
+              确定（{personSelected.size}）
             </Button>
           </Box>
         </Box>
