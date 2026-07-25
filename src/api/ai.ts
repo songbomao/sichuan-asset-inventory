@@ -73,6 +73,11 @@ interface AiResponse<T> {
 function unwrap<T>(resp: { data: AiResponse<T> }): T {
   const { code, data, msg, message } = resp.data;
   if (code === 0 || code === 200) {
+    // 后端 AI 无密钥时会优雅降级：code=200 但 data=null，附带降级说明文案。
+    // 直接返回 null 会导致调用方在 null 上取属性崩溃，故此处抛出后端文案。
+    if (data == null) {
+      throw new Error(message || msg || 'AI 服务暂不可用，已回退人工流程');
+    }
     return data;
   }
   throw new Error(msg || message || 'AI 服务调用失败');

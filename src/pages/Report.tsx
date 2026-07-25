@@ -130,10 +130,17 @@ export default function ReportPage() {
     setAiMarkdown('');
     try {
       const result = await WriteReport({ taskId });
-      setAiMarkdown(result.markdown || result.actionCardText);
+      // 判空双保险：AI 降级时 unwrap 已抛错，此处再兜一层避免空对象取属性
+      const content = result?.markdown || result?.actionCardText;
+      if (!content) {
+        setAiError('AI 服务暂不可用，已回退人工流程');
+        return;
+      }
+      setAiMarkdown(content);
       setAiDialogOpen(true);
-    } catch {
-      setAiError('AI 服务暂不可用');
+    } catch (err: unknown) {
+      // 展示后端返回的真实降级/错误文案，而非固定提示
+      setAiError(err instanceof Error ? err.message : 'AI 服务暂不可用');
     } finally {
       setAiLoading(false);
     }

@@ -24,9 +24,11 @@ interface TaskListResponse {
  * 获取盘点任务列表
  * POST /api/Account/UniGetToken { action: "GetTaskList" }
  */
-export async function getTaskList(): Promise<TaskItem[]> {
+export async function getTaskList(onlyMine = false): Promise<TaskItem[]> {
   const resp = await client.post('/api/Account/UniGetToken', {
     action: 'GetTaskList',
+    // 责任人视角：仅返回当前登录用户名下有资产分配的任务
+    ...(onlyMine ? { onlyMine: true } : {}),
   });
   const data = resp.data as { code: number; data: { total: number; page: number; pageSize: number; list: TaskItem[] }; msg: string; message: string };
   if (data.code === 0 || data.code === 200) {
