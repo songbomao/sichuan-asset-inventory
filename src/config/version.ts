@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607250841';
+export const APP_VERSION = 'v202607251051';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-25 08:41';
-export const RELEASE_NOTES = '新建盘点任务支持精确选择：按类别筛选后可预览资产清单（编码+名称+责任人/部门）并勾选特定资产；按部门选择后可预览该部门及子部门下的人员及其负责资产数并勾选特定人员；两类方式均实时显示已选/总数统计。';
+export const RELEASE_TIME = '2026-07-25 10:51';
+export const RELEASE_NOTES = '盘点下达前新增责任人匹配校验：责任人(user)为空时全量列出并禁止下达；责任人与钉钉一票否决式全量匹配，离职/重名/无法匹配时列出人员及涉及资产并禁止下达；校验失败弹出明细清单对话框。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607251051',
+    time: '2026-07-25 10:51',
+    notes: '盘点下达前新增责任人匹配校验：责任人(user)为空时全量列出并禁止下达；责任人与钉钉一票否决式全量匹配，离职/重名/无法匹配时列出人员及涉及资产并禁止下达；校验失败弹出明细清单对话框。',
+  },
   {
     version: 'v202607250841',
     time: '2026-07-25 08:41',

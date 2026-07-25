@@ -28,6 +28,23 @@ export interface CreateTaskParams {
   CreatedBy?: string;
 }
 
+/**
+ * 创建任务失败时的结构化校验明细（code !== 0 时由后端在 data.data 返回）
+ *  - empty_user：存在资产责任人为空，无法匹配责任人
+ *  - match_failed：责任人匹配失败（钉钉搜不到/疑似离职 或 重名无法唯一确定）
+ */
+export interface CreateTaskErrorDetail {
+  reason: 'empty_user' | 'match_failed';
+  /** reason === 'empty_user' 时返回的问题资产列表 */
+  assets?: { assetCode: string; assetName: string; deptName?: string }[];
+  /** reason === 'match_failed' 时返回的匹配失败责任人列表 */
+  failed?: {
+    userName: string;
+    type: 'not_found' | 'ambiguous';
+    assets: { assetCode: string; assetName: string }[];
+  }[];
+}
+
 /** 创建任务响应 */
 interface CreateTaskResponse {
   code: number;
@@ -48,7 +65,9 @@ export async function createTask(params: CreateTaskParams): Promise<{ Id: number
   if (data.code === 0 || data.code === 200) {
     return data.data;
   }
-  throw new Error(data.msg || data.message || '创建任务失败');
+  const err = new Error(data.msg || data.message || '创建任务失败') as Error & { detail?: CreateTaskErrorDetail };
+  err.detail = data.data as unknown as CreateTaskErrorDetail | undefined;
+  throw err;
 }
 
 /** 资产预览单条 */

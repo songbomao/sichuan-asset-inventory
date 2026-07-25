@@ -44,6 +44,7 @@ import {
   previewPersonnelByDepartments,
   type AdminTaskItem,
   type CreateTaskParams,
+  type CreateTaskErrorDetail,
   type InventoryOptionsResult,
   type SyncStatusResult,
   type DingtalkDepartmentNode,
@@ -141,6 +142,8 @@ export default function AdminTasks() {
   const [form, setForm] = useState<DialogForm>({ ...defaultForm });
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  /** 创建任务后端校验拦截（empty_user / match_failed）的结构化明细弹窗 */
+  const [validationError, setValidationError] = useState<CreateTaskErrorDetail | null>(null);
   const [inventoryOptions, setInventoryOptions] = useState<InventoryOptionsResult>({ departments: [], categories: [] });
   const [optionsLoading, setOptionsLoading] = useState(false);
 
@@ -477,7 +480,12 @@ export default function AdminTasks() {
         fetchTasks();
       }, 1500);
     } catch (err) {
-      setFeedback({ type: 'error', msg: err instanceof Error ? err.message : '创建失败' });
+      const detail = (err as Error & { detail?: CreateTaskErrorDetail })?.detail;
+      if (detail && (detail.reason === 'empty_user' || detail.reason === 'match_failed')) {
+        setValidationError(detail);
+      } else {
+        setFeedback({ type: 'error', msg: err instanceof Error ? err.message : '创建失败' });
+      }
     } finally {
       setSubmitting(false);
     }
@@ -1105,6 +1113,84 @@ export default function AdminTasks() {
             </Button>
           </Box>
         </Box>
+      </Dialog>
+
+      {/* 创建任务后端校验拦截明细（empty_user / match_failed） */}
+      <Dialog
+        open={validationError !== null}
+        onClose={() => setValidationError(null)}
+        fullWidth
+        maxWidth="xs"
+        sx={{ '& .MuiDialog-paper': { margin: { xs: 2, sm: 4 } } }}
+      >
+        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.05rem', color: 'error.main', pb: 1 }}>
+          创建任务被拦截
+        </DialogTitle>
+        <DialogContent sx={{ pt: '8px !important' }}>
+          {validationError?.reason === 'empty_user' && (
+            <Stack spacing={1.5}>
+              <Alert severity="error" sx={{ fontSize: '0.85rem' }}>
+                以下资产的责任人为空，无法匹配盘点责任人，请补全责任人信息后再创建。
+              </Alert>
+              <Box sx={{ maxHeight: 320, overflowY: 'auto' }}>
+                <Stack spacing={0.5} divider={<Divider flexItem />}>
+                  {(validationError.assets ?? []).map((a) => (
+                    <Box key={a.assetCode} sx={{ py: 0.5 }}>
+                      <Typography variant="body2" sx={{ fontSize: '0.85rem' }}>
+                        <strong>{a.assetCode}</strong> {a.assetName}
+                        {a.deptName ? `（${a.deptName}）` : ''}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Stack>
+              </Box>
+              <Typography variant="caption" color="text.secondary">
+                共 {validationError.assets?.length ?? 0} 项
+              </Typography>
+            </Stack>
+          )}
+
+          {validationError?.reason === 'match_failed' && (
+            <Stack spacing={1.5}>
+              <Alert severity="error" sx={{ fontSize: '0.85rem' }}>
+                以下责任人无法在钉钉中唯一匹配，请修正责任人信息后再创建。
+              </Alert>
+              <Box sx={{ maxHeight: 320, overflowY: 'auto' }}>
+                <Stack spacing={1.5}>
+                  {(validationError.failed ?? []).map((f) => (
+                    <Box key={f.userName}>
+                      <Typography
+                        variant="body2"
+                        sx={{ fontSize: '0.85rem', fontWeight: 600, color: 'error.main' }}
+                      >
+                        责任人「{f.userName}」— {f.type === 'not_found' ? '钉钉中不存在，疑似离职' : '存在多个同名人员，无法唯一确定'}
+                      </Typography>
+                      <Box sx={{ pl: 1.5, mt: 0.5 }}>
+                        {(f.assets ?? []).map((a) => (
+                          <Typography key={a.assetCode} variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                            {a.assetCode} {a.assetName}
+                          </Typography>
+                        ))}
+                      </Box>
+                    </Box>
+                  ))}
+                </Stack>
+              </Box>
+              <Typography variant="caption" color="text.secondary">
+                共 {validationError.failed?.length ?? 0} 名责任人待处理
+              </Typography>
+            </Stack>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 2, pb: 2 }}>
+          <Button
+            variant="contained"
+            onClick={() => setValidationError(null)}
+            sx={{ borderRadius: '10px', textTransform: 'none' }}
+          >
+            我知道了
+          </Button>
+        </DialogActions>
       </Dialog>
       </>
       )}
