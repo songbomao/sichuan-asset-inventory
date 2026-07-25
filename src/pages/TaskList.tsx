@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Card from '@mui/material/Card';
 import CardActionArea from '@mui/material/CardActionArea';
@@ -9,9 +9,19 @@ import Alert from '@mui/material/Alert';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import IconButton from '@mui/material/IconButton';
 import InboxIcon from '@mui/icons-material/Inbox';
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
+import Box from '@mui/material/Box';
 import { getTaskList, type TaskItem } from '../api/tasks';
 import StatusBadge from '../components/StatusBadge';
 import ProgressBar from '../components/ProgressBar';
+
+/** 已办任务状态集合（完成 / 取消均视为已结束） */
+const DONE_STATUSES = new Set(['completed', 'cancelled']);
+/** 待办任务状态集合（待盘点 / 待启动 / 进行中） */
+const TODO_STATUSES = new Set(['pending', 'draft', 'running', 'in_progress']);
+
+type Segment = 'todo' | 'done';
 
 /**
  * 盘点任务列表页
@@ -23,6 +33,7 @@ export default function TaskListPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [segment, setSegment] = useState<Segment>('todo');
 
   const fetchTasks = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -76,20 +87,42 @@ export default function TaskListPage() {
     }
   };
 
+  /** 按分段过滤（查询逻辑不变，仅前端分组展示） */
+  const visibleTasks = useMemo(() => {
+    if (segment === 'done') {
+      return tasks.filter((t) => DONE_STATUSES.has(t.status));
+    }
+    return tasks.filter((t) => TODO_STATUSES.has(t.status));
+  }, [tasks, segment]);
+
   return (
     <div className="p-4 space-y-4">
       {/* 头部 */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">盘点任务</h1>
+          <h1 className="text-xl font-bold text-gray-900">我的任务</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            {tasks.length > 0 ? `共 ${tasks.length} 个任务待处理` : '当前没有盘点任务'}
+            {tasks.length > 0 ? `共 ${tasks.length} 个盘点任务` : '当前没有盘点任务'}
           </p>
         </div>
         <IconButton onClick={() => fetchTasks(true)} disabled={refreshing} color="primary">
           <RefreshIcon className={refreshing ? 'animate-spin-refresh' : ''} />
         </IconButton>
       </div>
+
+      {/* 待办 / 已办 分段切换 */}
+      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+        <Tabs
+          value={segment}
+          onChange={(_e, v: Segment) => setSegment(v)}
+          variant="fullWidth"
+          textColor="primary"
+          indicatorColor="primary"
+        >
+          <Tab label={`待办 (${tasks.filter((t) => TODO_STATUSES.has(t.status)).length})`} value="todo" />
+          <Tab label={`已办 (${tasks.filter((t) => DONE_STATUSES.has(t.status)).length})`} value="done" />
+        </Tabs>
+      </Box>
 
       {/* 错误提示 */}
       {error && (
@@ -111,17 +144,19 @@ export default function TaskListPage() {
         ))}
 
       {/* 空状态 */}
-      {!loading && !error && tasks.length === 0 && (
+      {!loading && !error && visibleTasks.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16 text-gray-400">
           <InboxIcon sx={{ fontSize: 64, mb: 2 }} />
-          <p className="text-base font-medium">暂无盘点任务</p>
+          <p className="text-base font-medium">
+            {segment === 'todo' ? '暂无待办任务' : '暂无已办任务'}
+          </p>
           <p className="text-sm mt-1">下拉刷新或联系管理员分配任务</p>
         </div>
       )}
 
       {/* 任务卡片列表 */}
       {!loading &&
-        tasks.map((task) => (
+        visibleTasks.map((task) => (
           <Card key={task.taskId} className="glow-border hover:shadow-glow transition-shadow">
             <CardActionArea onClick={() => navigate(`/tasks/${task.taskId}`)}>
               <CardContent>

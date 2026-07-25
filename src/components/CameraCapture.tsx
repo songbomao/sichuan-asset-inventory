@@ -2,8 +2,15 @@ import { useRef, useState, useCallback, useEffect } from 'react';
 import Button from '@mui/material/Button';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import CircularProgress from '@mui/material/CircularProgress';
 import Chip from '@mui/material/Chip';
+import Alert from '@mui/material/Alert';
+import {
+  RecognizeAsset,
+  type RecognizeAssetCandidate,
+  type RecognizeAssetResult,
+} from '../api/ai';
 
 interface CameraCaptureProps {
   onCapture: (dataUrl: string) => void;
@@ -20,6 +27,10 @@ interface CameraCaptureProps {
   minPhotos?: number;
   /** 最多允许拍几张 */
   maxPhotos?: number;
+  /** AI 识别候选资产（提供后显示「AI 识别」按钮） */
+  candidates?: RecognizeAssetCandidate[];
+  /** AI 识别完成回调 */
+  onAIRecognized?: (result: RecognizeAssetResult) => void;
 }
 
 /**
@@ -36,6 +47,8 @@ export default function CameraCapture({
   photoCount = 0,
   minPhotos = 2,
   maxPhotos = 4,
+  candidates,
+  onAIRecognized,
 }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -48,8 +61,32 @@ export default function CameraCapture({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // AI 识别相关
+  const [lastPhoto, setLastPhoto] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiMsg, setAiMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
   const reachedMax = photoCount >= maxPhotos;
   const needMore = Math.max(0, minPhotos - photoCount);
+
+  /** 触发 AI 资产识别 */
+  const handleAIRecognize = useCallback(async () => {
+    if (!lastPhoto || !candidates || candidates.length === 0) return;
+    setAiLoading(true);
+    setAiMsg(null);
+    try {
+      const result = await RecognizeAsset({ image: lastPhoto, candidates });
+      setAiMsg({
+        type: 'success',
+        text: `识别为 ${result.name}（${result.assetCode}）· 置信度 ${Math.round(result.confidence * 100)}%`,
+      });
+      onAIRecognized?.(result);
+    } catch {
+      setAiMsg({ type: 'error', text: 'AI 服务暂不可用' });
+    } finally {
+      setAiLoading(false);
+    }
+  }, [lastPhoto, candidates, onAIRecognized]);
 
   /** 停止摄像头 */
   const stopCamera = useCallback(() => {
@@ -180,6 +217,7 @@ export default function CameraCapture({
 
         const watermarked = canvas.toDataURL('image/jpeg', 0.7);
         setPreviewSrc(watermarked);
+        setLastPhoto(watermarked);
         onCapture(watermarked);
       };
       img.src = rawDataUrl;
@@ -364,6 +402,28 @@ export default function CameraCapture({
           >
             相册
           </Button>
+        </div>
+      )}
+
+      {/* AI 资产识别（提供候选后显示） */}
+      {!cameraOpen && candidates && candidates.length > 0 && lastPhoto && (
+        <div className="w-full space-y-2">
+          <Button
+            variant="contained"
+            fullWidth
+            color="secondary"
+            startIcon={aiLoading ? <CircularProgress size={18} color="inherit" /> : <AutoAwesomeIcon />}
+            onClick={handleAIRecognize}
+            disabled={aiLoading || disabled}
+            sx={{ py: 1.2, borderRadius: 2 }}
+          >
+            {aiLoading ? 'AI 识别中...' : '✨ AI 识别资产'}
+          </Button>
+          {aiMsg && (
+            <Alert severity={aiMsg.type === 'success' ? 'success' : 'info'} sx={{ fontSize: '0.8rem' }}>
+              {aiMsg.text}
+            </Alert>
+          )}
         </div>
       )}
     </div>

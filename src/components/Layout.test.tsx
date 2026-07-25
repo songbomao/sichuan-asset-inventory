@@ -13,34 +13,40 @@ function renderWithRouter(initialPath = '/tasks') {
 }
 
 describe('Layout', () => {
-  it('should render bottom navigation with 3 tabs', () => {
+  it('should render bottom navigation with owner tabs (责任人视图)', () => {
     renderWithRouter('/tasks');
-    expect(screen.getByText('任务')).toBeDefined();
-    expect(screen.getByText('记录')).toBeDefined();
+    expect(screen.getByText('我的任务')).toBeDefined();
+    expect(screen.getByText('资产档案')).toBeDefined();
     expect(screen.getByText('我的')).toBeDefined();
   });
 
-  it('should highlight tasks tab when on /tasks', () => {
+  it('should render role switcher (责任人 / 管理员)', () => {
     renderWithRouter('/tasks');
-    const tasksTab = screen.getByText('任务').closest('button');
+    expect(screen.getByText('责任人')).toBeDefined();
+    expect(screen.getByText('管理员')).toBeDefined();
+  });
+
+  it('should highlight 我的任务 tab when on /tasks', () => {
+    renderWithRouter('/tasks');
+    const tasksTab = screen.getByText('我的任务').closest('button');
     expect(tasksTab?.classList.toString()).toContain('Mui-selected');
   });
 
-  it('should highlight records tab when on /records', () => {
-    renderWithRouter('/records');
-    const recordsTab = screen.getByText('记录').closest('button');
-    expect(recordsTab?.classList.toString()).toContain('Mui-selected');
+  it('should highlight 资产档案 tab when on /assets', () => {
+    renderWithRouter('/assets');
+    const assetsTab = screen.getByText('资产档案').closest('button');
+    expect(assetsTab?.classList.toString()).toContain('Mui-selected');
   });
 
-  it('should highlight profile tab when on /profile', () => {
+  it('should highlight 我的 tab when on /profile', () => {
     renderWithRouter('/profile');
     const profileTab = screen.getByText('我的').closest('button');
     expect(profileTab?.classList.toString()).toContain('Mui-selected');
   });
 
-  it('should default to tasks tab for unknown paths', () => {
+  it('should default to 我的任务 tab for unknown paths', () => {
     renderWithRouter('/unknown');
-    const tasksTab = screen.getByText('任务').closest('button');
+    const tasksTab = screen.getByText('我的任务').closest('button');
     expect(tasksTab?.classList.toString()).toContain('Mui-selected');
   });
 

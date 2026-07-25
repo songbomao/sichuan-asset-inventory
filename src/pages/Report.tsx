@@ -5,17 +5,27 @@ import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import Skeleton from '@mui/material/Skeleton';
+import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
 import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
 import Divider from '@mui/material/Divider';
 import { generateReport, type ReportData } from '../api/report';
+import { getTaskList, type TaskItem } from '../api/tasks';
+import { WriteReport } from '../api/ai';
 import { useAuth } from '../contexts/AuthContext';
 
 /**
  * 盘点报告页
+ * - 任务级（/tasks/:taskId/report）：展示该任务报告
+ * - 管理员入口（/admin/report，无 taskId）：先选择任务再查看
  */
 export default function ReportPage() {
   const { taskId } = useParams<{ taskId: string }>();
@@ -24,6 +34,16 @@ export default function ReportPage() {
   const [data, setData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // 管理员无 taskId 时：任务选择器
+  const [taskOptions, setTaskOptions] = useState<TaskItem[]>([]);
+  const [taskOptionsLoading, setTaskOptionsLoading] = useState(false);
+
+  // AI 生成汇报文案
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiDialogOpen, setAiDialogOpen] = useState(false);
+  const [aiMarkdown, setAiMarkdown] = useState('');
+  const [aiError, setAiError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     if (!taskId) return;
@@ -40,9 +60,25 @@ export default function ReportPage() {
     }
   }, [taskId]);
 
+  const loadTaskOptions = useCallback(async () => {
+    setTaskOptionsLoading(true);
+    try {
+      const list = await getTaskList();
+      setTaskOptions(list);
+    } catch {
+      setTaskOptions([]);
+    } finally {
+      setTaskOptionsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (taskId) {
+      fetchData();
+    } else {
+      loadTaskOptions();
+    }
+  }, [taskId, fetchData, loadTaskOptions]);
 
   const { user } = useAuth();
   if (!user?.isAdmin) {
@@ -53,6 +89,55 @@ export default function ReportPage() {
       </div>
     );
   }
+
+  /** 管理员入口：选择任务后跳转任务级报告 */
+  if (!taskId) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <header className="sticky top-0 z-10 bg-gradient-to-r from-primary to-[#4a148c] text-white px-4 py-3 flex items-center gap-3 shadow-lg">
+          <IconButton color="inherit" size="small" onClick={() => navigate('/admin/tasks')}>
+            <ArrowBackIosNewIcon fontSize="small" />
+          </IconButton>
+          <h2 className="text-sm font-semibold">盘点报告</h2>
+        </header>
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          <p className="text-sm text-gray-500">请选择要生成报告的盘点任务</p>
+          {taskOptionsLoading && <CircularProgress size={24} />}
+          {!taskOptionsLoading && taskOptions.length === 0 && (
+            <p className="text-sm text-gray-400">暂无可用任务</p>
+          )}
+          {taskOptions.map((t) => (
+            <Card key={t.taskId} className="hover:shadow-lg transition-shadow cursor-pointer">
+              <CardContent onClick={() => navigate(`/tasks/${t.taskId}/report`)}>
+                <Typography variant="subtitle1" className="font-semibold text-gray-900">
+                  {t.taskName}
+                </Typography>
+                <div className="text-xs text-gray-400 mt-1">资产 {t.assetCount} 项 · {t.status}</div>
+              </CardContent>
+            </Card>
+          ))}
+          <div className="h-4" />
+        </div>
+      </div>
+    );
+  }
+
+  /** AI 生成汇报文案 */
+  const handleGenerateReport = useCallback(async () => {
+    if (!taskId) return;
+    setAiLoading(true);
+    setAiError(null);
+    setAiMarkdown('');
+    try {
+      const result = await WriteReport({ taskId });
+      setAiMarkdown(result.markdown || result.actionCardText);
+      setAiDialogOpen(true);
+    } catch {
+      setAiError('AI 服务暂不可用');
+    } finally {
+      setAiLoading(false);
+    }
+  }, [taskId]);
 
   if (loading) {
     return (
@@ -97,6 +182,22 @@ export default function ReportPage() {
       </header>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* AI 生成汇报文案 */}
+        <Button
+          variant="contained"
+          color="secondary"
+          fullWidth
+          startIcon={aiLoading ? <CircularProgress size={18} color="inherit" /> : <AutoAwesomeIcon />}
+          onClick={handleGenerateReport}
+          disabled={aiLoading}
+          sx={{ py: 1.1, borderRadius: 2 }}
+        >
+          {aiLoading ? 'AI 生成中...' : '✨ AI 生成汇报文案'}
+        </Button>
+        {aiError && (
+          <Alert severity="warning" sx={{ fontSize: '0.8rem' }}>{aiError}</Alert>
+        )}
+
         {/* 报告头 */}
         <Card className="glow-border">
           <CardContent>
@@ -192,6 +293,19 @@ export default function ReportPage() {
 
         <div className="h-4" />
       </div>
+
+      {/* AI 汇报文案弹窗 */}
+      <Dialog open={aiDialogOpen} onClose={() => setAiDialogOpen(false)} fullWidth maxWidth="sm">
+        <DialogTitle sx={{ fontWeight: 700 }}>✨ AI 生成的汇报文案</DialogTitle>
+        <DialogContent>
+          <div className="text-sm text-gray-700 whitespace-pre-line bg-gray-50 rounded-lg p-3 max-h-80 overflow-auto">
+            {aiMarkdown}
+          </div>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAiDialogOpen(false)}>关闭</Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 }

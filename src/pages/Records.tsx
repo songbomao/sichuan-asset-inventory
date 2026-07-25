@@ -25,7 +25,9 @@ import InventoryIcon from '@mui/icons-material/Inventory';
 import CategoryIcon from '@mui/icons-material/Category';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import NotesIcon from '@mui/icons-material/Notes';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { getMyRecords, getRecordDetail, type RecordItem } from '../api/inventory';
+import { DiagnoseDifference, type DiagnoseDifferenceResult } from '../api/ai';
 import StatusBadge from '../components/StatusBadge';
 
 /** 筛选选项 */
@@ -85,6 +87,29 @@ function DetailDrawer({
   const currentY = useRef(0);
   const [dragOffset, setDragOffset] = useState(0);
   const dragging = useRef(false);
+
+  // AI 差异诊断
+  const [diagnoseLoading, setDiagnoseLoading] = useState(false);
+  const [diagnoseResult, setDiagnoseResult] = useState<DiagnoseDifferenceResult | null>(null);
+  const [diagnoseError, setDiagnoseError] = useState<string | null>(null);
+
+  const handleDiagnose = async () => {
+    if (!record) return;
+    setDiagnoseLoading(true);
+    setDiagnoseError(null);
+    setDiagnoseResult(null);
+    try {
+      const result = await DiagnoseDifference({
+        taskId: record.taskId,
+        assetCode: record.assetCode,
+      });
+      setDiagnoseResult(result);
+    } catch {
+      setDiagnoseError('AI 服务暂不可用');
+    } finally {
+      setDiagnoseLoading(false);
+    }
+  };
 
   const onTouchStart = (e: React.TouchEvent) => {
     startY.current = e.touches[0].clientY;
@@ -241,11 +266,36 @@ function DetailDrawer({
                 {record.location && (
                   <InfoRow label="位置" value={record.location} small multiline />
                 )}
-                {record.remark && (
-                  <InfoRow label="备注" value={record.remark} small multiline />
-                )}
-              </Stack>
-            </Paper>
+            {record.remark && (
+              <InfoRow label="备注" value={record.remark} small multiline />
+            )}
+          </Stack>
+        </Paper>
+
+        {/* AI 差异诊断（异常记录） */}
+        {record.status !== '正常' && (
+          <Paper elevation={0} className="rounded-2xl p-4 bg-gray-50/60 border border-gray-100">
+            <Button
+              variant="contained"
+              color="secondary"
+              fullWidth
+              startIcon={diagnoseLoading ? <CircularProgress size={18} color="inherit" /> : <AutoAwesomeIcon />}
+              onClick={handleDiagnose}
+              disabled={diagnoseLoading}
+              sx={{ py: 1, borderRadius: 2 }}
+            >
+              {diagnoseLoading ? 'AI 诊断中...' : '✨ AI 差异诊断'}
+            </Button>
+            {diagnoseResult && (
+              <Alert severity="info" sx={{ mt: 2, fontSize: '0.8rem', whiteSpace: 'pre-line' }}>
+                {`原因：${diagnoseResult.reason}\n建议：${diagnoseResult.suggestion}\n责任人提示：${diagnoseResult.ownerHint}`}
+              </Alert>
+            )}
+            {diagnoseError && (
+              <Alert severity="warning" sx={{ mt: 2, fontSize: '0.8rem' }}>{diagnoseError}</Alert>
+            )}
+          </Paper>
+        )}
           </Box>
         )}
       </Box>
@@ -294,8 +344,9 @@ function InfoRow({
 
 /**
  * 盘点记录页
+ * @param embedded 嵌入模式（如资产档案-盘点时间线子 tab 复用），隐藏独立页头
  */
-export default function RecordsPage() {
+export default function RecordsPage({ embedded = false }: { embedded?: boolean }) {
   const [records, setRecords] = useState<RecordItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -378,19 +429,21 @@ export default function RecordsPage() {
   };
 
   return (
-    <div className="p-4 space-y-4 bg-gray-50 min-h-screen">
-      {/* 头部 */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">盘点记录</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            {records.length > 0 ? `共 ${records.length} 条记录${total > records.length ? ` / 总计 ${total} 条` : ''}` : '暂无盘点记录'}
-          </p>
+    <div className={embedded ? 'space-y-4' : 'p-4 space-y-4 bg-gray-50 min-h-screen'}>
+      {/* 头部（仅独立页显示） */}
+      {!embedded && (
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">盘点记录</h1>
+            <p className="text-sm text-gray-500 mt-0.5">
+              {records.length > 0 ? `共 ${records.length} 条记录${total > records.length ? ` / 总计 ${total} 条` : ''}` : '暂无盘点记录'}
+            </p>
+          </div>
+          <IconButton onClick={() => fetchRecords(true)} disabled={refreshing || loadingMore} color="primary">
+            <RefreshIcon className={refreshing ? 'animate-spin-refresh' : ''} />
+          </IconButton>
         </div>
-        <IconButton onClick={() => fetchRecords(true)} disabled={refreshing || loadingMore} color="primary">
-          <RefreshIcon className={refreshing ? 'animate-spin-refresh' : ''} />
-        </IconButton>
-      </div>
+      )}
 
       {/* 筛选标签 */}
       <div className="flex gap-2 overflow-x-auto pb-1">

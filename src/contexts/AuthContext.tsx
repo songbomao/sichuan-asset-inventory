@@ -4,6 +4,9 @@ import type { DingtalkUserInfo } from '../api/auth';
 import { getStoredUser } from '../api/auth';
 import { getAdminInfo } from '../api/admin';
 
+/** 视图角色：责任人视图 / 管理员视图 */
+export type RoleView = 'owner' | 'admin';
+
 /** 认证上下文值 */
 interface AuthContextValue {
   token: string | null;
@@ -13,6 +16,10 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   /** 从后端刷新当前用户的 isAdmin/isSuper 标记（管理员配置变更后立即生效） */
   refreshAdmin: () => Promise<void>;
+  /** 当前信息架构视图角色，默认 'owner'。仅 user.isAdmin 时允许切到 'admin' */
+  roleView: RoleView;
+  /** 切换视图角色（非管理员请求 admin 会被忽略） */
+  setRoleView: (view: RoleView) => void;
 }
 
 const AuthContext = createContext<AuthContextValue>({
@@ -22,6 +29,8 @@ const AuthContext = createContext<AuthContextValue>({
   logout: () => {},
   isAuthenticated: false,
   refreshAdmin: async () => {},
+  roleView: 'owner',
+  setRoleView: () => {},
 });
 
 /** 认证上下文 Provider */
@@ -30,6 +39,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.getItem('auth_token'),
   );
   const [user, setUser] = useState<DingtalkUserInfo | null>(() => getStoredUser());
+
+  // 视图角色：默认从 localStorage 读取，缺失或非管理员遗留的 admin 一律回退 owner
+  const [roleView, setRoleViewState] = useState<RoleView>(() => {
+    const stored = localStorage.getItem('role_view');
+    return stored === 'admin' ? 'admin' : 'owner';
+  });
 
   const login = useCallback((newToken: string, userInfo?: DingtalkUserInfo) => {
     localStorage.setItem('auth_token', newToken);
@@ -43,9 +58,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => {
     localStorage.removeItem('auth_token');
     localStorage.removeItem('auth_user');
+    localStorage.removeItem('role_view');
     setToken(null);
     setUser(null);
+    setRoleViewState('owner');
   }, []);
+
+  /** 切换视图角色：仅当用户为管理员时才允许进入 admin 视图 */
+  const setRoleView = useCallback(
+    (view: RoleView) => {
+      if (view === 'admin' && !user?.isAdmin) {
+        return;
+      }
+      localStorage.setItem('role_view', view);
+      setRoleViewState(view);
+    },
+    [user?.isAdmin],
+  );
 
   /** 从后端拉取最新权限标记，覆盖本地 user（后端为权威来源） */
   const refreshAdmin = useCallback(async () => {
@@ -79,6 +108,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('storage', handler);
   }, [token, logout]);
 
+  // 用户权限变化时，若失去管理员身份则强制回退到责任人视图
+  useEffect(() => {
+    if (!user?.isAdmin && roleView === 'admin') {
+      setRoleView('owner');
+    }
+  }, [user?.isAdmin, roleView, setRoleView]);
+
   const value = useMemo(
     () => ({
       token,
@@ -87,8 +123,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       isAuthenticated: !!token,
       refreshAdmin,
+      roleView,
+      setRoleView,
     }),
-    [token, user, login, logout, refreshAdmin],
+    [token, user, login, logout, refreshAdmin, roleView, setRoleView],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

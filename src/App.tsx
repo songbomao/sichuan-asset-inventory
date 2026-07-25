@@ -1,11 +1,13 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout';
+import RequireAdmin from './components/RequireAdmin';
 import Login from './pages/Login';
 import TaskList from './pages/TaskList';
 import Inventory from './pages/Inventory';
 import Records from './pages/Records';
 import Profile from './pages/Profile';
+import AssetsArchive from './pages/AssetsArchive';
 import AdminTasks from './pages/AdminTasks';
 import Review from './pages/Review';
 import Dashboard from './pages/Dashboard';
@@ -44,7 +46,7 @@ export default function App() {
         }
       />
 
-      {/* 受保护路由 — 带底部导航 */}
+      {/* 受保护路由 — 带底部导航（责任人 / 管理员双套导航由 Layout 内部按角色渲染） */}
       <Route
         element={
           <ProtectedRoute>
@@ -52,10 +54,40 @@ export default function App() {
           </ProtectedRoute>
         }
       >
+        {/* 责任人导航 */}
         <Route path="/tasks" element={<TaskList />} />
-        <Route path="/records" element={<Records />} />
+        <Route path="/assets" element={<AssetsArchive />} />
         <Route path="/profile" element={<Profile />} />
-        <Route path="/admin" element={<AdminTasks />} />
+        {/* 原 /records 并入资产档案的时间线子 tab */}
+        <Route path="/records" element={<Navigate to="/assets?tab=timeline" replace />} />
+
+        {/* 管理员导航（需管理员权限） */}
+        <Route
+          path="/admin/tasks"
+          element={
+            <RequireAdmin>
+              <AdminTasks />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/dashboard"
+          element={
+            <RequireAdmin>
+              <Dashboard />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/report"
+          element={
+            <RequireAdmin>
+              <Report />
+            </RequireAdmin>
+          }
+        />
+        {/* 历史兼容别名 */}
+        <Route path="/admin" element={<Navigate to="/admin/tasks" replace />} />
       </Route>
 
       {/* 盘点页 — 独立页面，不带底部导航 */}

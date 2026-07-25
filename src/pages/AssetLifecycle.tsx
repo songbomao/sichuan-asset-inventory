@@ -6,12 +6,15 @@ import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import Skeleton from '@mui/material/Skeleton';
+import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
 import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import SearchIcon from '@mui/icons-material/Search';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { getLifecycle, type LifecycleData } from '../api/report';
+import { DiagnoseDifference, type DiagnoseDifferenceResult } from '../api/ai';
 
 /**
  * 资产全生命周期查询页
@@ -24,11 +27,20 @@ export default function AssetLifecyclePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // AI 差异诊断
+  const [diagnoseTaskId, setDiagnoseTaskId] = useState('');
+  const [diagnoseLoading, setDiagnoseLoading] = useState(false);
+  const [diagnoseResult, setDiagnoseResult] = useState<DiagnoseDifferenceResult | null>(null);
+  const [diagnoseError, setDiagnoseError] = useState<string | null>(null);
+
   const handleSearch = useCallback(async () => {
     if (!assetCode.trim()) return;
     setLoading(true);
     setError(null);
     setData(null);
+    setDiagnoseResult(null);
+    setDiagnoseError(null);
+    setDiagnoseTaskId('');
     try {
       const result = await getLifecycle(assetCode.trim());
       setData(result);
@@ -39,6 +51,25 @@ export default function AssetLifecyclePage() {
       setLoading(false);
     }
   }, [assetCode]);
+
+  /** AI 差异诊断：对当前资产给出原因与处理建议 */
+  const handleDiagnose = useCallback(async () => {
+    if (!data) return;
+    setDiagnoseLoading(true);
+    setDiagnoseError(null);
+    setDiagnoseResult(null);
+    try {
+      const result = await DiagnoseDifference({
+        taskId: diagnoseTaskId.trim(),
+        assetCode: data.assetCode,
+      });
+      setDiagnoseResult(result);
+    } catch {
+      setDiagnoseError('AI 服务暂不可用');
+    } finally {
+      setDiagnoseLoading(false);
+    }
+  }, [data, diagnoseTaskId]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -145,6 +176,45 @@ export default function AssetLifecyclePage() {
                       );
                     })}
                   </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* AI 差异诊断 */}
+            <Card>
+              <CardContent>
+                <Typography variant="subtitle1" className="font-semibold text-gray-900 mb-3">
+                  AI 差异诊断
+                </Typography>
+                <TextField
+                  size="small"
+                  fullWidth
+                  label="盘点任务ID（可选）"
+                  placeholder="如 T-2024-001，留空按资产全局诊断"
+                  value={diagnoseTaskId}
+                  onChange={(e) => setDiagnoseTaskId(e.target.value)}
+                  sx={{ mb: 2 }}
+                />
+                <Button
+                  variant="contained"
+                  color="secondary"
+                  fullWidth
+                  startIcon={diagnoseLoading ? <CircularProgress size={18} color="inherit" /> : <AutoAwesomeIcon />}
+                  onClick={handleDiagnose}
+                  disabled={diagnoseLoading}
+                  sx={{ py: 1, borderRadius: 2 }}
+                >
+                  {diagnoseLoading ? '诊断中...' : '✨ 诊断差异'}
+                </Button>
+                {diagnoseResult && (
+                  <Alert severity="info" sx={{ mt: 2, fontSize: '0.8rem', whiteSpace: 'pre-line' }}>
+                    {`原因：${diagnoseResult.reason}\n建议：${diagnoseResult.suggestion}\n责任人提示：${diagnoseResult.ownerHint}`}
+                  </Alert>
+                )}
+                {diagnoseError && (
+                  <Alert severity="warning" sx={{ mt: 2, fontSize: '0.8rem' }}>
+                    {diagnoseError}
+                  </Alert>
                 )}
               </CardContent>
             </Card>

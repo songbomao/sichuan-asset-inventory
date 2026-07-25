@@ -21,6 +21,11 @@ import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import { getTaskDetail, getProgress, type AssetInfo } from '../api/tasks';
 import { submitRecord, getAssetByCode, type AssetDetail } from '../api/inventory';
 import { getLifecycle, type LifecycleData } from '../api/report';
+import {
+  RecognizeAsset,
+  type RecognizeAssetCandidate,
+  type RecognizeAssetResult,
+} from '../api/ai';
 import { getCurrentLocation } from '../api/reverseGeocode';
 import { useAuth } from '../contexts/AuthContext';
 import CameraCapture from '../components/CameraCapture';
@@ -130,11 +135,8 @@ export default function InventoryPage() {
   // 水印时间
   const [watermarkTime, setWatermarkTime] = useState('');
 
-  // AI 识别弹窗
-  const [scanDialogOpen, setScanDialogOpen] = useState(false);
-  const [scanCode, setScanCode] = useState('');
-  const [scanning, setScanning] = useState(false);
-  const [scanResult, setScanResult] = useState<string | null>(null);
+  // AI 识别
+  const [aiScanning, setAiScanning] = useState(false);
 
   // 触控滑动跟踪
   const touchStartX = useRef(0);
@@ -331,23 +333,59 @@ export default function InventoryPage() {
     }
   }, [taskId, assets, currentIndex, photos, assetStatus, remark, gpsCoords, gpsLocation]);
 
-  /** AI 识别资产 */
-  const handleScan = useCallback(async () => {
-    if (!scanCode.trim()) return;
-    setScanning(true);
-    setScanResult(null);
-    try {
-      const result = await getAssetByCode(scanCode.trim());
-      setScanResult(
-        `资产编码：${result.assetCode}\n名称：${result.assetName}\n分类：${result.categoryName || '-'}\n位置：${result.location || '-'}`,
-      );
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : '识别失败';
-      setScanResult(`❌ ${msg}`);
-    } finally {
-      setScanning(false);
+  /** AI 识别后将识别结果跳转定位到对应资产 */
+  const jumpToAsset = useCallback(
+    (result: RecognizeAssetResult) => {
+      const idx = assets.findIndex((a) => a.assetCode === result.assetCode);
+      if (idx >= 0) {
+        setCurrentIndex(idx);
+        setSnackbar({
+          open: true,
+          message: `✅ AI 识别为 ${result.name}，已跳转`,
+          severity: 'success',
+        });
+      } else {
+        setSnackbar({
+          open: true,
+          message: `AI 识别为 ${result.name}（不在本任务）`,
+          severity: 'success',
+        });
+      }
+    },
+    [assets],
+  );
+
+  /** 基于照片 + 候选资产列表调用真实 AI 识别 */
+  const recognizeWithImage = useCallback(
+    async (image: string) => {
+      const candidates: RecognizeAssetCandidate[] = assets.map((a) => ({
+        assetCode: a.assetCode,
+        name: a.assetName,
+        spec: a.category || '',
+      }));
+      if (candidates.length === 0) return;
+      setAiScanning(true);
+      try {
+        const result = await RecognizeAsset({ image, candidates });
+        jumpToAsset(result);
+      } catch {
+        setSnackbar({ open: true, message: '⚠️ AI 服务暂不可用', severity: 'error' });
+      } finally {
+        setAiScanning(false);
+      }
+    },
+    [assets, jumpToAsset],
+  );
+
+  /** 顶部「AI识别」按钮：使用已拍照片发起识别 */
+  const handleAIRecognize = useCallback(async () => {
+    if (photos.length === 0) {
+      setSnackbar({ open: true, message: '请先拍摄至少一张照片', severity: 'error' });
+      return;
     }
-  }, [scanCode]);
+    const combined = await combinePhotos(photos);
+    await recognizeWithImage(combined);
+  }, [photos, recognizeWithImage]);
 
   // ---------- 加载态 ----------
   if (loading) {
@@ -414,8 +452,9 @@ export default function InventoryPage() {
           size="small"
           variant="outlined"
           color="inherit"
-          onClick={() => setScanDialogOpen(true)}
-          startIcon={<QrCodeScannerIcon />}
+          onClick={handleAIRecognize}
+          disabled={aiScanning}
+          startIcon={aiScanning ? <CircularProgress size={16} color="inherit" /> : <QrCodeScannerIcon />}
           sx={{ borderRadius: '16px', borderColor: 'rgba(255,255,255,0.5)', color: '#fff', fontSize: '0.7rem', py: 0.4, px: 1 }}
         >
           AI识别
@@ -491,6 +530,12 @@ export default function InventoryPage() {
             photoCount={photos.length}
             minPhotos={2}
             maxPhotos={4}
+            candidates={assets.map((a) => ({
+              assetCode: a.assetCode,
+              name: a.assetName,
+              spec: a.category || '',
+            }))}
+            onAIRecognized={jumpToAsset}
           />
         </div>
 
@@ -603,37 +648,6 @@ export default function InventoryPage() {
           {snackbar.message}
         </Alert>
       </Snackbar>
-
-      {/* AI 识别弹窗 */}
-      <Dialog open={scanDialogOpen} onClose={() => setScanDialogOpen(false)} fullWidth maxWidth="xs">
-        <DialogTitle sx={{ fontWeight: 700, fontSize: '1rem' }}>🔍 AI 识别资产</DialogTitle>
-        <DialogContent>
-          <p className="text-sm text-gray-500 mb-3">输入资产编码，系统将自动查询资产信息</p>
-          <TextField
-            fullWidth
-            label="资产编码"
-            value={scanCode}
-            onChange={(e) => setScanCode(e.target.value)}
-            autoFocus
-            size="small"
-            placeholder="输入资产编码如 ZC-2024-00123"
-            sx={{ mb: 2 }}
-          />
-          {scanResult && (
-            <div className="bg-gray-50 rounded-lg p-3 text-sm whitespace-pre-line">
-              {scanResult}
-            </div>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => { setScanDialogOpen(false); setScanResult(null); setScanCode(''); }}>
-            关闭
-          </Button>
-          <Button variant="contained" onClick={handleScan} disabled={scanning || !scanCode.trim()}>
-            {scanning ? <CircularProgress size={18} color="inherit" /> : '查询'}
-          </Button>
-        </DialogActions>
-      </Dialog>
     </div>
   );
 }

@@ -21,11 +21,35 @@ export interface PersonStat {
   completed: number;
 }
 
+/** 类别维度统计（全局视图） */
+export interface CategoryStat {
+  category: string;
+  total: number;
+  completed: number;
+}
+
+/** 任务汇总（全局视图，可下钻） */
+export interface TaskSummary {
+  taskId: string;
+  taskName: string;
+  totalAssets: number;
+  completedCount: number;
+  abnormalCount: number;
+  completionRate: number;
+  status?: string;
+}
+
 /** 看板数据 */
 export interface DashboardData {
   overall: DashboardOverall;
   deptStats: DeptStat[];
   personStats: PersonStat[];
+  /** 视图范围：task=单任务；global=全局（taskId='0'） */
+  scope?: 'task' | 'global';
+  /** 类别维度（全局视图） */
+  categoryStats?: CategoryStat[];
+  /** 任务汇总列表（全局视图，可下钻） */
+  tasks?: TaskSummary[];
 }
 
 /** 看板响应 */

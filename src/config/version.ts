@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607251349';
+export const APP_VERSION = 'v202607252020';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-25 13:49';
-export const RELEASE_NOTES = '修复我的页部门字段与盘点页统计口径：我的页部门改为完整层级路径"父级（子级）-末级"（如市场部（保密办公室）-IT支撑中心）；盘点任务页资产总数与盘点进度仅统计当前登录用户被分配的固资，不再显示任务全部资产数。';
+export const RELEASE_TIME = '2026-07-25 20:20';
+export const RELEASE_NOTES = '重新部署验证前端缓存策略：vite.config 已对 assets/*.js|css 引用追加 ?v=版本号 强制刷新；本次仅升版本号触发 GitHub Pages 重新部署，确保钉钉 WebView 加载到最新构建产物（含 v202607251900 的角色化重构 + P0 三项 AI）。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -17,9 +17,14 @@ export const VERSION_HISTORY: Array<{
   notes: string;
 }> = [
   {
-    version: 'v202607251349',
-    time: '2026-07-25 13:49',
-    notes: '修复我的页部门字段与盘点页统计口径：我的页部门改为完整层级路径"父级（子级）-末级"（如市场部（保密办公室）-IT支撑中心）；盘点任务页资产总数与盘点进度仅统计当前登录用户被分配的固资，不再显示任务全部资产数。',
+    version: 'v202607252020',
+    time: '2026-07-25 20:20',
+    notes: '重新部署验证前端缓存策略：vite.config 已对 assets/*.js|css 引用追加 ?v=版本号 强制刷新；本次仅升版本号触发 GitHub Pages 重新部署，确保钉钉 WebView 加载到最新构建产物（含 v202607251900 的角色化重构 + P0 三项 AI）。',
+  },
+  {
+    version: 'v202607251900',
+    time: '2026-07-25 19:00',
+    notes: '角色化信息架构重构 + P0 三项 AI 能力（拍照即盘/差异诊断/报告撰写）前端落地：①角色切换器 + 双套底部导航（责任人：我的任务/资产档案/我的；管理员：盘点任务/进度监控/盘点报告），按 isAdmin 隔离；②新增资产档案页（资产总览 + 盘点时间线，原记录页并入时间线）；③任务页改「我的任务」+待办/已办分段，统计按当前登录人；④进度监控全局聚合看板（部门/类别双维度完成率 + 任务汇总下钻）；⑤报告页支持归档与 AI 生成汇报文案；⑥AI 调用层与 CameraCapture/Records/Report UI 接入，AI 不可用时静默回退。',
   },
   {
     version: 'v202607251312',
