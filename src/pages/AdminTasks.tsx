@@ -181,7 +181,8 @@ export default function AdminTasks() {
         setAssetList(res.list ?? []);
         setAssetTotal(res.total ?? 0);
         setAssetPage(page);
-      } catch {
+      } catch (err) {
+        console.error('预览资产失败', err);
         setAssetList([]);
         setAssetTotal(0);
       } finally {
@@ -215,10 +216,11 @@ export default function AdminTasks() {
       const res = await previewPersonnelByDepartments({ deptIds });
       setPersonList(res.list ?? []);
       setPersonTotal(res.total ?? 0);
-    } catch {
-      setPersonList([]);
-      setPersonTotal(0);
-    } finally {
+      } catch (err) {
+        console.error('预览人员失败', err);
+        setPersonList([]);
+        setPersonTotal(0);
+      } finally {
       setPersonLoading(false);
     }
   }, [selectedDeptMap]);
@@ -747,7 +749,7 @@ export default function AdminTasks() {
                       onClick={openPersonPreview}
                       sx={{ alignSelf: 'flex-start', borderRadius: '8px', textTransform: 'none', mr: 1 }}
                     >
-                      预览人员（已选 {form.selectedPersonNames.length}）
+                      预览人员（{Object.keys(selectedDeptMap).length} 个部门）
                     </Button>
                     {form.selectedPersonNames.length === 0 ? (
                       <Typography variant="caption" color="text.secondary">
@@ -792,7 +794,7 @@ export default function AdminTasks() {
                       onClick={openAssetPreview}
                       sx={{ alignSelf: 'flex-start', borderRadius: '8px', textTransform: 'none', mr: 1 }}
                     >
-                      预览资产（已选 {form.selectedAssetCodes.length}）
+                      预览资产（{form.categories.length} 个类别）
                     </Button>
                     {form.selectedAssetCodes.length === 0 ? (
                       <Typography variant="caption" color="text.secondary">

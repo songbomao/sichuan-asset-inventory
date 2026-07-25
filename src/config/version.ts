@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607251051';
+export const APP_VERSION = 'v202607251254';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-25 10:51';
-export const RELEASE_NOTES = '盘点下达前新增责任人匹配校验：责任人(user)为空时全量列出并禁止下达；责任人与钉钉一票否决式全量匹配，离职/重名/无法匹配时列出人员及涉及资产并禁止下达；校验失败弹出明细清单对话框。';
+export const RELEASE_TIME = '2026-07-25 12:54';
+export const RELEASE_NOTES = '修复盘点预览数量为空的问题：前端简单请求把数组 JSON.stringify 进 query，后端网关新增 ParseStringList/ParseLongList 兼容解析 JSON 数组字符串与逗号分隔字符串，恢复按类别预览资产、按部门预览人员；预览按钮文案改为显示已选部门/类别数量，避免与弹窗内精确多选计数混淆。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607251254',
+    time: '2026-07-25 12:54',
+    notes: '修复盘点预览数量为空的问题：前端简单请求把数组 JSON.stringify 进 query，后端网关新增 ParseStringList/ParseLongList 兼容解析 JSON 数组字符串与逗号分隔字符串，恢复按类别预览资产、按部门预览人员；预览按钮文案改为显示已选部门/类别数量。',
+  },
   {
     version: 'v202607251051',
     time: '2026-07-25 10:51',
