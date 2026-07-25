@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607251343';
+export const APP_VERSION = 'v202607251349';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-25 13:43';
-export const RELEASE_NOTES = '优化钉钉工作通知样式与跳转：后端 SendWorkNotice 改用 action_card 消息类型，支持 Markdown 标题/加粗/emoji 醒目排版，底部"点击查看详情"按钮可点击跳转任务详情页；CreateTask/DispatchTask/CheckUrge 均拼接带任务 ID 的前端 H5 链接；前端 Login 支持 redirect 查询参数，从消息链接进入登录后自动回到对应任务详情。';
+export const RELEASE_TIME = '2026-07-25 13:49';
+export const RELEASE_NOTES = '修复我的页部门字段与盘点页统计口径：我的页部门改为完整层级路径"父级（子级）-末级"（如市场部（保密办公室）-IT支撑中心）；盘点任务页资产总数与盘点进度仅统计当前登录用户被分配的固资，不再显示任务全部资产数。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -17,9 +17,9 @@ export const VERSION_HISTORY: Array<{
   notes: string;
 }> = [
   {
-    version: 'v202607251343',
-    time: '2026-07-25 13:43',
-    notes: '优化钉钉工作通知样式与跳转：后端 SendWorkNotice 改用 action_card 消息类型，支持 Markdown 标题/加粗/emoji 醒目排版，底部"点击查看详情"按钮可点击跳转任务详情页；CreateTask/DispatchTask/CheckUrge 均拼接带任务 ID 的前端 H5 链接；前端 Login 支持 redirect 查询参数，从消息链接进入登录后自动回到对应任务详情。',
+    version: 'v202607251349',
+    time: '2026-07-25 13:49',
+    notes: '修复我的页部门字段与盘点页统计口径：我的页部门改为完整层级路径"父级（子级）-末级"（如市场部（保密办公室）-IT支撑中心）；盘点任务页资产总数与盘点进度仅统计当前登录用户被分配的固资，不再显示任务全部资产数。',
   },
   {
     version: 'v202607251312',
