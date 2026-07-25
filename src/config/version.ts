@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607251333';
+export const APP_VERSION = 'v202607251343';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-25 13:33';
-export const RELEASE_NOTES = '修复部门人员预览不完整与部门加载慢：后端 GetPersonnelByDepartments 改为由钉钉通讯录人员驱动，按部门 ID 递归取全部子部门人员，再关联 sai_assets 统计资产数（无资产人员也显示 assetCount=0），彻底解决部门名与 sai_assets.DeptName 不一致导致的人员丢失；前端勾选部门不再递归预加载整棵子树，由后端统一递归处理，大幅提升部门选择响应速度。';
+export const RELEASE_TIME = '2026-07-25 13:43';
+export const RELEASE_NOTES = '优化钉钉工作通知样式与跳转：后端 SendWorkNotice 改用 action_card 消息类型，支持 Markdown 标题/加粗/emoji 醒目排版，底部"点击查看详情"按钮可点击跳转任务详情页；CreateTask/DispatchTask/CheckUrge 均拼接带任务 ID 的前端 H5 链接；前端 Login 支持 redirect 查询参数，从消息链接进入登录后自动回到对应任务详情。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -17,9 +17,9 @@ export const VERSION_HISTORY: Array<{
   notes: string;
 }> = [
   {
-    version: 'v202607251333',
-    time: '2026-07-25 13:33',
-    notes: '修复部门人员预览不完整与部门加载慢：后端 GetPersonnelByDepartments 改为由钉钉通讯录人员驱动，按部门 ID 递归取全部子部门人员，再关联 sai_assets 统计资产数（无资产人员也显示 assetCount=0），彻底解决部门名与 sai_assets.DeptName 不一致导致的人员丢失；前端勾选部门不再递归预加载整棵子树，由后端统一递归处理，大幅提升部门选择响应速度。',
+    version: 'v202607251343',
+    time: '2026-07-25 13:43',
+    notes: '优化钉钉工作通知样式与跳转：后端 SendWorkNotice 改用 action_card 消息类型，支持 Markdown 标题/加粗/emoji 醒目排版，底部"点击查看详情"按钮可点击跳转任务详情页；CreateTask/DispatchTask/CheckUrge 均拼接带任务 ID 的前端 H5 链接；前端 Login 支持 redirect 查询参数，从消息链接进入登录后自动回到对应任务详情。',
   },
   {
     version: 'v202607251312',

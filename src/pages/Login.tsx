@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
@@ -19,10 +19,14 @@ type LoginState = 'loading' | 'non-dingtalk' | 'error' | 'logged-out';
  */
 export default function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const auth = useAuth();
 
   const [state, setState] = useState<LoginState>('loading');
   const [errorMsg, setErrorMsg] = useState<string>('');
+
+  // 从消息链接进入时携带 redirect 参数，登录后跳回指定任务详情页
+  const redirectTo = searchParams.get('redirect') || '/tasks';
 
   const performLogin = useCallback(
     async (authCode: string) => {
@@ -30,14 +34,14 @@ export default function LoginPage() {
         setState('loading');
         const result = await dingtalkLogin(authCode);
         auth.login(result.access_token, result.user);
-        navigate('/tasks', { replace: true });
+        navigate(redirectTo, { replace: true });
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : '免登失败，请重试';
         setErrorMsg(msg);
         setState('error');
       }
     },
-    [auth, navigate],
+    [auth, navigate, redirectTo],
   );
 
   const startDingtalkAuth = useCallback(() => {
