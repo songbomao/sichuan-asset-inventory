@@ -20,9 +20,6 @@ vi.mock('./pages/TaskList', () => ({
 vi.mock('./pages/Inventory', () => ({
   default: () => <div data-testid="inventory-page">Inventory Page</div>,
 }));
-vi.mock('./pages/Records', () => ({
-  default: () => <div data-testid="records-page">Records Page</div>,
-}));
 vi.mock('./pages/Profile', () => ({
   default: () => <div data-testid="profile-page">Profile Page</div>,
 }));
@@ -60,8 +57,9 @@ describe('App Routing', () => {
       expect(screen.getByTestId('login-page')).toBeDefined();
     });
 
-    it('should redirect /records to /login', () => {
+    it('should redirect /records (via /my-records) to /login', () => {
       renderApp('/records', null);
+      // /records 历史别名 → /my-records，未登录被 ProtectedRoute 拦到 /login
       expect(screen.getByTestId('login-page')).toBeDefined();
     });
 
