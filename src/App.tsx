@@ -5,7 +5,6 @@ import RequireAdmin from './components/RequireAdmin';
 import Login from './pages/Login';
 import TaskList from './pages/TaskList';
 import Inventory from './pages/Inventory';
-import Records from './pages/Records';
 import Profile from './pages/Profile';
 import AssetsArchive from './pages/AssetsArchive';
 import AdminTasks from './pages/AdminTasks';
@@ -69,8 +68,8 @@ export default function App() {
         <Route path="/profile" element={<Profile />} />
         {/* 我的进度 — 所有角色通用入口，追踪个人名下任务盘点进度 */}
         <Route path="/my-progress" element={<MyProgress />} />
-        {/* 原 /records 并入资产档案的时间线子 tab */}
-        <Route path="/records" element={<Navigate to="/assets?tab=timeline" replace />} />
+        {/* 历史兼容别名：原 /records 统一到「我的盘点记录」单一入口 */}
+        <Route path="/records" element={<Navigate to="/my-records" replace />} />
 
         {/* 管理员导航（需管理员权限） */}
         <Route

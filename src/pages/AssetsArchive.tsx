@@ -16,7 +16,7 @@ import CategoryIcon from '@mui/icons-material/Category';
 import { getAssetTable, type AssetTableItem } from '../api/admin';
 import { useAuth } from '../contexts/AuthContext';
 import StatusBadge from '../components/StatusBadge';
-import RecordsPage from './Records';
+import MyRecords from './MyRecords';
 
 type ArchiveTab = 'overview' | 'timeline';
 
@@ -167,10 +167,10 @@ export default function AssetsArchive() {
         </>
       )}
 
-      {/* 盘点时间线：复用盘点记录列表 */}
+      {/* 盘点时间线：复用「我的盘点记录」为唯一事实来源（后端过滤+筛选+分页） */}
       {tab === 'timeline' && (
         <Box sx={{ mx: -2, mt: -2 }}>
-          <RecordsPage embedded />
+          <MyRecords embedded />
         </Box>
       )}
     </div>

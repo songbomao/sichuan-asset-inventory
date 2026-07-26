@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607262012';
+export const APP_VERSION = 'v202607262215';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-26 20:12';
-export const RELEASE_NOTES = '新增盘点结果查看功能：①新增「我的盘点记录」页（/my-records，入口：我的页按钮 + 我的任务页历史图标），展示本人参与的全部盘点记录（照片/备注/盘点数量/存放地点/盘点人），支持按状态、起止日期、关键字筛选与分页；②新增「任务盘点记录」页（/admin/tasks/:taskId/records，RequireAdmin），超管视角展示该任务下全员盘点记录 + 汇总视图（完成率/按状态分布/按参与人分布）+ 参与人列表；③抽取 RecordDetailDrawer 共享组件，盘点详情完整展示照片/备注/盘点数量/功能状态/外观状态；④盘点操作页新增可选「盘点数量」录入；⑤AdminTasks 任务卡片新增「盘点记录」按钮直达任务记录页。配套后端 v202607262013（GetMyRecords/GetTaskRecords/GetTaskRecordSummary 接口 + InventoryQty 列）。';
+export const RELEASE_TIME = '2026-07-26 22:15';
+export const RELEASE_NOTES = '重构「我的盘点记录」消除 R1 双入口重叠：以 MyRecords.tsx 为唯一事实来源，删除旧 Records.tsx 及其测试；资产档案「盘点时间线」Tab 直接复用 MyRecords(embedded)；删除 api/inventory 的 getMyRecords（仅保留后端过滤的 getMyRecordsFiltered）；App.tsx 清理死 import 并将 /records 兼容别名重定向到 /my-records。所有「我的记录」入口统一收敛到 /my-records，筛选/分页/盘点数量展示一致。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607262215',
+    time: '2026-07-26 22:15',
+    notes: '重构「我的盘点记录」消除 R1 双入口重叠：以 MyRecords.tsx 为唯一事实来源，删除旧 Records.tsx 及其测试；资产档案「盘点时间线」Tab 直接复用 MyRecords(embedded)；删除 api/inventory 的 getMyRecords（仅保留后端过滤的 getMyRecordsFiltered）；App.tsx 清理死 import 并将 /records 兼容别名重定向到 /my-records。所有「我的记录」入口统一收敛到 /my-records。',
+  },
   {
     version: 'v202607262012',
     time: '2026-07-26 20:12',

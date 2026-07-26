@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { submitRecord, getAssetByCode, getMyRecords } from './inventory';
+import { submitRecord, getAssetByCode } from './inventory';
 
 vi.mock('./client', () => {
   const mockGet = vi.fn();
@@ -89,30 +89,6 @@ describe('getAssetByCode', () => {
     mockGet.mockResolvedValueOnce({
       data: { code: 404, data: null, message: '资产不存在' },
     });
-    await expect(getAssetByCode('NONEXIST')).rejects.toThrow('资产不存在');
-  });
-});
-
-describe('getMyRecords', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it('should return records list on success', async () => {
-    const records = [
-      { recordId: 'r1', taskId: 't1', taskName: '任务1', assetCode: 'ZC-001', assetName: '电脑', status: '正常', remark: '', photoUrl: '', createTime: '2024-01-01', location: '成都' },
-    ];
-    mockGet.mockResolvedValueOnce({
-      data: { code: 0, data: records, message: 'ok' },
-    });
-    const result = await getMyRecords();
-    expect(result).toEqual(records);
-  });
-
-  it('should throw error on failure', async () => {
-    mockGet.mockResolvedValueOnce({
-      data: { code: 500, data: null, message: '' },
-    });
-    await expect(getMyRecords()).rejects.toThrow('获取盘点记录失败');
+      await expect(getAssetByCode('NONEXIST')).rejects.toThrow('资产不存在');
   });
 });

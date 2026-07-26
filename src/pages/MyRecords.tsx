@@ -38,7 +38,7 @@ const FILTERS = [
  * 我的盘点记录（责任人视角）
  * 独立页：筛选（状态/起止日期/关键字）+ 列表（含盘点数量）+ 分页 + 复用详情抽屉
  */
-export default function MyRecords() {
+export default function MyRecords({ embedded = false }: { embedded?: boolean }) {
   const navigate = useNavigate();
 
   const [records, setRecords] = useState<RecordItem[]>([]);
@@ -156,8 +156,9 @@ export default function MyRecords() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* 独立页头部 */}
+    <div className={embedded ? 'space-y-4' : 'min-h-screen bg-gray-50'}>
+      {/* 独立页头部（embedded 模式隐藏，由父页面提供外壳） */}
+      {!embedded && (
       <div className="sticky top-0 z-10 bg-gradient-to-r from-primary to-[#4a148c] text-white px-4 py-3 flex items-center gap-3 shadow-lg">
         <IconButton
           size="small"
@@ -174,8 +175,9 @@ export default function MyRecords() {
           </p>
         </div>
       </div>
+      )}
 
-      <div className="p-4 space-y-4">
+      <div className={embedded ? 'space-y-4' : 'p-4 space-y-4'}>
         {/* 状态筛选 */}
         <div className="flex gap-2 overflow-x-auto pb-1">
           {FILTERS.map((f) => (
