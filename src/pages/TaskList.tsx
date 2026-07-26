@@ -81,9 +81,10 @@ export default function TaskListPage() {
     }
   };
 
-  /** 仅展示未盘点（pending）的新任务 */
+  /** 展示待盘点的新任务（pending）与进行中（running）的任务
+   *  注意：DispatchTask 下达后任务状态为 running，若仅过滤 pending 会导致责任人永远看不到已下达任务 */
   const visibleTasks = useMemo(
-    () => tasks.filter((t) => t.status === PENDING_STATUS),
+    () => tasks.filter((t) => t.status === PENDING_STATUS || t.status === 'running'),
     [tasks],
   );
 

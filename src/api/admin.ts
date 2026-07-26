@@ -319,6 +319,21 @@ export async function dispatchTask(taskId: number): Promise<DispatchResult> {
   throw new Error(data.msg || data.message || '下达任务失败');
 }
 
+/**
+ * 删除盘点任务（仅删除指定 taskId 对应的任务及关联数据，不影响其他任务）
+ * POST /api/Account/UniGetToken/DeleteTask
+ */
+export async function deleteTask(taskId: number): Promise<void> {
+  const { data } = await client.post<{ code: number; msg?: string; message?: string }>(
+    '/api/Account/UniGetToken',
+    { action: 'DeleteTask', taskId },
+    { timeout: 60000 },
+  );
+  if (data.code !== 0 && data.code !== 200) {
+    throw new Error(data.msg || data.message || '删除任务失败');
+  }
+}
+
 /** 任务资产摘要（卡片展示用） */
 export interface TaskAssetSummary {
   totalAssets: number;

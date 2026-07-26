@@ -28,6 +28,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import SendIcon from '@mui/icons-material/Send';
 import SyncIcon from '@mui/icons-material/Sync';
 import CloseIcon from '@mui/icons-material/Close';
+import DeleteIcon from '@mui/icons-material/Delete';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import Chip from '@mui/material/Chip';
@@ -36,6 +37,7 @@ import {
   getAdminTaskList,
   createTask,
   dispatchTask,
+  deleteTask,
   getSyncStatus,
   getInventoryOptions,
   getDingtalkDepartments,
@@ -127,6 +129,10 @@ export default function AdminTasks() {
 
   // 下达任务的页面级反馈
   const [dispatchMsg, setDispatchMsg] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+
+  // 删除任务：待确认的任务 + 删除中状态
+  const [deleteTarget, setDeleteTarget] = useState<AdminTaskItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // 仅管理员可进入任务管理
   if (!user?.isAdmin) {
@@ -472,6 +478,23 @@ export default function AdminTasks() {
     }
   };
 
+  /** 删除任务（仅删除指定 taskId，删除后刷新列表不影响其他任务） */
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await deleteTask(deleteTarget.id);
+      setDispatchMsg({ type: 'success', msg: `任务「${deleteTarget.taskName}」已删除` });
+      setDeleteTarget(null);
+      fetchTasks();
+    } catch (err) {
+      setDispatchMsg({ type: 'error', msg: err instanceof Error ? err.message : '删除任务失败' });
+      setDeleteTarget(null);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div className="p-4 space-y-4">
       {/* 版块切换 */}
@@ -580,7 +603,19 @@ export default function AdminTasks() {
         tasks.map((task) => {
           const st = statusMap[task.status] ?? { label: task.status, color: 'default' as const };
           return (
-            <Card key={task.id} className="glow-border hover:shadow-glow transition-shadow">
+            <Card key={task.id} className="glow-border hover:shadow-glow transition-shadow" sx={{ position: 'relative' }}>
+              <IconButton
+                size="small"
+                color="error"
+                title="删除任务"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDeleteTarget(task);
+                }}
+                sx={{ position: 'absolute', top: 6, right: 6, zIndex: 2, bgcolor: 'rgba(255,255,255,0.85)' }}
+              >
+                <DeleteIcon fontSize="small" />
+              </IconButton>
               <CardActionArea onClick={() => navigate(`/tasks/${task.id}`)}>
                 <CardContent>
                   <div className="flex items-start justify-between mb-2">
@@ -627,6 +662,25 @@ export default function AdminTasks() {
 
       {/* 底部间距 */}
       <div className="h-4" />
+
+      {/* ---- 删除任务确认 Dialog ---- */}
+      <Dialog open={!!deleteTarget} onClose={() => !deleting && setDeleteTarget(null)} fullWidth maxWidth="xs">
+        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.05rem' }}>确认删除任务</DialogTitle>
+        <DialogContent sx={{ pt: '8px !important' }}>
+          <Typography variant="body2" color="text.secondary">
+            即将删除任务「{deleteTarget?.taskName}」。该操作将级联删除此任务下的资产清单与盘点记录，
+            <strong>不会影响其他任务</strong>，但删除后不可恢复。
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setDeleteTarget(null)} disabled={deleting} sx={{ textTransform: 'none' }}>
+            取消
+          </Button>
+          <Button onClick={handleDelete} color="error" variant="contained" disabled={deleting} sx={{ textTransform: 'none' }}>
+            {deleting ? '删除中…' : '确认删除'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* ---- 新建任务 Dialog ---- */}
       <Dialog
