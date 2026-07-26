@@ -94,10 +94,20 @@ export default function TaskListPage() {
     }
   };
 
-  /** 展示待盘点的新任务（pending）与进行中（running）的任务
+  /** 派生卡片状态：当前责任人名下资产全部盘点完成 → 已完成；否则沿用任务级状态
+   *  后端 GetTaskList(onlyMine) 已按当前用户聚合 assetCount/completedCount（见 InventoryTaskService），
+   *  因此用这两个字段判定本人是否盘点完成，而非任务级 t.Status。 */
+  const deriveTaskStatus = (t: TaskItem): string => {
+    if (t.assetCount > 0 && t.completedCount >= t.assetCount) return 'completed';
+    return t.status;
+  };
+
+  /** 展示待盘点的新任务（pending）、进行中（running）以及本人已盘点完成（completed）的任务
    *  注意：DispatchTask 下达后任务状态为 running，若仅过滤 pending 会导致责任人永远看不到已下达任务 */
   const visibleTasks = useMemo(
-    () => tasks.filter((t) => t.status === PENDING_STATUS || t.status === 'running'),
+    () => tasks.filter(
+      (t) => t.status === PENDING_STATUS || t.status === 'running' || t.status === 'completed',
+    ),
     [tasks],
   );
 
@@ -121,7 +131,7 @@ export default function TaskListPage() {
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm text-gray-500 mt-0.5">
-            {visibleTasks.length > 0 ? `共 ${visibleTasks.length} 个待盘点任务` : '当前没有待盘点任务'}
+            {visibleTasks.length > 0 ? `共 ${visibleTasks.length} 个盘点任务` : '当前没有盘点任务'}
           </p>
         </div>
       </div>
@@ -149,7 +159,7 @@ export default function TaskListPage() {
       {!loading && !error && visibleTasks.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16 text-gray-400">
           <InboxIcon sx={{ fontSize: 64, mb: 2 }} />
-          <p className="text-base font-medium">暂无待盘点任务</p>
+          <p className="text-base font-medium">暂无盘点任务</p>
           <p className="text-sm mt-1">下拉刷新或联系管理员分配任务</p>
         </div>
       )}
@@ -169,7 +179,7 @@ export default function TaskListPage() {
                   >
                     {task.taskName}
                   </Typography>
-                  <StatusBadge status={task.status} />
+                  <StatusBadge status={deriveTaskStatus(task)} />
                 </div>
 
                 <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">

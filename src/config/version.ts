@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607262327';
+export const APP_VERSION = 'v202607262332';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-26 23:27';
-export const RELEASE_NOTES = '「我的资产」Tab 受限改造：复用组件 AssetLocalTable 新增可选 props——lockToOwner（隐藏搜索框、关键字锁定为当前登录用户名、仅展示本人名下固定资产）、hideDownload（移除「下载全量CSV」按钮）、pageSize/pageSizeOptions（每页条数）。「我的资产」Tab 传 lockToOwner hideDownload pageSize={40} pageSizeOptions={[40]}；管理页「固资查询」仍走默认 props（搜索/下载/分页20 不变），互不影响。仅组件复用层与 UI 改造，不影响现有功能。';
+export const RELEASE_TIME = '2026-07-26 23:32';
+export const RELEASE_NOTES = '修复「我的盘点任务」Tab 卡片状态逻辑：原卡片直接取任务级 t.Status 显示，与当前责任人完成情况脱节（本人盘点完仍显示「进行中」）。改为依据后端 GetTaskList(onlyMine) 已按当前用户聚合的 assetCount/completedCount 派生状态——当前责任人名下资产全部盘点完成（completedCount>=assetCount 且 assetCount>0）即显示「已完成」，否则沿用任务级状态；visibleTasks 过滤补上 completed 使已完成卡片可见；进度条本就按用户级完成数渲染，与状态一致。仅前端逻辑，后端无改动。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607262332',
+    time: '2026-07-26 23:32',
+    notes: '修复「我的盘点任务」Tab 卡片状态逻辑：原卡片直接取任务级 t.Status 显示，与当前责任人完成情况脱节。改为依据后端 GetTaskList(onlyMine) 已按当前用户聚合的 assetCount/completedCount 派生状态——当前责任人名下资产全部盘点完成（completedCount>=assetCount 且 assetCount>0）即显示「已完成」，否则沿用任务级状态；visibleTasks 过滤补上 completed 使已完成卡片可见；进度条本就按用户级完成数渲染，与状态一致。仅前端逻辑，后端无改动。',
+  },
   {
     version: 'v202607262327',
     time: '2026-07-26 23:27',
