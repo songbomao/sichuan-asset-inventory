@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607262236';
+export const APP_VERSION = 'v202607262252';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-26 22:36';
-export const RELEASE_NOTES = '重构「我的盘点记录」消除 R1 双入口重叠（收尾清理）：以 MyRecords.tsx 为唯一事实来源，删除旧 Records.tsx 及其测试；资产档案「盘点时间线」Tab 直接复用 MyRecords(embedded)；删除 api/inventory 的 getMyRecords（仅保留后端过滤的 getMyRecordsFiltered）；App.tsx 清理死 import 并将 /records 兼容别名重定向到 /my-records。本轮补充清理 App.test.tsx 中残留的 vi.mock 对已删除 Records 组件的死 mock，并将 /records 重定向测试语义修正为 /records→/my-records→守卫拦到 /login。所有「我的记录」入口统一收敛到 /my-records。';
+export const RELEASE_TIME = '2026-07-26 22:52';
+export const RELEASE_NOTES = '信息架构收敛：「我的」页移除「我的盘点记录」按钮（该入口收敛至「我的任务」页 Tab）；「我的任务」页拆分为两个 fullWidth Tab——「我的盘点任务」（现有任务列表+刷新）与「我的盘点记录」（复用 MyRecords(embedded)，含筛选/分页/详情抽屉）；Tab 样式完全参照管理员 AdminTasks 的 3-Tab（variant=fullWidth、minHeight=40、textTransform=none、fontSize=0.9rem），切换效果/间距/字体一致。盘点记录入口现为「我的任务→我的盘点记录」Tab 与「资产档案→盘点时间线」两处，底层均复用 MyRecords。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -17,9 +17,9 @@ export const VERSION_HISTORY: Array<{
   notes: string;
 }> = [
   {
-    version: 'v202607262236',
-    time: '2026-07-26 22:36',
-    notes: '重构「我的盘点记录」消除 R1 双入口重叠（收尾清理）：以 MyRecords.tsx 为唯一事实来源，删除旧 Records.tsx 及其测试；资产档案「盘点时间线」Tab 直接复用 MyRecords(embedded)；删除 api/inventory 的 getMyRecords（仅保留后端过滤的 getMyRecordsFiltered）；App.tsx 清理死 import 并将 /records 兼容别名重定向到 /my-records。本轮补充清理 App.test.tsx 中残留的 vi.mock 对已删除 Records 组件的死 mock，并将 /records 重定向测试语义修正为 /records→/my-records→守卫拦到 /login。所有「我的记录」入口统一收敛到 /my-records。',
+    version: 'v202607262252',
+    time: '2026-07-26 22:52',
+    notes: '信息架构收敛：「我的」页移除「我的盘点记录」按钮（入口收敛至「我的任务」页 Tab）；「我的任务」页拆分为两个 fullWidth Tab——「我的盘点任务」（现有任务列表+刷新）与「我的盘点记录」（复用 MyRecords(embedded)）；Tab 样式完全参照管理员 AdminTasks 的 3-Tab（variant=fullWidth、minHeight=40、textTransform=none、fontSize=0.9rem），切换效果/间距/字体一致。盘点记录入口现为「我的任务→我的盘点记录」Tab 与「资产档案→盘点时间线」两处。',
   },
   {
     version: 'v202607262012',

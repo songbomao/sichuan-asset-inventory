@@ -8,7 +8,6 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import Divider from '@mui/material/Divider';
 import LogoutIcon from '@mui/icons-material/Logout';
-import HistoryIcon from '@mui/icons-material/History';
 import PersonIcon from '@mui/icons-material/Person';
 import BadgeIcon from '@mui/icons-material/Badge';
 import BusinessIcon from '@mui/icons-material/Business';
@@ -179,17 +178,6 @@ export default function ProfilePage() {
           配置管理员
         </Button>
       )}
-
-      {/* 我的盘点记录 */}
-      <Button
-        variant="outlined"
-        fullWidth
-        startIcon={<HistoryIcon />}
-        onClick={() => navigate('/my-records')}
-        sx={{ py: 1.3, borderRadius: '12px', textTransform: 'none' }}
-      >
-        我的盘点记录
-      </Button>
 
       {/* 退出登录 */}
       <Button

@@ -6,11 +6,13 @@ import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
 import Skeleton from '@mui/material/Skeleton';
 import Alert from '@mui/material/Alert';
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import HistoryIcon from '@mui/icons-material/History';
 import IconButton from '@mui/material/IconButton';
 import InboxIcon from '@mui/icons-material/Inbox';
 import { getTaskList, type TaskItem } from '../api/tasks';
+import MyRecords from './MyRecords';
 import StatusBadge from '../components/StatusBadge';
 import ProgressBar from '../components/ProgressBar';
 
@@ -23,6 +25,7 @@ const PENDING_STATUS = 'pending';
  */
 export default function TaskListPage() {
   const navigate = useNavigate();
+  const [tab, setTab] = useState<'tasks' | 'records'>('tasks');
 
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -91,6 +94,19 @@ export default function TaskListPage() {
 
   return (
     <div className="p-4 space-y-4">
+      {/* 版块切换（样式参照管理员 AdminTasks 3-Tab） */}
+      <Tabs
+        value={tab}
+        onChange={(_e, v) => setTab(v)}
+        variant="fullWidth"
+        sx={{ mb: 1, minHeight: 40, '& .MuiTab-root': { minHeight: 40, textTransform: 'none', fontSize: '0.9rem' } }}
+      >
+        <Tab value="tasks" label="我的盘点任务" />
+        <Tab value="records" label="我的盘点记录" />
+      </Tabs>
+
+      {tab === 'tasks' && (
+      <>
       {/* 头部 */}
       <div className="flex items-center justify-between">
         <div>
@@ -100,10 +116,7 @@ export default function TaskListPage() {
           </p>
         </div>
         <div className="flex items-center gap-1">
-          <IconButton onClick={() => navigate('/my-records')} color="primary" title="我的盘点记录">
-            <HistoryIcon />
-          </IconButton>
-          <IconButton onClick={() => fetchTasks(true)} disabled={refreshing} color="primary">
+          <IconButton onClick={() => fetchTasks(true)} disabled={refreshing} color="primary" title="刷新">
             <RefreshIcon className={refreshing ? 'animate-spin-refresh' : ''} />
           </IconButton>
         </div>
@@ -176,6 +189,12 @@ export default function TaskListPage() {
 
       {/* 底部间距 */}
       <div className="h-4" />
+      </>
+      )}
+
+      {tab === 'records' && (
+        <MyRecords embedded />
+      )}
     </div>
   );
 }
