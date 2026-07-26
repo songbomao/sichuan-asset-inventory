@@ -5,15 +5,15 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import PersonIcon from '@mui/icons-material/Person';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import DashboardIcon from '@mui/icons-material/Dashboard';
-import InsightsIcon from '@mui/icons-material/Insights';
-import SettingsIcon from '@mui/icons-material/Settings';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import Paper from '@mui/material/Paper';
 import { useAuth } from '../contexts/AuthContext';
 
 /** 责任人（业主）底部导航 */
 const ownerTabs = [
   { path: '/tasks', label: '我的任务', icon: <AssignmentIcon /> },
-  { path: '/my-progress', label: '我的进度', icon: <InsightsIcon /> },
+  { path: '/my-progress', label: '我的进度', icon: <TrendingUpIcon /> },
   { path: '/assets', label: '资产档案', icon: <ArchiveIcon /> },
   { path: '/profile', label: '我的', icon: <PersonIcon /> },
 ];
@@ -27,10 +27,10 @@ const ownerTabs = [
  */
 const adminTabs = [
   { path: '/tasks', label: '我的任务', icon: <AssignmentIcon /> },
-  { path: '/my-progress', label: '我的进度', icon: <InsightsIcon /> },
+  { path: '/my-progress', label: '我的进度', icon: <TrendingUpIcon /> },
   { path: '/admin/dashboard', label: '全局进度', icon: <DashboardIcon /> },
   { path: '/profile', label: '我的', icon: <PersonIcon /> },
-  { path: '/admin/tasks', label: '管理', icon: <SettingsIcon /> },
+  { path: '/admin/tasks', label: '管理', icon: <AdminPanelSettingsIcon /> },
 ];
 
 /**
