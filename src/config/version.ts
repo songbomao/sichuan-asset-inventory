@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607261056';
+export const APP_VERSION = 'v202607261104';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-26 10:56';
-export const RELEASE_NOTES = '三项优化：①底部导航新增「我的进度」通用入口（所有角色可见），新建 MyProgress 页展示当前用户名下全部盘点任务的完成率与总体进度，点击卡片直达该任务进度看板；②盘点任务页（盘点任务管理/资产对比同步/固资查询三模块）确认维持 RequireAdmin 路由级 + 页面级 isAdmin 双重门控，仅管理员和超级管理员可访问；③取消「盘点报告」底部导航独立入口，报告合并至盘点任务管理——任务卡片进详情后「盘点报告」作为末位卡片与其他详情卡片平级展示（/admin/report 路由保留兼容直链）。';
+export const RELEASE_TIME = '2026-07-26 11:04';
+export const RELEASE_NOTES = '管理员底部导航调整：将原「盘点任务」入口移动到从左到右最右侧位置，并改名为「管理」（图标改为齿轮 Settings）。管理员导航顺序现为：进度监控 · 我的进度 · 我的 · 管理。路由（/admin/tasks）与页面内容不变，仍承载盘点任务管理/资产对比同步/固资查询三模块及双重门控。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607261104',
+    time: '2026-07-26 11:04',
+    notes: '管理员底部导航调整：将原「盘点任务」入口移动到从左到右最右侧位置，并改名为「管理」（图标改为齿轮 Settings）。管理员导航顺序现为：进度监控 · 我的进度 · 我的 · 管理。路由（/admin/tasks）与页面内容不变，仍承载盘点任务管理/资产对比同步/固资查询三模块及双重门控。',
+  },
   {
     version: 'v202607261056',
     time: '2026-07-26 10:56',

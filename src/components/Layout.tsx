@@ -6,6 +6,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import InsightsIcon from '@mui/icons-material/Insights';
+import SettingsIcon from '@mui/icons-material/Settings';
 import Paper from '@mui/material/Paper';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -21,12 +22,13 @@ const ownerTabs = [
  * 管理员底部导航（含通用「我的」页）
  * 「盘点报告」不再作为独立入口，已合并至任务详情（任务卡片 → 盘点报告卡片）。
  * 「我的进度」为所有角色通用入口，管理员亦可追踪个人名下任务。
+ * 「管理」（原「盘点任务」）承载任务管理/资产对比同步/固资查询，置于最右侧入口。
  */
 const adminTabs = [
-  { path: '/admin/tasks', label: '盘点任务', icon: <AssignmentIcon /> },
   { path: '/admin/dashboard', label: '进度监控', icon: <DashboardIcon /> },
   { path: '/my-progress', label: '我的进度', icon: <InsightsIcon /> },
   { path: '/profile', label: '我的', icon: <PersonIcon /> },
+  { path: '/admin/tasks', label: '管理', icon: <SettingsIcon /> },
 ];
 
 /**
