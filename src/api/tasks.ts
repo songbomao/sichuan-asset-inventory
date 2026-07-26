@@ -46,6 +46,14 @@ export interface AssetInfo {
   department: string;
   status: string;
   imageUrl: string;
+  /** 规格型号（来自 sai_assets.standard） */
+  standard?: string;
+  /** 成本中心名称 */
+  costCenterName?: string;
+  /** 责任人 / 使用人 */
+  userName?: string;
+  /** 利润中心（公司）名称 */
+  profitCenterName?: string;
 }
 
 /** 任务详情响应 */

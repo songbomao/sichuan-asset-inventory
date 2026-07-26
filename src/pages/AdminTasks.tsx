@@ -58,7 +58,7 @@ import AssetLocalTable from './AssetLocalTable';
 
 const scopeTypeOptions = [
   { value: 'all', label: '全部资产' },
-  { value: 'by_dept', label: '按盘点部门' },
+  { value: 'by_dept', label: '按资产责任人' },
   { value: 'by_category', label: '按盘点类别' },
   { value: 'by_org', label: '按组织' },
   { value: 'by_cost_center', label: '按成本中心' },
@@ -152,8 +152,8 @@ export default function AdminTasks() {
   const [inventoryOptions, setInventoryOptions] = useState<InventoryOptionsResult>({ departments: [], categories: [] });
   const [optionsLoading, setOptionsLoading] = useState(false);
 
-  /* 盘点部门组织树（多选 + 懒加载 + 级联勾选） */
-  const [deptDialogOpen, setDeptDialogOpen] = useState(false);
+  /* 合并选人弹窗：部门树 + 人员多选（替代原独立的部门弹窗 / 人员预览弹窗） */
+  const [personPickerOpen, setPersonPickerOpen] = useState(false);
   const [deptTree, setDeptTree] = useState<DingtalkDepartmentNode[]>([]);
   const [expandedDepts, setExpandedDepts] = useState<Set<number>>(new Set());
   const [loadingDeptTree, setLoadingDeptTree] = useState(false);
@@ -205,8 +205,8 @@ export default function AdminTasks() {
     void fetchAssetPreview('', 1);
   };
 
-  /* 部门人员预览（全屏 Dialog + 精确多选） */
-  const [personPreviewOpen, setPersonPreviewOpen] = useState(false);
+  /* 人员预览状态已并入 personPickerOpen 合并选人弹窗 */
+  const [personKeyword, setPersonKeyword] = useState('');
   const [personList, setPersonList] = useState<PreviewPersonnelItem[]>([]);
   const [personTotal, setPersonTotal] = useState(0);
   const [personLoading, setPersonLoading] = useState(false);
@@ -230,11 +230,10 @@ export default function AdminTasks() {
     }
   }, [selectedDeptMap]);
 
-  /** 打开人员预览时初始化选中集合（回显已选） */
-  const openPersonPreview = () => {
+  /** 打开合并选人弹窗：初始化已选人员集合（回显已选），部门树与人员列表在弹窗内加载 */
+  const openPersonPicker = () => {
     setPersonSelected(new Set(form.selectedPersonNames));
-    setPersonPreviewOpen(true);
-    void fetchPersonPreview();
+    setPersonPickerOpen(true);
   };
 
   /** 递归更新部门树中某节点的 children（用于懒加载后回填） */
@@ -329,9 +328,9 @@ export default function AdminTasks() {
     );
   };
 
-  /** 打开部门树弹窗时加载根部门 */
+  /** 打开合并选人弹窗时加载根部门树 */
   useEffect(() => {
-    if (!deptDialogOpen) return;
+    if (!personPickerOpen) return;
     const load = async () => {
       setLoadingDeptTree(true);
       try {
@@ -344,7 +343,18 @@ export default function AdminTasks() {
       }
     };
     void load();
-  }, [deptDialogOpen]);
+  }, [personPickerOpen]);
+
+  /** 合并选人弹窗打开且已选部门时，加载所选部门（含子部门）的全部人员 */
+  useEffect(() => {
+    if (!personPickerOpen) return;
+    if (Object.keys(selectedDeptMap).length === 0) {
+      setPersonList([]);
+      setPersonTotal(0);
+      return;
+    }
+    void fetchPersonPreview();
+  }, [personPickerOpen, selectedDeptMap, fetchPersonPreview]);
 
   const presetNames = buildPresetNames(new Date().getFullYear());
 
@@ -398,16 +408,28 @@ export default function AdminTasks() {
 
   /** 提交新建任务 */
   const handleCreate = async () => {
+    if (!form.TaskName.trim()) {
+      setFeedback({ type: 'error', msg: '请填写盘点任务名称' });
+      return;
+    }
     if (!form.method) {
       setFeedback({ type: 'error', msg: '请选择盘点方式' });
       return;
     }
     if (form.method === 'by_dept' && Object.keys(selectedDeptMap).length === 0) {
-      setFeedback({ type: 'error', msg: '请选择盘点部门' });
+      setFeedback({ type: 'error', msg: '请选择盘点责任人范围（部门）' });
       return;
     }
     if (form.method === 'by_category' && form.categories.length === 0) {
       setFeedback({ type: 'error', msg: '请选择盘点类别' });
+      return;
+    }
+    if (!form.Deadline) {
+      setFeedback({ type: 'error', msg: '请选择截止时间（精确到年月日时分秒）' });
+      return;
+    }
+    if (!form.CreatedBy.trim()) {
+      setFeedback({ type: 'error', msg: '创建人不能为空' });
       return;
     }
     setSubmitting(true);
@@ -710,7 +732,7 @@ export default function AdminTasks() {
               onChange={(_e, val) => setForm((f) => ({ ...f, TaskName: val ?? '' }))}
               onInputChange={(_e, val) => setForm((f) => ({ ...f, TaskName: val ?? '' }))}
               renderInput={(params) => (
-                <TextField {...params} label="任务名称（可选）" size="small" placeholder="留空则由系统生成默认名称" />
+                <TextField {...params} label="任务名称" required size="small" placeholder="请输入盘点任务名称" />
               )}
               fullWidth
             />
@@ -732,7 +754,7 @@ export default function AdminTasks() {
               }
               fullWidth
             >
-              <MenuItem value="by_dept">按盘点部门</MenuItem>
+              <MenuItem value="by_dept">按资产责任人</MenuItem>
               <MenuItem value="by_category">按盘点类别</MenuItem>
             </TextField>
 
@@ -741,13 +763,13 @@ export default function AdminTasks() {
                 <Button
                   variant="outlined"
                   size="small"
-                  onClick={() => setDeptDialogOpen(true)}
+                  onClick={openPersonPicker}
                   disabled={deptBusy}
                   sx={{ alignSelf: 'flex-start', borderRadius: '8px', textTransform: 'none' }}
                 >
-                  {Object.keys(selectedDeptMap).length > 0
-                    ? `已选盘点部门（${Object.keys(selectedDeptMap).length}）`
-                    : '选择盘点部门'}
+                  {Object.keys(selectedDeptMap).length > 0 || form.selectedPersonNames.length > 0
+                    ? `已选 ${Object.keys(selectedDeptMap).length} 个部门 / ${form.selectedPersonNames.length} 名责任人`
+                    : '选择盘点责任人'}
                 </Button>
                 {Object.keys(selectedDeptMap).length > 0 && (
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
@@ -761,29 +783,13 @@ export default function AdminTasks() {
                     ))}
                   </Box>
                 )}
-                {Object.keys(selectedDeptMap).length > 0 && (
-                  <Box>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      onClick={openPersonPreview}
-                      sx={{ alignSelf: 'flex-start', borderRadius: '8px', textTransform: 'none', mr: 1 }}
-                    >
-                      预览人员（{Object.keys(selectedDeptMap).length} 个部门）
-                    </Button>
-                    {form.selectedPersonNames.length === 0 ? (
-                      <Typography variant="caption" color="text.secondary">
-                        已选 {Object.keys(selectedDeptMap).length} 个部门，点击预览人员
-                      </Typography>
-                    ) : (
-                      <Chip
-                        size="small"
-                        color="primary"
-                        label={`已选 ${form.selectedPersonNames.length} 名人员`}
-                        onDelete={() => setForm((f) => ({ ...f, selectedPersonNames: [] }))}
-                      />
-                    )}
-                  </Box>
+                {form.selectedPersonNames.length > 0 && (
+                  <Chip
+                    size="small"
+                    color="primary"
+                    label={`已选 ${form.selectedPersonNames.length} 名责任人`}
+                    onDelete={() => setForm((f) => ({ ...f, selectedPersonNames: [] }))}
+                  />
                 )}
               </>
             )}
@@ -834,10 +840,12 @@ export default function AdminTasks() {
             )}
 
             <TextField
-              label="截止日期"
-              type="date"
+              label="截止时间"
+              type="datetime-local"
+              required
               size="small"
               InputLabelProps={{ shrink: true }}
+              inputProps={{ step: 1 }}
               value={form.Deadline}
               onChange={(e) => setForm((f) => ({ ...f, Deadline: e.target.value }))}
               fullWidth
@@ -892,59 +900,111 @@ export default function AdminTasks() {
         </DialogActions>
       </Dialog>
 
-      {/* 盘点部门组织树（多选 / 懒加载 / 级联勾选） */}
+      {/* 选择盘点责任人：部门树 + 人员多选，合并为单一界面 */}
       <Dialog
-        open={deptDialogOpen}
-        onClose={() => setDeptDialogOpen(false)}
+        open={personPickerOpen}
+        onClose={() => setPersonPickerOpen(false)}
         fullScreen
         PaperProps={{ sx: { bgcolor: 'background.paper' } }}
       >
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1.5 }}>
-            <Typography variant="subtitle1" fontWeight={700}>选择盘点部门</Typography>
-            <Stack direction="row" spacing={1} alignItems="center">
-              {deptBusy && <CircularProgress size={18} />}
-              <IconButton onClick={() => setDeptDialogOpen(false)} size="small">
-                <CloseIcon />
-              </IconButton>
-            </Stack>
+            <Typography variant="subtitle1" fontWeight={700}>选择盘点责任人</Typography>
+            <IconButton onClick={() => setPersonPickerOpen(false)} size="small">
+              <CloseIcon />
+            </IconButton>
           </Box>
           <Divider />
-          <Box sx={{ overflowY: 'auto', flexGrow: 1, py: 1, px: 1.5 }}>
-            {loadingDeptTree ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                <CircularProgress size={24} />
+          <Box sx={{ display: 'flex', flex: 1, minHeight: 0 }}>
+            {/* 左：部门树（多选 + 懒加载） */}
+            <Box sx={{ width: '42%', borderRight: '1px solid', borderColor: 'divider', overflowY: 'auto', py: 1, px: 1.5 }}>
+              <Typography variant="caption" color="text.secondary">选择部门（可多选，自动包含子部门）</Typography>
+              {loadingDeptTree ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress size={24} /></Box>
+              ) : deptTree.length === 0 ? (
+                <Typography color="text.secondary" sx={{ p: 2, fontSize: '0.85rem' }}>暂无部门数据</Typography>
+              ) : (
+                <Stack spacing={0.5} sx={{ mt: 0.5 }}>
+                  {deptTree.map((d) => renderDeptNode(d, 0))}
+                </Stack>
+              )}
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
+                {Object.keys(selectedDeptMap).length === 0 ? (
+                  <Typography variant="caption" color="text.secondary">尚未选择部门</Typography>
+                ) : (
+                  Object.entries(selectedDeptMap).map(([id, name]) => (
+                    <Chip key={id} label={name} size="small" onDelete={() => removeDept(Number(id))} />
+                  ))
+                )}
               </Box>
-            ) : deptTree.length === 0 ? (
-              <Typography color="text.secondary" sx={{ p: 2, fontSize: '0.85rem' }}>暂无部门数据</Typography>
-            ) : (
-              <Stack spacing={0.5}>
-                {deptTree.map((d) => renderDeptNode(d, 0))}
-              </Stack>
-            )}
+            </Box>
+            {/* 右：人员多选（来自所选部门及子部门） */}
+            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+              <Box sx={{ px: 2, py: 1.5 }}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="按姓名搜索人员"
+                  value={personKeyword}
+                  onChange={(e) => setPersonKeyword(e.target.value)}
+                />
+              </Box>
+              <Divider />
+              <Box sx={{ overflowY: 'auto', flexGrow: 1, py: 1, px: 1.5 }}>
+                {Object.keys(selectedDeptMap).length === 0 ? (
+                  <Typography color="text.secondary" sx={{ p: 2, fontSize: '0.85rem' }}>请先在左侧选择部门，再从本部门及子部门中勾选责任人</Typography>
+                ) : personLoading ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress size={24} /></Box>
+                ) : personList.length === 0 ? (
+                  <Typography color="text.secondary" sx={{ p: 2, fontSize: '0.85rem' }}>该范围暂无人员数据</Typography>
+                ) : (
+                  <Stack spacing={0.5}>
+                    {personList
+                      .filter((p) => (personKeyword || '').trim() === '' || p.name.includes((personKeyword || '').trim()))
+                      .map((item) => {
+                        const checked = personSelected.has(item.name);
+                        return (
+                          <Box
+                            key={item.name}
+                            onClick={() =>
+                              setPersonSelected((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(item.name)) next.delete(item.name);
+                                else next.add(item.name);
+                                return next;
+                              })
+                            }
+                            sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1, py: 1, borderRadius: 1, cursor: 'pointer' }}
+                          >
+                            <Checkbox checked={checked} onChange={() => {}} sx={{ p: 0.5 }} />
+                            <Box sx={{ flex: 1 }}>
+                              <Typography variant="body2" sx={{ fontSize: '0.9rem' }}>{item.name}</Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                负责 {item.assetCount} 项资产
+                              </Typography>
+                            </Box>
+                          </Box>
+                        );
+                      })}
+                  </Stack>
+                )}
+              </Box>
+            </Box>
           </Box>
           <Divider />
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1.5, gap: 1 }}>
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, flex: 1 }}>
-              {Object.keys(selectedDeptMap).length === 0 ? (
-                <Typography variant="caption" color="text.secondary">尚未选择部门</Typography>
-              ) : (
-                Object.entries(selectedDeptMap).map(([id, name]) => (
-                  <Chip
-                    key={id}
-                    label={name}
-                    size="small"
-                    onDelete={() => removeDept(Number(id))}
-                  />
-                ))
-              )}
-            </Box>
+            <Typography variant="caption" color="text.secondary">
+              已选 {personSelected.size} 名责任人（不选则包含所选部门全部人员）
+            </Typography>
             <Button
               variant="contained"
-              onClick={() => setDeptDialogOpen(false)}
+              onClick={() => {
+                setForm((f) => ({ ...f, selectedPersonNames: Array.from(personSelected) }));
+                setPersonPickerOpen(false);
+              }}
               sx={{ borderRadius: '10px', textTransform: 'none', whiteSpace: 'nowrap' }}
             >
-              确定（{Object.keys(selectedDeptMap).length}）
+              确定（{personSelected.size}）
             </Button>
           </Box>
         </Box>
@@ -1051,91 +1111,7 @@ export default function AdminTasks() {
         </Box>
       </Dialog>
 
-      {/* 人员预览（按部门，精确多选） */}
-      <Dialog
-        open={personPreviewOpen}
-        onClose={() => setPersonPreviewOpen(false)}
-        fullScreen
-        PaperProps={{ sx: { bgcolor: 'background.paper' } }}
-      >
-        <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1.5 }}>
-            <Typography variant="subtitle1" fontWeight={700}>
-              人员预览（已选 {personSelected.size} / 共 {personTotal}）
-            </Typography>
-            <IconButton onClick={() => setPersonPreviewOpen(false)} size="small">
-              <CloseIcon />
-            </IconButton>
-          </Box>
-          <Divider />
-          <Box sx={{ overflowY: 'auto', flexGrow: 1, py: 1, px: 1.5 }}>
-            {personLoading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                <CircularProgress size={24} />
-              </Box>
-            ) : personList.length === 0 ? (
-              <Typography color="text.secondary" sx={{ p: 2, fontSize: '0.85rem' }}>暂无人员数据</Typography>
-            ) : (
-              <Stack spacing={0.5}>
-                {personList.map((item) => {
-                  const checked = personSelected.has(item.name);
-                  return (
-                    <Box
-                      key={item.name}
-                      onClick={() =>
-                        setPersonSelected((prev) => {
-                          const next = new Set(prev);
-                          if (next.has(item.name)) next.delete(item.name);
-                          else next.add(item.name);
-                          return next;
-                        })
-                      }
-                      sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1, py: 1, borderRadius: 1, cursor: 'pointer' }}
-                    >
-                      <Checkbox checked={checked} onChange={() => {}} sx={{ p: 0.5 }} />
-                      <Box sx={{ flex: 1 }}>
-                        <Typography variant="body2" sx={{ fontSize: '0.9rem' }}>{item.name}</Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          负责 {item.assetCount} 项资产
-                        </Typography>
-                      </Box>
-                    </Box>
-                  );
-                })}
-              </Stack>
-            )}
-          </Box>
-          <Divider />
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1.5, gap: 1 }}>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Button
-                size="small"
-                onClick={() => setPersonSelected(new Set(personList.map((i) => i.name)))}
-                sx={{ textTransform: 'none' }}
-              >
-                全选
-              </Button>
-              <Button
-                size="small"
-                onClick={() => setPersonSelected(new Set())}
-                sx={{ textTransform: 'none' }}
-              >
-                取消全选
-              </Button>
-            </Box>
-            <Button
-              variant="contained"
-              onClick={() => {
-                setForm((f) => ({ ...f, selectedPersonNames: Array.from(personSelected) }));
-                setPersonPreviewOpen(false);
-              }}
-              sx={{ borderRadius: '10px', textTransform: 'none', whiteSpace: 'nowrap' }}
-            >
-              确定（{personSelected.size}）
-            </Button>
-          </Box>
-        </Box>
-      </Dialog>
+      {/* 人员预览已合并至「选择盘点责任人」弹窗（personPickerOpen） */}
 
       {/* 创建任务后端校验拦截明细（empty_user / match_failed） */}
       <Dialog

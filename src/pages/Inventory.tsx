@@ -274,8 +274,11 @@ export default function InventoryPage() {
       setPhotos([]);
       updateTime();
 
-      // 自动跳到下一个
-      if (currentIndex < assets.length - 1) {
+      // 全部盘点项完成 → 自动跳回任务卡片页（/tasks）；否则跳到下一个
+      const newCompletedCount = completedCodes.length + 1;
+      if (newCompletedCount >= assets.length) {
+        setTimeout(() => navigate('/tasks'), 1000);
+      } else if (currentIndex < assets.length - 1) {
         setCurrentIndex((prev) => prev + 1);
       }
     } catch (err: unknown) {
@@ -358,6 +361,52 @@ export default function InventoryPage() {
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2 space-y-2">
+        {/* 固定资产详情（来自 sai_assets，经 GetTaskDetail 关联返回） */}
+        <div className="bg-white rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-1.5">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-gray-900 text-sm">固定资产详情</h3>
+            <span className="text-xs text-gray-400">{currentAsset.assetCode}</span>
+          </div>
+          <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+            <div>
+              <dt className="text-gray-400">资产名称</dt>
+              <dd className="text-gray-800 break-words">{currentAsset.assetName}</dd>
+            </div>
+            <div>
+              <dt className="text-gray-400">类别</dt>
+              <dd className="text-gray-800">{currentAsset.category || '—'}</dd>
+            </div>
+            <div>
+              <dt className="text-gray-400">使用部门</dt>
+              <dd className="text-gray-800">{currentAsset.department || '—'}</dd>
+            </div>
+            <div>
+              <dt className="text-gray-400">责任人</dt>
+              <dd className="text-gray-800">{currentAsset.userName || '—'}</dd>
+            </div>
+            <div>
+              <dt className="text-gray-400">存放地点</dt>
+              <dd className="text-gray-800 break-words">{currentAsset.location || '—'}</dd>
+            </div>
+            <div>
+              <dt className="text-gray-400">使用状态</dt>
+              <dd className="text-gray-800">{currentAsset.status || '—'}</dd>
+            </div>
+            {currentAsset.costCenterName ? (
+              <div>
+                <dt className="text-gray-400">成本中心</dt>
+                <dd className="text-gray-800 break-words">{currentAsset.costCenterName}</dd>
+              </div>
+            ) : null}
+            {currentAsset.standard ? (
+              <div>
+                <dt className="text-gray-400">规格型号</dt>
+                <dd className="text-gray-800 break-words">{currentAsset.standard}</dd>
+              </div>
+            ) : null}
+          </dl>
+        </div>
+
         {/* 已盘点提示 */}
         {isCompleted && (
           <Alert severity="success" sx={{ fontSize: '0.8rem', py: 0.5 }}>
