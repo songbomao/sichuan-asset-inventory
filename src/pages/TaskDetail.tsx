@@ -15,25 +15,7 @@ import RateReviewIcon from '@mui/icons-material/RateReview';
 import DescriptionIcon from '@mui/icons-material/Description';
 import { getTaskDetail, getProgress } from '../api/tasks';
 import { useAuth } from '../contexts/AuthContext';
-import VerticalTimeline, { type TimelineEvent } from '../components/VerticalTimeline';
-
-/** 根据任务完成百分比生成盘点里程碑时间轴数据 */
-function generateTimelineEvents(percentage: number): TimelineEvent[] {
-  const now = new Date();
-  const fmt = (d: Date) =>
-    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
-  const offset = (minutes: number) => fmt(new Date(now.getTime() - minutes * 60 * 1000));
-
-  const events: TimelineEvent[] = [
-    { id: 'sync', title: '数据同步', timestamp: offset(300), status: 'completed' },
-    { id: 'dispatch', title: '盘点下达（钉钉推送）', timestamp: offset(270), status: percentage > 0 ? 'completed' : 'pending' },
-    { id: 'inventorying', title: '盘点中', timestamp: percentage > 0 && percentage < 100 ? fmt(now) : percentage >= 100 ? offset(180) : '--', status: percentage >= 100 ? 'completed' : percentage > 0 ? 'in-progress' : 'pending' },
-    { id: 'report', title: '报告生成中', timestamp: percentage >= 100 ? offset(60) : '--', status: percentage >= 100 ? 'completed' : 'pending' },
-    { id: 'end', title: '盘点结束', timestamp: percentage >= 100 ? offset(30) : '--', status: percentage >= 100 ? 'completed' : 'pending' },
-    { id: 'archive', title: '盘点完成归档', timestamp: percentage >= 100 ? offset(15) : '--', status: percentage >= 100 ? 'completed' : 'pending' },
-  ];
-  return events;
-}
+import HorizontalTimeline, { type MilestoneNode } from '../components/HorizontalTimeline';
 
 /**
  * 任务详情入口页（盘点/复盘/看板/报告 分流）
@@ -44,6 +26,18 @@ export default function TaskDetailPage() {
   const { user } = useAuth();
 
   const [taskName, setTaskName] = useState('');
+  const [detail, setDetail] = useState<{
+    assetCount: number;
+    myAssetCount: number;
+    assets: { assetCode: string }[];
+    milestones: {
+      syncTime: string | null;
+      dispatchTime: string | null;
+      completeTime: string | null;
+      reportTime: string | null;
+      archiveTime: string | null;
+    };
+  } | null>(null);
   const [assetCount, setAssetCount] = useState(0);
   const [progress, setProgress] = useState({ total: 0, completed: 0, percentage: 0 });
   const [loading, setLoading] = useState(true);
@@ -54,12 +48,16 @@ export default function TaskDetailPage() {
     setLoading(true);
     setError(null);
     try {
-      const [detail, prog] = await Promise.all([
+      const [d, prog] = await Promise.all([
         getTaskDetail(taskId),
         getProgress(taskId),
       ]);
-      setTaskName(detail.taskName);
-      setAssetCount(detail.assets.length);
+      setTaskName(d.taskName);
+      setDetail(d);
+      // 责任人视角显示本人名下资产数；管理员视角显示整任务资产数
+      const wholeCount = typeof d.assetCount === 'number' ? d.assetCount : d.assets.length;
+      const mineCount = typeof d.myAssetCount === 'number' ? d.myAssetCount : d.assets.length;
+      setAssetCount(user?.isAdmin ? wholeCount : mineCount);
       setProgress(prog);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : '加载任务详情失败';
@@ -67,7 +65,7 @@ export default function TaskDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [taskId]);
+  }, [taskId, user?.isAdmin]);
 
   useEffect(() => {
     fetchData();
@@ -150,13 +148,31 @@ export default function TaskDetailPage() {
       </header>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {/* 盘点进度时间轴 */}
+        {/* 任务进度时间轴（横向 5 节点） */}
         <Card className="hover:shadow-md transition-shadow">
           <CardContent>
             <Typography variant="subtitle1" className="font-semibold text-gray-900 mb-3">
-              盘点进度
+              任务进度
             </Typography>
-            <VerticalTimeline events={generateTimelineEvents(progress.percentage)} />
+            <HorizontalTimeline
+              nodes={
+                (detail?.milestones
+                  ? [
+                      { id: 'sync', title: '数据同步', timestamp: detail.milestones.syncTime },
+                      { id: 'dispatch', title: '盘点下达', timestamp: detail.milestones.dispatchTime },
+                      { id: 'complete', title: '盘点完成', timestamp: detail.milestones.completeTime },
+                      { id: 'report', title: '报告生成', timestamp: detail.milestones.reportTime },
+                      { id: 'archive', title: '盘点完成归档', timestamp: detail.milestones.archiveTime },
+                    ]
+                  : [
+                      { id: 'sync', title: '数据同步', timestamp: null },
+                      { id: 'dispatch', title: '盘点下达', timestamp: null },
+                      { id: 'complete', title: '盘点完成', timestamp: null },
+                      { id: 'report', title: '报告生成', timestamp: null },
+                      { id: 'archive', title: '盘点完成归档', timestamp: null },
+                    ]) as MilestoneNode[]
+              }
+            />
           </CardContent>
         </Card>
 

@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607262332';
+export const APP_VERSION = 'v202607262354';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-26 23:32';
-export const RELEASE_NOTES = '修复「我的盘点任务」Tab 卡片状态逻辑：原卡片直接取任务级 t.Status 显示，与当前责任人完成情况脱节（本人盘点完仍显示「进行中」）。改为依据后端 GetTaskList(onlyMine) 已按当前用户聚合的 assetCount/completedCount 派生状态——当前责任人名下资产全部盘点完成（completedCount>=assetCount 且 assetCount>0）即显示「已完成」，否则沿用任务级状态；visibleTasks 过滤补上 completed 使已完成卡片可见；进度条本就按用户级完成数渲染，与状态一致。仅前端逻辑，后端无改动。';
+export const RELEASE_TIME = '2026-07-26 23:54';
+export const RELEASE_NOTES = '修复盘点任务详情页两处问题：①资产数量显示错误——根因是后端 GetTaskDetail 原返回整任务全部资产（未过滤责任人），前端取 detail.assets.length 显示 3；后端改为同时返回 assetCount（整任务数）与 myAssetCount（当前责任人名下数），前端按角色取数（管理员看整任务数、责任人看本人名下数）。②进度图优化——取消原竖向 6 节点假时间戳时间轴，新增横向 5 节点任务进度轴（MUI Stepper alternativeLabel，与管理页资产对比同步同款）：数据同步（SAP→本地最近同步时刻）/盘点下达（任务 CreatedAt）/盘点完成（责任人最后一个 self 记录 CreatedAt）/报告生成（sai_report_archive.GeneratedAt）/盘点完成归档（+5 分钟），完成态由真实时间戳是否存在驱动，标题由「盘点进度」改为「任务进度」。配套后端 v202607262353（GetTaskDetail 补返 assetCount/myAssetCount/milestones）。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607262354',
+    time: '2026-07-26 23:54',
+    notes: '修复盘点任务详情页两处问题：①资产数量显示错误——根因是后端 GetTaskDetail 原返回整任务全部资产（未过滤责任人），前端取 detail.assets.length 显示 3；后端改为同时返回 assetCount（整任务数）与 myAssetCount（当前责任人名下数），前端按角色取数（管理员看整任务数、责任人看本人名下数）。②进度图优化——取消原竖向 6 节点假时间戳时间轴，新增横向 5 节点任务进度轴（MUI Stepper alternativeLabel，与管理页资产对比同步同款）：数据同步（SAP→本地最近同步时刻）/盘点下达（任务 CreatedAt）/盘点完成（责任人最后一个 self 记录 CreatedAt）/报告生成（sai_report_archive.GeneratedAt）/盘点完成归档（+5 分钟），完成态由真实时间戳是否存在驱动，标题由「盘点进度」改为「任务进度」。配套后端 v202607262353（GetTaskDetail 补返 assetCount/myAssetCount/milestones）。',
+  },
   {
     version: 'v202607262332',
     time: '2026-07-26 23:32',

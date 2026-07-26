@@ -56,6 +56,15 @@ export interface AssetInfo {
   profitCenterName?: string;
 }
 
+/** 任务进度里程碑（真实时间戳，null 表示尚未到达该节点） */
+export interface TaskMilestones {
+  syncTime: string | null;
+  dispatchTime: string | null;
+  completeTime: string | null;
+  reportTime: string | null;
+  archiveTime: string | null;
+}
+
 /** 任务详情响应 */
 interface TaskDetailResponse {
   code: number;
@@ -64,6 +73,12 @@ interface TaskDetailResponse {
     taskName: string;
     assets: AssetInfo[];
     completedCodes: string[];
+    /** 整任务资产数（管理员视角） */
+    assetCount: number;
+    /** 当前责任人名下资产数（责任人视角） */
+    myAssetCount: number;
+    /** 任务进度里程碑真实时间戳 */
+    milestones: TaskMilestones;
   };
   message: string;
   msg?: string;
@@ -78,6 +93,9 @@ export async function getTaskDetail(taskId: string): Promise<{
   taskName: string;
   assets: AssetInfo[];
   completedCodes: string[];
+  assetCount: number;
+  myAssetCount: number;
+  milestones: TaskMilestones;
 }> {
   const { data } = await client.get<TaskDetailResponse>('/api/Account/Task/GetTaskDetail', {
     params: { taskId },
