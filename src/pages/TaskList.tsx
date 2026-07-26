@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Card from '@mui/material/Card';
 import CardActionArea from '@mui/material/CardActionArea';
@@ -8,8 +8,6 @@ import Skeleton from '@mui/material/Skeleton';
 import Alert from '@mui/material/Alert';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import IconButton from '@mui/material/IconButton';
 import InboxIcon from '@mui/icons-material/Inbox';
 import { getTaskList, type TaskItem } from '../api/tasks';
 import MyRecords from './MyRecords';
@@ -53,6 +51,14 @@ export default function TaskListPage() {
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks]);
+
+  /** 切换 Tab 时自动触发对应页数据刷新：tasks 调 fetchTasks(true)；records 因条件渲染重挂载，MyRecords 挂载即拉取最新数据 */
+  const prevTab = useRef(tab);
+  useEffect(() => {
+    if (prevTab.current === tab) return;
+    prevTab.current = tab;
+    if (tab === 'tasks') fetchTasks(true);
+  }, [tab]);
 
   /** 格式化截止时间 */
   const formatDeadline = (deadline: string): string => {
@@ -110,15 +116,10 @@ export default function TaskListPage() {
       {/* 头部 */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">我的任务</h1>
+          <h1 className="text-xl font-bold text-gray-900">我的盘点</h1>
           <p className="text-sm text-gray-500 mt-0.5">
             {visibleTasks.length > 0 ? `共 ${visibleTasks.length} 个待盘点任务` : '当前没有待盘点任务'}
           </p>
-        </div>
-        <div className="flex items-center gap-1">
-          <IconButton onClick={() => fetchTasks(true)} disabled={refreshing} color="primary" title="刷新">
-            <RefreshIcon className={refreshing ? 'animate-spin-refresh' : ''} />
-          </IconButton>
         </div>
       </div>
 

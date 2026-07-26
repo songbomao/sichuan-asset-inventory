@@ -1,7 +1,7 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import BottomNavigation from '@mui/material/BottomNavigation';
 import BottomNavigationAction from '@mui/material/BottomNavigationAction';
-import AssignmentIcon from '@mui/icons-material/Assignment';
+import InventoryIcon from '@mui/icons-material/Inventory';
 import PersonIcon from '@mui/icons-material/Person';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -12,7 +12,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 /** 责任人（业主）底部导航 */
 const ownerTabs = [
-  { path: '/tasks', label: '我的任务', icon: <AssignmentIcon /> },
+  { path: '/tasks', label: '我的盘点', icon: <InventoryIcon /> },
   { path: '/my-progress', label: '我的进度', icon: <TrendingUpIcon /> },
   { path: '/assets', label: '资产档案', icon: <ArchiveIcon /> },
   { path: '/profile', label: '我的', icon: <PersonIcon /> },
@@ -26,7 +26,7 @@ const ownerTabs = [
  * 「管理」（原「盘点任务」）承载任务管理/资产对比同步/固资查询，置于最右侧入口。
  */
 const adminTabs = [
-  { path: '/tasks', label: '我的任务', icon: <AssignmentIcon /> },
+  { path: '/tasks', label: '我的盘点', icon: <InventoryIcon /> },
   { path: '/my-progress', label: '我的进度', icon: <TrendingUpIcon /> },
   { path: '/admin/dashboard', label: '全局进度', icon: <DashboardIcon /> },
   { path: '/profile', label: '我的', icon: <PersonIcon /> },

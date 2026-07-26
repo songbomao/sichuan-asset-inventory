@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607262252';
+export const APP_VERSION = 'v202607262300';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-26 22:52';
-export const RELEASE_NOTES = '信息架构收敛：「我的」页移除「我的盘点记录」按钮（该入口收敛至「我的任务」页 Tab）；「我的任务」页拆分为两个 fullWidth Tab——「我的盘点任务」（现有任务列表+刷新）与「我的盘点记录」（复用 MyRecords(embedded)，含筛选/分页/详情抽屉）；Tab 样式完全参照管理员 AdminTasks 的 3-Tab（variant=fullWidth、minHeight=40、textTransform=none、fontSize=0.9rem），切换效果/间距/字体一致。盘点记录入口现为「我的任务→我的盘点记录」Tab 与「资产档案→盘点时间线」两处，底层均复用 MyRecords。';
+export const RELEASE_TIME = '2026-07-26 23:00';
+export const RELEASE_NOTES = '导航与交互优化：①底部导航「我的任务」更名为「我的盘点」，图标由 AssignmentIcon 改为 InventoryIcon（库存盘点风格），责任人与管理员两套导航同步更新；②「我的盘点」页标题「我的任务」→「我的盘点」；③移除「我的盘点」页刷新图标按钮；④新增 Tab 切换自动刷新逻辑——切换至「我的盘点任务」Tab 触发 fetchTasks(true)，切换至「我的盘点记录」Tab 因条件渲染重挂载使 MyRecords 挂载即拉取最新数据，该逻辑覆盖全部 Tab 页面。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607262300',
+    time: '2026-07-26 23:00',
+    notes: '导航与交互优化：①底部导航「我的任务」更名为「我的盘点」，图标 AssignmentIcon→InventoryIcon（库存盘点风格），责任人与管理员两套导航同步更新；②「我的盘点」页标题「我的任务」→「我的盘点」；③移除「我的盘点」页刷新图标按钮；④新增 Tab 切换自动刷新——切到「我的盘点任务」触发 fetchTasks(true)，切到「我的盘点记录」因条件渲染重挂载使 MyRecords 挂载即拉最新，覆盖全部 Tab。',
+  },
   {
     version: 'v202607262252',
     time: '2026-07-26 22:52',
