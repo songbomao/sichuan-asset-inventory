@@ -27,8 +27,8 @@ const ownerTabs = [
  */
 const adminTabs = [
   { path: '/tasks', label: '我的任务', icon: <AssignmentIcon /> },
-  { path: '/admin/dashboard', label: '进度监控', icon: <DashboardIcon /> },
   { path: '/my-progress', label: '我的进度', icon: <InsightsIcon /> },
+  { path: '/admin/dashboard', label: '全局进度', icon: <DashboardIcon /> },
   { path: '/profile', label: '我的', icon: <PersonIcon /> },
   { path: '/admin/tasks', label: '管理', icon: <SettingsIcon /> },
 ];

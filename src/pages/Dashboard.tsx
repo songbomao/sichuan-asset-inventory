@@ -89,7 +89,7 @@ export default function DashboardPage() {
           <IconButton color="inherit" size="small" onClick={goBack}>
             <ArrowBackIosNewIcon fontSize="small" />
           </IconButton>
-          <h2 className="text-sm font-semibold">{isGlobal ? '进度监控 · 全局' : '进度看板'}</h2>
+          <h2 className="text-sm font-semibold">{isGlobal ? '全局进度' : '进度看板'}</h2>
         </header>
         <div className="p-4 space-y-4">
           {[1, 2, 3].map((i) => <Card key={i}><CardContent><Skeleton variant="text" /></CardContent></Card>)}
@@ -120,7 +120,7 @@ export default function DashboardPage() {
         </IconButton>
         <div className="flex-1 min-w-0">
           <h2 className="text-sm font-semibold truncate">
-            {isGlobal ? '进度监控 · 全局' : `进度看板 · ${taskName}`}
+            {isGlobal ? '全局进度' : `进度看板 · ${taskName}`}
           </h2>
         </div>
         <IconButton color="inherit" size="small" onClick={fetchData}>

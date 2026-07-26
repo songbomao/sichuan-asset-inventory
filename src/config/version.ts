@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607261115';
+export const APP_VERSION = 'v202607261120';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-26 11:15';
-export const RELEASE_NOTES = '管理员/超级管理员底部导航补齐「我的任务」入口：管理员同样可能作为责任人执行盘点，导航顺序现为「我的任务 · 进度监控 · 我的进度 · 我的 · 管理」，执行入口置于最左、管理入口置于最右。';
+export const RELEASE_TIME = '2026-07-26 11:20';
+export const RELEASE_NOTES = '管理员底部导航调整：原「进度监控」改名为「全局进度」，并与「我的进度」互换位置；新顺序为「我的任务 · 我的进度 · 全局进度 · 我的 · 管理」。Dashboard 全局视图标题同步由「进度监控 · 全局」改为「全局进度」。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -17,9 +17,9 @@ export const VERSION_HISTORY: Array<{
   notes: string;
 }> = [
   {
-    version: 'v202607261115',
-    time: '2026-07-26 11:15',
-    notes: '管理员/超级管理员底部导航补齐「我的任务」入口：管理员同样可能作为责任人执行盘点，导航顺序现为「我的任务 · 进度监控 · 我的进度 · 我的 · 管理」，执行入口置于最左、管理入口置于最右。',
+    version: 'v202607261120',
+    time: '2026-07-26 11:20',
+    notes: '管理员底部导航调整：原「进度监控」改名为「全局进度」，并与「我的进度」互换位置；新顺序为「我的任务 · 我的进度 · 全局进度 · 我的 · 管理」。Dashboard 全局视图标题同步由「进度监控 · 全局」改为「全局进度」。',
   },
   {
     version: 'v202607261104',
