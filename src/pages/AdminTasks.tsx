@@ -26,7 +26,6 @@ import Divider from '@mui/material/Divider';
 import AddIcon from '@mui/icons-material/Add';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import SendIcon from '@mui/icons-material/Send';
-import SyncIcon from '@mui/icons-material/Sync';
 import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -512,18 +511,20 @@ export default function AdminTasks() {
       {tab === 'tasks' && (
       <>
       {/* 头部 */}
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">任务管理</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            创建和下发盘点任务
-          </p>
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-sm text-gray-500">
+          创建和下发盘点任务
         </div>
-        <div className="flex gap-1 shrink-0">
-          <IconButton onClick={fetchSyncStatus} color="primary" size="small" title="刷新同步状态">
-            <SyncIcon />
-          </IconButton>
-          <IconButton onClick={fetchTasks} color="primary" size="small">
+        <div className="flex gap-1 shrink-0 items-center">
+          <IconButton
+            onClick={() => {
+              void fetchSyncStatus();
+              void fetchTasks();
+            }}
+            color="primary"
+            size="small"
+            title="刷新数据"
+          >
             <RefreshIcon />
           </IconButton>
           <Button
@@ -603,26 +604,32 @@ export default function AdminTasks() {
         tasks.map((task) => {
           const st = statusMap[task.status] ?? { label: task.status, color: 'default' as const };
           return (
-            <Card key={task.id} className="glow-border hover:shadow-glow transition-shadow" sx={{ position: 'relative' }}>
-              <IconButton
-                size="small"
-                color="error"
-                title="删除任务"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setDeleteTarget(task);
-                }}
-                sx={{ position: 'absolute', top: 6, right: 6, zIndex: 2, bgcolor: 'rgba(255,255,255,0.85)' }}
-              >
-                <DeleteIcon fontSize="small" />
-              </IconButton>
+            <Card key={task.id} className="glow-border hover:shadow-glow transition-shadow">
               <CardActionArea onClick={() => navigate(`/tasks/${task.id}`)}>
                 <CardContent>
-                  <div className="flex items-start justify-between mb-2">
-                    <Typography variant="subtitle1" component="h3" className="font-semibold text-gray-900" sx={{ flex: 1, mr: 1 }}>
+                  <div className="flex items-start justify-between mb-2 gap-2">
+                    <Typography variant="subtitle1" component="h3" className="font-semibold text-gray-900" sx={{ flex: 1, minWidth: 0 }}>
                       {task.taskName}
                     </Typography>
-                    <Chip label={st.label} color={st.color} size="small" />
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Chip label={st.label} color={st.color} size="small" />
+                      <Tooltip title={task.status === 'completed' ? '已完成任务不可删除' : '删除任务'}>
+                        <span>
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteTarget(task);
+                            }}
+                            disabled={task.status === 'completed'}
+                            sx={{ bgcolor: 'rgba(255,255,255,0.85)' }}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-4 text-sm text-gray-500 mb-3 flex-wrap">
@@ -670,6 +677,9 @@ export default function AdminTasks() {
           <Typography variant="body2" color="text.secondary">
             即将删除任务「{deleteTarget?.taskName}」。该操作将级联删除此任务下的资产清单与盘点记录，
             <strong>不会影响其他任务</strong>，但删除后不可恢复。
+            {deleteTarget?.status === 'running' && (
+              <span className="block mt-1 text-orange-600">运行中任务删除后，系统将向任务内所有人员发送「取消盘点」钉钉提醒。</span>
+            )}
           </Typography>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>

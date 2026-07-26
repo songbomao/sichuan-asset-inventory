@@ -11,26 +11,14 @@ import Snackbar from '@mui/material/Snackbar';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import TextField from '@mui/material/TextField';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import { getTaskDetail, getProgress, type AssetInfo } from '../api/tasks';
-import { submitRecord, getAssetByCode, type AssetDetail } from '../api/inventory';
-import { getLifecycle, type LifecycleData } from '../api/report';
-import {
-  RecognizeAsset,
-  type RecognizeAssetCandidate,
-  type RecognizeAssetResult,
-} from '../api/ai';
+import { submitRecord } from '../api/inventory';
 import { getCurrentLocation } from '../api/reverseGeocode';
 import { useAuth } from '../contexts/AuthContext';
 import CameraCapture from '../components/CameraCapture';
 import ProgressBar from '../components/ProgressBar';
-import AssetDetailTabs from '../components/AssetDetailTabs';
 
 /** 盘点状态选项 */
 const STATUS_OPTIONS = [
@@ -119,24 +107,12 @@ export default function InventoryPage() {
   // 进度
   const [progress, setProgress] = useState({ total: 0, completed: 0, percentage: 0 });
 
-  // 当前资产完整详情
-  const [assetDetail, setAssetDetail] = useState<AssetDetail | null>(null);
-  const [loadingDetail, setLoadingDetail] = useState(false);
-  const [detailError, setDetailError] = useState<string | null>(null);
-
-  // 资产历史变更记录
-  const [lifecycle, setLifecycle] = useState<LifecycleData | null>(null);
-  const [lifecycleLoading, setLifecycleLoading] = useState(false);
-
   // GPS 位置与解析状态
   const [gpsLocation, setGpsLocation] = useState('定位中...');
   const [gpsCoords, setGpsCoords] = useState({ longitude: '', latitude: '' });
 
   // 水印时间
   const [watermarkTime, setWatermarkTime] = useState('');
-
-  // AI 识别
-  const [aiScanning, setAiScanning] = useState(false);
 
   // 触控滑动跟踪
   const touchStartX = useRef(0);
@@ -207,29 +183,7 @@ export default function InventoryPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /** 加载当前资产完整详情与历史记录 */
-  const fetchAssetDetail = useCallback(async (assetCode: string) => {
-    setLoadingDetail(true);
-    setDetailError(null);
-    setLifecycleLoading(true);
-    try {
-      const [detail, life] = await Promise.all([
-        getAssetByCode(assetCode),
-        getLifecycle(assetCode).catch(() => null),
-      ]);
-      setAssetDetail(detail);
-      setLifecycle(life);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : '加载资产详情失败';
-      setDetailError(msg);
-      setAssetDetail(null);
-    } finally {
-      setLoadingDetail(false);
-      setLifecycleLoading(false);
-    }
-  }, []);
-
-  /** 切换资产时重置当前盘点状态并加载详情 */
+  /** 切换资产时重置当前盘点状态 */
   useEffect(() => {
     const currentAsset = assets[currentIndex];
     if (currentAsset) {
@@ -237,9 +191,8 @@ export default function InventoryPage() {
       setRemark('');
       setPhotos([]);
       updateTime();
-      fetchAssetDetail(currentAsset.assetCode);
     }
-  }, [currentIndex, assets, fetchAssetDetail]);
+  }, [currentIndex, assets]);
 
   /** 处理照片捕获 */
   const handlePhotoCapture = useCallback((dataUrl: string) => {
@@ -333,60 +286,6 @@ export default function InventoryPage() {
     }
   }, [taskId, assets, currentIndex, photos, assetStatus, remark, gpsCoords, gpsLocation]);
 
-  /** AI 识别后将识别结果跳转定位到对应资产 */
-  const jumpToAsset = useCallback(
-    (result: RecognizeAssetResult) => {
-      const idx = assets.findIndex((a) => a.assetCode === result.assetCode);
-      if (idx >= 0) {
-        setCurrentIndex(idx);
-        setSnackbar({
-          open: true,
-          message: `✅ AI 识别为 ${result.name}，已跳转`,
-          severity: 'success',
-        });
-      } else {
-        setSnackbar({
-          open: true,
-          message: `AI 识别为 ${result.name}（不在本任务）`,
-          severity: 'success',
-        });
-      }
-    },
-    [assets],
-  );
-
-  /** 基于照片 + 候选资产列表调用真实 AI 识别 */
-  const recognizeWithImage = useCallback(
-    async (image: string) => {
-      const candidates: RecognizeAssetCandidate[] = assets.map((a) => ({
-        assetCode: a.assetCode,
-        name: a.assetName,
-        spec: a.category || '',
-      }));
-      if (candidates.length === 0) return;
-      setAiScanning(true);
-      try {
-        const result = await RecognizeAsset({ image, candidates });
-        jumpToAsset(result);
-      } catch {
-        setSnackbar({ open: true, message: '⚠️ AI 服务暂不可用', severity: 'error' });
-      } finally {
-        setAiScanning(false);
-      }
-    },
-    [assets, jumpToAsset],
-  );
-
-  /** 顶部「AI识别」按钮：使用已拍照片发起识别 */
-  const handleAIRecognize = useCallback(async () => {
-    if (photos.length === 0) {
-      setSnackbar({ open: true, message: '请先拍摄至少一张照片', severity: 'error' });
-      return;
-    }
-    const combined = await combinePhotos(photos);
-    await recognizeWithImage(combined);
-  }, [photos, recognizeWithImage]);
-
   // ---------- 加载态 ----------
   if (loading) {
     return (
@@ -448,24 +347,13 @@ export default function InventoryPage() {
             {currentAsset?.assetName} · {currentIndex + 1} / {assets.length}
           </p>
         </div>
-        <Button
-          size="small"
-          variant="outlined"
-          color="inherit"
-          onClick={handleAIRecognize}
-          disabled={aiScanning}
-          startIcon={aiScanning ? <CircularProgress size={16} color="inherit" /> : <QrCodeScannerIcon />}
-          sx={{ borderRadius: '16px', borderColor: 'rgba(255,255,255,0.5)', color: '#fff', fontSize: '0.7rem', py: 0.4, px: 1 }}
-        >
-          AI识别
-        </Button>
       </header>
 
-      {/* 进度条 */}
+      {/* 进度条：根据实际盘点完成比例动态更新 */}
       <div className="px-3 py-1.5 bg-white border-b border-gray-100 shrink-0">
         <ProgressBar
-          current={completedCodes.length + (isCompleted ? 0 : 0)}
-          total={assets.length}
+          current={progress.completed}
+          total={progress.total}
         />
       </div>
 
@@ -476,15 +364,6 @@ export default function InventoryPage() {
             该资产已盘点完成 ✅
           </Alert>
         )}
-
-        {/* 资产详情 Tab 卡片 */}
-        <AssetDetailTabs
-          asset={assetDetail}
-          loading={loadingDetail}
-          error={detailError}
-          lifecycle={lifecycle}
-          lifecycleLoading={lifecycleLoading}
-        />
 
         {/* 水印照片卡片 */}
         <div className="bg-white rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-2">
@@ -530,12 +409,6 @@ export default function InventoryPage() {
             photoCount={photos.length}
             minPhotos={2}
             maxPhotos={4}
-            candidates={assets.map((a) => ({
-              assetCode: a.assetCode,
-              name: a.assetName,
-              spec: a.category || '',
-            }))}
-            onAIRecognized={jumpToAsset}
           />
         </div>
 

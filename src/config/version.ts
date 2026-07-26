@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607261140';
+export const APP_VERSION = 'v202607261615';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-26 11:40';
-export const RELEASE_NOTES = '修复两条 Bug：①管理页新增删除任务能力——卡片右上角删除按钮 + 二次确认弹窗，调用后端 DeleteTask 仅级联删除指定 taskId（任务+资产清单+记录），不影响其他任务；②我的任务页可见性修复——原仅显示 pending 状态导致 DispatchTask 置 running 后责任人看不到任务，改为同时展示 pending 与 running 进行中任务，责任人可正常查看并执行盘点。';
+export const RELEASE_TIME = '2026-07-26 16:15';
+export const RELEASE_NOTES = '三项修改落地：①盘点报告页「AI生成汇报文案」改为「AI生成盘点报告」，点击后提示「AI服务暂不可用，已回退人工流程」；②管理页-盘点任务管理移除「任务管理」标题，合并为一个刷新按钮同步刷新任务与同步状态，任务卡片状态 Chip 与删除按钮分开排版，已完成任务禁用删除；③盘点操作页面进度条改按实际完成比例（progress.completed/total）动态更新，移除 AI 识别按钮与资产详情 Tab 等非盘点模块，仅保留盘点核心功能。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -17,9 +17,9 @@ export const VERSION_HISTORY: Array<{
   notes: string;
 }> = [
   {
-    version: 'v202607261140',
-    time: '2026-07-26 11:40',
-    notes: '修复两条 Bug：①管理页新增删除任务能力——卡片右上角删除按钮 + 二次确认弹窗，调用后端 DeleteTask 仅级联删除指定 taskId（任务+资产清单+记录），不影响其他任务；②我的任务页可见性修复——原仅显示 pending 状态导致 DispatchTask 置 running 后责任人看不到任务，改为同时展示 pending 与 running 进行中任务，责任人可正常查看并执行盘点。',
+    version: 'v202607261615',
+    time: '2026-07-26 16:15',
+    notes: '三项修改落地：①盘点报告页「AI生成汇报文案」改为「AI生成盘点报告」，点击后提示「AI服务暂不可用，已回退人工流程」；②管理页-盘点任务管理移除「任务管理」标题，合并为一个刷新按钮同步刷新任务与同步状态，任务卡片状态 Chip 与删除按钮分开排版，已完成任务禁用删除；③盘点操作页面进度条改按实际完成比例（progress.completed/total）动态更新，移除 AI 识别按钮与资产详情 Tab 等非盘点模块，仅保留盘点核心功能。',
   },
   {
     version: 'v202607261125',

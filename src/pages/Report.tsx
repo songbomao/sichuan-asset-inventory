@@ -19,7 +19,6 @@ import DialogActions from '@mui/material/DialogActions';
 import Divider from '@mui/material/Divider';
 import { generateReport, type ReportData } from '../api/report';
 import { getTaskList, type TaskItem } from '../api/tasks';
-import { WriteReport } from '../api/ai';
 import { useAuth } from '../contexts/AuthContext';
 
 /**
@@ -122,25 +121,18 @@ export default function ReportPage() {
     );
   }
 
-  /** AI 生成汇报文案 */
+  /** AI 生成盘点报告（当前服务暂不可用，点击即提示已回退人工流程） */
   const handleGenerateReport = useCallback(async () => {
     if (!taskId) return;
     setAiLoading(true);
     setAiError(null);
     setAiMarkdown('');
     try {
-      const result = await WriteReport({ taskId });
-      // 判空双保险：AI 降级时 unwrap 已抛错，此处再兜一层避免空对象取属性
-      const content = result?.markdown || result?.actionCardText;
-      if (!content) {
-        setAiError('AI 服务暂不可用，已回退人工流程');
-        return;
-      }
-      setAiMarkdown(content);
-      setAiDialogOpen(true);
+      // AI 服务当前不可用，统一提示已回退人工流程，不再请求后端
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      setAiError('AI服务暂不可用，已回退人工流程');
     } catch (err: unknown) {
-      // 展示后端返回的真实降级/错误文案，而非固定提示
-      setAiError(err instanceof Error ? err.message : 'AI 服务暂不可用');
+      setAiError(err instanceof Error ? err.message : 'AI服务暂不可用，已回退人工流程');
     } finally {
       setAiLoading(false);
     }
@@ -199,7 +191,7 @@ export default function ReportPage() {
           disabled={aiLoading}
           sx={{ py: 1.1, borderRadius: 2 }}
         >
-          {aiLoading ? 'AI 生成中...' : '✨ AI 生成汇报文案'}
+          {aiLoading ? 'AI 生成中...' : '✨ AI 生成盘点报告'}
         </Button>
         {aiError && (
           <Alert severity="warning" sx={{ fontSize: '0.8rem' }}>{aiError}</Alert>
@@ -303,7 +295,7 @@ export default function ReportPage() {
 
       {/* AI 汇报文案弹窗 */}
       <Dialog open={aiDialogOpen} onClose={() => setAiDialogOpen(false)} fullWidth maxWidth="sm">
-        <DialogTitle sx={{ fontWeight: 700 }}>✨ AI 生成的汇报文案</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 700 }}>✨ AI 生成的盘点报告</DialogTitle>
         <DialogContent>
           <div className="text-sm text-gray-700 whitespace-pre-line bg-gray-50 rounded-lg p-3 max-h-80 overflow-auto">
             {aiMarkdown}
