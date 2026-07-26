@@ -14,6 +14,7 @@ import Dashboard from './pages/Dashboard';
 import Report from './pages/Report';
 import AssetLifecycle from './pages/AssetLifecycle';
 import TaskDetail from './pages/TaskDetail';
+import MyProgress from './pages/MyProgress';
 
 /** 受保护路由：未登录跳转登录页 */
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -64,6 +65,8 @@ export default function App() {
         <Route path="/tasks" element={<TaskList />} />
         <Route path="/assets" element={<AssetsArchive />} />
         <Route path="/profile" element={<Profile />} />
+        {/* 我的进度 — 所有角色通用入口，追踪个人名下任务盘点进度 */}
+        <Route path="/my-progress" element={<MyProgress />} />
         {/* 原 /records 并入资产档案的时间线子 tab */}
         <Route path="/records" element={<Navigate to="/assets?tab=timeline" replace />} />
 

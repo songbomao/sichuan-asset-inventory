@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607260013';
+export const APP_VERSION = 'v202607261056';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-26 00:13';
-export const RELEASE_NOTES = '修复四问题：①AI 报告生成 API 网关异常——Program.cs 中 AiService 原误用 AddHttpClient<AiService>()（typed-client 要求构造函数首参为 HttpClient），改为 AddHttpClient() 注册 IHttpClientFactory + AddScoped<AiService>()，与 AiService(IConfiguration, IHttpClientFactory) 构造函数对齐；②移除「我的」页左上角冗余的「我的」标题；③盘点任务管理页 3 个 Tab（盘点任务管理/资产对比同步/固资查询）维持 RequireAdmin 路由级 + 页面级双重门控，仅管理员和超级管理员可见；④恢复责任人的进度看板与盘点页访问——全局进度监控仍仅管理员可见，任务级进度看板对所有责任人开放（任务详情页「进度看板」卡片移出仅管理员区）。';
+export const RELEASE_TIME = '2026-07-26 10:56';
+export const RELEASE_NOTES = '三项优化：①底部导航新增「我的进度」通用入口（所有角色可见），新建 MyProgress 页展示当前用户名下全部盘点任务的完成率与总体进度，点击卡片直达该任务进度看板；②盘点任务页（盘点任务管理/资产对比同步/固资查询三模块）确认维持 RequireAdmin 路由级 + 页面级 isAdmin 双重门控，仅管理员和超级管理员可访问；③取消「盘点报告」底部导航独立入口，报告合并至盘点任务管理——任务卡片进详情后「盘点报告」作为末位卡片与其他详情卡片平级展示（/admin/report 路由保留兼容直链）。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607261056',
+    time: '2026-07-26 10:56',
+    notes: '三项优化：①底部导航新增「我的进度」通用入口（所有角色可见），新建 MyProgress 页展示当前用户名下全部盘点任务的完成率与总体进度，点击卡片直达该任务进度看板；②盘点任务页（盘点任务管理/资产对比同步/固资查询三模块）确认维持 RequireAdmin 路由级 + 页面级 isAdmin 双重门控，仅管理员和超级管理员可访问；③取消「盘点报告」底部导航独立入口，报告合并至盘点任务管理——任务卡片进详情后「盘点报告」作为末位卡片与其他详情卡片平级展示（/admin/report 路由保留兼容直链）。',
+  },
   {
     version: 'v202607260013',
     time: '2026-07-26 00:13',
