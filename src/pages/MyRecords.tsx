@@ -10,7 +10,6 @@ import IconButton from '@mui/material/IconButton';
 import InboxIcon from '@mui/icons-material/Inbox';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
-import Dialog from '@mui/material/Dialog';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -36,7 +35,7 @@ const FILTERS = [
 
 /**
  * 我的盘点记录（责任人视角）
- * 独立页：筛选（状态/起止日期/关键字）+ 列表（含盘点数量）+ 分页 + 复用详情抽屉
+ * 独立页：筛选（状态/关键字）+ 列表（含盘点数量）+ 分页 + 复用详情抽屉
  */
 export default function MyRecords({ embedded = false }: { embedded?: boolean }) {
   const navigate = useNavigate();
@@ -48,8 +47,6 @@ export default function MyRecords({ embedded = false }: { embedded?: boolean }) 
 
   // 筛选条件
   const [status, setStatus] = useState('all');
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
   const [keyword, setKeyword] = useState('');
 
   // 分页
@@ -63,8 +60,6 @@ export default function MyRecords({ embedded = false }: { embedded?: boolean }) 
   const [selectedRecord, setSelectedRecord] = useState<RecordItem | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
-  const [showPhoto, setShowPhoto] = useState(false);
-  const [fullscreen, setFullscreen] = useState(false);
 
   const fetchRecords = useCallback(async (isLoadMore = false) => {
     if (isLoadMore) setLoadingMore(true);
@@ -77,8 +72,6 @@ export default function MyRecords({ embedded = false }: { embedded?: boolean }) 
         page: currentPage,
         pageSize,
         status: status === 'all' ? undefined : status,
-        startTime: startTime || undefined,
-        endTime: endTime || undefined,
         keyword: keyword.trim() || undefined,
       });
       setTotal(t);
@@ -92,7 +85,7 @@ export default function MyRecords({ embedded = false }: { embedded?: boolean }) 
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [page, pageSize, status, startTime, endTime, keyword]);
+  }, [page, pageSize, status, keyword]);
 
   useEffect(() => {
     fetchRecords();
@@ -109,8 +102,6 @@ export default function MyRecords({ embedded = false }: { embedded?: boolean }) 
       page: 1,
       pageSize,
       status: targetStatus === 'all' ? undefined : targetStatus,
-      startTime: startTime || undefined,
-      endTime: endTime || undefined,
       keyword: keyword.trim() || undefined,
     })
       .then(({ list, total: t }) => {
@@ -130,8 +121,6 @@ export default function MyRecords({ embedded = false }: { embedded?: boolean }) 
   /** 打开详情弹窗 */
   const openDetail = async (record: RecordItem) => {
     setSelectedRecord(record);
-    setShowPhoto(false);
-    setFullscreen(false);
     setDetailError(null);
     setDetailLoading(true);
     setDetailOpen(true);
@@ -151,8 +140,6 @@ export default function MyRecords({ embedded = false }: { embedded?: boolean }) 
   const closeDetail = () => {
     setDetailOpen(false);
     setSelectedRecord(null);
-    setShowPhoto(false);
-    setFullscreen(false);
   };
 
   return (
@@ -193,29 +180,9 @@ export default function MyRecords({ embedded = false }: { embedded?: boolean }) 
           ))}
         </div>
 
-        {/* 日期 + 关键字筛选 */}
+        {/* 关键字筛选 */}
         <PaperFilter>
           <Stack spacing={1.5}>
-            <div className="flex gap-2">
-              <TextField
-                label="开始日期"
-                type="date"
-                size="small"
-                fullWidth
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-              />
-              <TextField
-                label="结束日期"
-                type="date"
-                size="small"
-                fullWidth
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-              />
-            </div>
             <div className="flex gap-2">
               <TextField
                 label="关键字（资产名称/编码）"
@@ -348,35 +315,7 @@ export default function MyRecords({ embedded = false }: { embedded?: boolean }) 
           loading={detailLoading}
           error={detailError}
           record={selectedRecord}
-          showPhoto={showPhoto}
-          setShowPhoto={setShowPhoto}
-          setFullscreen={setFullscreen}
         />
-
-        {/* 全屏照片查看 */}
-        <Dialog
-          open={fullscreen}
-          onClose={() => setFullscreen(false)}
-          fullScreen
-          PaperProps={{ sx: { bgcolor: 'rgba(0,0,0,0.95)', color: '#fff' } }}
-        >
-          <Box
-            className="w-full h-full flex items-center justify-center"
-            onClick={() => setFullscreen(false)}
-          >
-            {selectedRecord?.photoUrl && (
-              <img
-                src={selectedRecord.photoUrl}
-                alt="盘点照片放大"
-                className="max-w-full max-h-full object-contain"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setFullscreen(false);
-                }}
-              />
-            )}
-          </Box>
-        </Dialog>
 
         <div className="h-4" />
       </div>

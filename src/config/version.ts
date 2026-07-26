@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607262354';
+export const APP_VERSION = 'v202607270022';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-26 23:54';
-export const RELEASE_NOTES = '修复盘点任务详情页两处问题：①资产数量显示错误——根因是后端 GetTaskDetail 原返回整任务全部资产（未过滤责任人），前端取 detail.assets.length 显示 3；后端改为同时返回 assetCount（整任务数）与 myAssetCount（当前责任人名下数），前端按角色取数（管理员看整任务数、责任人看本人名下数）。②进度图优化——取消原竖向 6 节点假时间戳时间轴，新增横向 5 节点任务进度轴（MUI Stepper alternativeLabel，与管理页资产对比同步同款）：数据同步（SAP→本地最近同步时刻）/盘点下达（任务 CreatedAt）/盘点完成（责任人最后一个 self 记录 CreatedAt）/报告生成（sai_report_archive.GeneratedAt）/盘点完成归档（+5 分钟），完成态由真实时间戳是否存在驱动，标题由「盘点进度」改为「任务进度」。配套后端 v202607262353（GetTaskDetail 补返 assetCount/myAssetCount/milestones）。';
+export const RELEASE_TIME = '2026-07-27 00:22';
+export const RELEASE_NOTES = '盘点详情页与记录筛选改造：①「我的盘点记录」移除按时间段（开始/结束日期）筛选，仅保留状态 chip + 关键字；②重构盘点详情抽屉——内聚照片灯箱（默认缩略图网格，点击放大全屏、再次点击还原、多图支持左右翻页与键盘切换），整体分为「基本信息」（蓝，来自 sai_assets 经 GetAssetByCode）与「盘点信息」（紫，来自责任人提交：状态/数量/盘点人/功能/外观/时间/地点/备注/照片）两大区块，蓝紫左border+标题强区分，层次清晰；③移除两页原外部 showPhoto/setFullscreen 状态与各自全屏 Dialog，灯箱逻辑全部内聚进抽屉，MyRecords 与 AdminTaskRecords 同步精简。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607270022',
+    time: '2026-07-27 00:22',
+    notes: '盘点详情页与记录筛选改造：①「我的盘点记录」移除按时间段（开始/结束日期）筛选，仅保留状态 chip + 关键字；②重构盘点详情抽屉——内聚照片灯箱（默认缩略图网格，点击放大全屏、再次点击还原、多图支持左右翻页与键盘切换），整体分为「基本信息」（蓝，来自 sai_assets 经 GetAssetByCode）与「盘点信息」（紫，来自责任人提交：状态/数量/盘点人/功能/外观/时间/地点/备注/照片）两大区块，蓝紫左border+标题强区分，层次清晰；③移除两页原外部 showPhoto/setFullscreen 状态与各自全屏 Dialog，灯箱逻辑全部内聚进抽屉，MyRecords 与 AdminTaskRecords 同步精简。',
+  },
   {
     version: 'v202607262354',
     time: '2026-07-26 23:54',

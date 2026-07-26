@@ -10,7 +10,6 @@ import IconButton from '@mui/material/IconButton';
 import InboxIcon from '@mui/icons-material/Inbox';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
-import Dialog from '@mui/material/Dialog';
 import Stack from '@mui/material/Stack';
 import LinearProgress from '@mui/material/LinearProgress';
 import TextField from '@mui/material/TextField';
@@ -72,8 +71,6 @@ export default function AdminTaskRecords() {
   const [selectedRecord, setSelectedRecord] = useState<RecordItem | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
-  const [showPhoto, setShowPhoto] = useState(false);
-  const [fullscreen, setFullscreen] = useState(false);
 
   const fetchSummary = useCallback(async () => {
     if (!taskId) return;
@@ -149,8 +146,6 @@ export default function AdminTaskRecords() {
 
   const openDetail = async (record: RecordItem) => {
     setSelectedRecord(record);
-    setShowPhoto(false);
-    setFullscreen(false);
     setDetailError(null);
     setDetailLoading(true);
     setDetailOpen(true);
@@ -169,8 +164,6 @@ export default function AdminTaskRecords() {
   const closeDetail = () => {
     setDetailOpen(false);
     setSelectedRecord(null);
-    setShowPhoto(false);
-    setFullscreen(false);
   };
 
   return (
@@ -396,35 +389,7 @@ export default function AdminTaskRecords() {
           loading={detailLoading}
           error={detailError}
           record={selectedRecord}
-          showPhoto={showPhoto}
-          setShowPhoto={setShowPhoto}
-          setFullscreen={setFullscreen}
         />
-
-        {/* 全屏照片查看 */}
-        <Dialog
-          open={fullscreen}
-          onClose={() => setFullscreen(false)}
-          fullScreen
-          PaperProps={{ sx: { bgcolor: 'rgba(0,0,0,0.95)', color: '#fff' } }}
-        >
-          <Box
-            className="w-full h-full flex items-center justify-center"
-            onClick={() => setFullscreen(false)}
-          >
-            {selectedRecord?.photoUrl && (
-              <img
-                src={selectedRecord.photoUrl}
-                alt="盘点照片放大"
-                className="max-w-full max-h-full object-contain"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setFullscreen(false);
-                }}
-              />
-            )}
-          </Box>
-        </Dialog>
 
         <div className="h-4" />
       </div>

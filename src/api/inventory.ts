@@ -134,6 +134,7 @@ export interface RecordItem {
   status: string;
   remark: string;
   photoUrl: string;
+  photoUrls?: string[];      // 多图（未来支持；当前后端仅返回单图 photoUrl，抽屉自动退化）
   createTime: string;
   location: string;
   inventoryQty?: number | null; // 盘点数量（可选）
