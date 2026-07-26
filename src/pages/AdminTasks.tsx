@@ -30,6 +30,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import HistoryIcon from '@mui/icons-material/History';
 import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import {
@@ -663,25 +664,39 @@ export default function AdminTasks() {
 
                   <div className="flex items-center justify-between text-xs text-gray-400">
                     <span>{task.createdBy || '--'}{task.createdAt ? ` · ${new Date(task.createdAt).toLocaleDateString('zh-CN')}` : ''}</span>
-                    {task.status === 'draft' && (
-                      <Tooltip title={!syncReady ? '请先完成数据同步后再下达任务' : ''}>
-                        <span>
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            startIcon={<SendIcon />}
-                            disabled={!syncReady}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDispatch(task.id);
-                            }}
-                            sx={{ borderRadius: '8px', textTransform: 'none' }}
-                          >
-                            下达任务
-                          </Button>
-                        </span>
-                      </Tooltip>
-                    )}
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<HistoryIcon />}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/admin/tasks/${task.id}/records`);
+                        }}
+                        sx={{ borderRadius: '8px', textTransform: 'none' }}
+                      >
+                        盘点记录
+                      </Button>
+                      {task.status === 'draft' && (
+                        <Tooltip title={!syncReady ? '请先完成数据同步后再下达任务' : ''}>
+                          <span>
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              startIcon={<SendIcon />}
+                              disabled={!syncReady}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDispatch(task.id);
+                              }}
+                              sx={{ borderRadius: '8px', textTransform: 'none' }}
+                            >
+                              下达任务
+                            </Button>
+                          </span>
+                        </Tooltip>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </CardActionArea>

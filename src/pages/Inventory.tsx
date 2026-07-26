@@ -93,6 +93,8 @@ export default function InventoryPage() {
   // 当前资产的盘点状态
   const [assetStatus, setAssetStatus] = useState('正常');
   const [remark, setRemark] = useState('');
+  /** 盘点数量（可选，留空表示不填） */
+  const [inventoryQty, setInventoryQty] = useState('');
   const [photos, setPhotos] = useState<string[]>([]);
 
   // 加载状态
@@ -280,6 +282,7 @@ export default function InventoryPage() {
         latitude: gpsCoords.latitude,
         location: gpsLocation,
         operatorName: user?.name || user?.username || 'unknown',
+        inventoryQty: inventoryQty.trim() === '' ? undefined : Number(inventoryQty),
       });
       setSnackbar({ open: true, message: '✅ 盘点提交成功！', severity: 'success' });
 
@@ -294,6 +297,7 @@ export default function InventoryPage() {
       // 重置当前盘点表单（照片/备注/状态/水印时间），避免带入下一个资产
       setAssetStatus('正常');
       setRemark('');
+      setInventoryQty('');
       setPhotos([]);
       updateTime();
 
@@ -528,6 +532,20 @@ export default function InventoryPage() {
           onChange={(e) => setRemark(e.target.value)}
           placeholder="填写盘点备注..."
           disabled={isCompleted}
+          sx={{ '& .MuiInputBase-root': { fontSize: '0.85rem' } }}
+        />
+
+        {/* 盘点数量（可选） */}
+        <TextField
+          fullWidth
+          label="盘点数量（可选）"
+          size="small"
+          type="number"
+          value={inventoryQty}
+          onChange={(e) => setInventoryQty(e.target.value)}
+          placeholder="填写实际盘点数量"
+          disabled={isCompleted}
+          inputProps={{ min: 0, step: 1 }}
           sx={{ '& .MuiInputBase-root': { fontSize: '0.85rem' } }}
         />
       </div>

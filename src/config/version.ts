@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607261941';
+export const APP_VERSION = 'v202607262012';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-26 19:41';
-export const RELEASE_NOTES = '启用三项 P0 AI 能力前端入口：①盘点报告页「AI 生成盘点报告」恢复真实调用 WriteReport（天翼云大模型生成 Markdown 报告并弹窗展示，失败时降级提示）；②盘点操作页相机组件接入 AI 识别——传入当前任务全部资产作为候选（candidates），拍照后显示「AI 识别资产」按钮，识别命中后自动切换到对应资产项（onAIRecognized）；③差异诊断入口保留不变。配套后端 v202607261942（appsettings 注入天翼云 Wishub ApiKey 与模型 ID）。';
+export const RELEASE_TIME = '2026-07-26 20:12';
+export const RELEASE_NOTES = '新增盘点结果查看功能：①新增「我的盘点记录」页（/my-records，入口：我的页按钮 + 我的任务页历史图标），展示本人参与的全部盘点记录（照片/备注/盘点数量/存放地点/盘点人），支持按状态、起止日期、关键字筛选与分页；②新增「任务盘点记录」页（/admin/tasks/:taskId/records，RequireAdmin），超管视角展示该任务下全员盘点记录 + 汇总视图（完成率/按状态分布/按参与人分布）+ 参与人列表；③抽取 RecordDetailDrawer 共享组件，盘点详情完整展示照片/备注/盘点数量/功能状态/外观状态；④盘点操作页新增可选「盘点数量」录入；⑤AdminTasks 任务卡片新增「盘点记录」按钮直达任务记录页。配套后端 v202607262013（GetMyRecords/GetTaskRecords/GetTaskRecordSummary 接口 + InventoryQty 列）。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607262012',
+    time: '2026-07-26 20:12',
+    notes: '新增盘点结果查看功能：①新增「我的盘点记录」页（/my-records，入口：我的页按钮 + 我的任务页历史图标），展示本人参与的全部盘点记录（照片/备注/盘点数量/存放地点/盘点人），支持按状态、起止日期、关键字筛选与分页；②新增「任务盘点记录」页（/admin/tasks/:taskId/records，RequireAdmin），超管视角展示该任务下全员盘点记录 + 汇总视图（完成率/按状态/按参与人分布）+ 参与人列表；③抽取 RecordDetailDrawer 共享组件，盘点详情完整展示照片/备注/盘点数量/功能状态/外观状态；④盘点操作页新增可选「盘点数量」录入；⑤AdminTasks 任务卡片新增「盘点记录」按钮直达任务记录页。配套后端 v202607262013（GetMyRecords/GetTaskRecords/GetTaskRecordSummary + InventoryQty 列）。',
+  },
   {
     version: 'v202607261941',
     time: '2026-07-26 19:41',

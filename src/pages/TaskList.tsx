@@ -7,6 +7,7 @@ import Typography from '@mui/material/Typography';
 import Skeleton from '@mui/material/Skeleton';
 import Alert from '@mui/material/Alert';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import HistoryIcon from '@mui/icons-material/History';
 import IconButton from '@mui/material/IconButton';
 import InboxIcon from '@mui/icons-material/Inbox';
 import { getTaskList, type TaskItem } from '../api/tasks';
@@ -98,9 +99,14 @@ export default function TaskListPage() {
             {visibleTasks.length > 0 ? `共 ${visibleTasks.length} 个待盘点任务` : '当前没有待盘点任务'}
           </p>
         </div>
-        <IconButton onClick={() => fetchTasks(true)} disabled={refreshing} color="primary">
-          <RefreshIcon className={refreshing ? 'animate-spin-refresh' : ''} />
-        </IconButton>
+        <div className="flex items-center gap-1">
+          <IconButton onClick={() => navigate('/my-records')} color="primary" title="我的盘点记录">
+            <HistoryIcon />
+          </IconButton>
+          <IconButton onClick={() => fetchTasks(true)} disabled={refreshing} color="primary">
+            <RefreshIcon className={refreshing ? 'animate-spin-refresh' : ''} />
+          </IconButton>
+        </div>
       </div>
 
       {/* 错误提示 */}

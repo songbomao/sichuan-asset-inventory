@@ -15,6 +15,8 @@ import Report from './pages/Report';
 import AssetLifecycle from './pages/AssetLifecycle';
 import TaskDetail from './pages/TaskDetail';
 import MyProgress from './pages/MyProgress';
+import MyRecords from './pages/MyRecords';
+import AdminTaskRecords from './pages/AdminTaskRecords';
 
 /** 受保护路由：未登录跳转登录页 */
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -155,6 +157,28 @@ export default function App() {
         element={
           <ProtectedRoute>
             <AssetLifecycle />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* 我的盘点记录（责任人）— 独立页面 */}
+      <Route
+        path="/my-records"
+        element={
+          <ProtectedRoute>
+            <MyRecords />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* 任务盘点记录（管理员）— 独立页面，需管理员权限 */}
+      <Route
+        path="/admin/tasks/:taskId/records"
+        element={
+          <ProtectedRoute>
+            <RequireAdmin>
+              <AdminTaskRecords />
+            </RequireAdmin>
           </ProtectedRoute>
         }
       />

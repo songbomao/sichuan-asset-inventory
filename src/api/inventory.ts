@@ -11,6 +11,7 @@ export interface SubmitRecordParams {
   latitude: string;
   location: string;
   operatorName: string;  // 盘点人姓名
+  inventoryQty?: number; // 盘点数量（可选）
 }
 
 /** 提交盘点响应 */
@@ -135,6 +136,10 @@ export interface RecordItem {
   photoUrl: string;
   createTime: string;
   location: string;
+  inventoryQty?: number | null; // 盘点数量（可选）
+  operatorName?: string;         // 盘点人姓名
+  functionStatus?: string;       // 功能状态
+  appearanceStatus?: string;     // 外观状态
 }
 
 /** 我的记录响应（支持分页） */
@@ -187,4 +192,130 @@ export async function getRecordDetail(recordId: string): Promise<RecordItem> {
     return data.data;
   }
   throw new Error(data.msg || data.message || '获取记录详情失败');
+}
+
+/** 筛选我的盘点记录参数 */
+export interface MyRecordsFilterParams {
+  page?: number;
+  pageSize?: number;
+  status?: string;       // 全部时不传
+  startTime?: string;    // yyyy-MM-dd
+  endTime?: string;      // yyyy-MM-dd
+  keyword?: string;      // 资产名称/编码关键字
+}
+
+/** 任务盘点记录响应 */
+interface TaskRecordsResponse {
+  code: number;
+  data: {
+    total: number;
+    page: number;
+    pageSize: number;
+    list: RecordItem[];
+  };
+  message: string;
+  msg?: string;
+}
+
+/**
+ * 筛选「我的盘点记录」
+ * POST /api/Account/Task/GetMyRecords
+ * 与 submitRecord 同模式，交由网关拦截器改写为 UniGetToken + action。
+ */
+export async function getMyRecordsFiltered(params: MyRecordsFilterParams = {}): Promise<{ total: number; page: number; pageSize: number; list: RecordItem[] }> {
+  const { page = 1, pageSize = 50, status, startTime, endTime, keyword } = params;
+  const resp = await client.post('/api/Account/Task/GetMyRecords', {
+    page,
+    pageSize,
+    status,
+    startTime,
+    endTime,
+    keyword,
+  });
+  const data = resp.data as { code: number; data: TaskRecordsResponse['data']; msg: string; message: string };
+  if (data.code === 0 || data.code === 200) {
+    return {
+      total: data.data?.total ?? 0,
+      page: data.data?.page ?? page,
+      pageSize: data.data?.pageSize ?? pageSize,
+      list: data.data?.list ?? [],
+    };
+  }
+  throw new Error(data.msg || data.message || '获取盘点记录失败');
+}
+
+/** 任务盘点记录参数 */
+export interface TaskRecordsParams {
+  taskId: string;
+  page?: number;
+  pageSize?: number;
+  status?: string;
+  keyword?: string;
+}
+
+/**
+ * 获取某任务下的全部盘点记录（管理员视角，含盘点人）
+ * POST /api/Account/Task/GetTaskRecords
+ */
+export async function getTaskRecords(params: TaskRecordsParams): Promise<{ total: number; page: number; pageSize: number; list: RecordItem[] }> {
+  const { taskId, page = 1, pageSize = 50, status, keyword } = params;
+  const resp = await client.post('/api/Account/Task/GetTaskRecords', {
+    taskId,
+    page,
+    pageSize,
+    status,
+    keyword,
+  });
+  const data = resp.data as { code: number; data: TaskRecordsResponse['data']; msg: string; message: string };
+  if (data.code === 0 || data.code === 200) {
+    return {
+      total: data.data?.total ?? 0,
+      page: data.data?.page ?? page,
+      pageSize: data.data?.pageSize ?? pageSize,
+      list: data.data?.list ?? [],
+    };
+  }
+  throw new Error(data.msg || data.message || '获取任务盘点记录失败');
+}
+
+/** 任务盘点记录汇总 */
+export interface TaskRecordSummary {
+  taskName: string;
+  taskStatus?: string;
+  deadline?: string;
+  createdBy?: string;
+  totalAssets: number;          // 任务资产总数
+  recordCount: number;          // 已盘点记录数（自盘）
+  completionRate: number;       // 完成率 0-100
+  byStatus: { status: string; count: number }[];        // 按状态分布
+  byOperator: {                                         // 按参与人分布
+    userName: string;
+    dingtalkUserId: string;
+    assetCount: number;
+    completedCount: number;
+    abnormalCount: number;
+  }[];
+}
+
+/** 任务记录汇总响应 */
+interface TaskRecordSummaryResponse {
+  code: number;
+  data: TaskRecordSummary;
+  message: string;
+  msg?: string;
+}
+
+/**
+ * 获取任务盘点记录汇总统计
+ * POST /api/Account/Task/GetTaskRecordSummary
+ */
+export async function getTaskRecordSummary(taskId: string): Promise<TaskRecordSummary> {
+  const resp = await client.post('/api/Account/Task/GetTaskRecordSummary', {
+    taskId,
+  });
+  const data = resp.data as TaskRecordSummaryResponse;
+  if (data.code === 0 || data.code === 200) {
+    return data.data;
+  }
+  throw new Error(data.msg || data.message || '获取任务汇总失败');
 }
