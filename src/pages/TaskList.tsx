@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import Card from '@mui/material/Card';
 import CardActionArea from '@mui/material/CardActionArea';
 import CardContent from '@mui/material/CardContent';
@@ -11,6 +12,7 @@ import Tab from '@mui/material/Tab';
 import InboxIcon from '@mui/icons-material/Inbox';
 import { getTaskList, type TaskItem } from '../api/tasks';
 import MyRecords from './MyRecords';
+import AssetLocalTable from './AssetLocalTable';
 import StatusBadge from '../components/StatusBadge';
 import ProgressBar from '../components/ProgressBar';
 
@@ -23,7 +25,8 @@ const PENDING_STATUS = 'pending';
  */
 export default function TaskListPage() {
   const navigate = useNavigate();
-  const [tab, setTab] = useState<'tasks' | 'records'>('tasks');
+  const { user } = useAuth();
+  const [tab, setTab] = useState<'tasks' | 'records' | 'assets'>('tasks');
 
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -109,6 +112,7 @@ export default function TaskListPage() {
       >
         <Tab value="tasks" label="我的盘点任务" />
         <Tab value="records" label="我的盘点记录" />
+        <Tab value="assets" label="我的资产" />
       </Tabs>
 
       {tab === 'tasks' && (
@@ -116,7 +120,6 @@ export default function TaskListPage() {
       {/* 头部 */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">我的盘点</h1>
           <p className="text-sm text-gray-500 mt-0.5">
             {visibleTasks.length > 0 ? `共 ${visibleTasks.length} 个待盘点任务` : '当前没有待盘点任务'}
           </p>
@@ -195,6 +198,10 @@ export default function TaskListPage() {
 
       {tab === 'records' && (
         <MyRecords embedded />
+      )}
+
+      {tab === 'assets' && (
+        <AssetLocalTable ownerName={user?.name} />
       )}
     </div>
   );

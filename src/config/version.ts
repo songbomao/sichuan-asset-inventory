@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607262300';
+export const APP_VERSION = 'v202607262315';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-26 23:00';
-export const RELEASE_NOTES = '导航与交互优化：①底部导航「我的任务」更名为「我的盘点」，图标由 AssignmentIcon 改为 InventoryIcon（库存盘点风格），责任人与管理员两套导航同步更新；②「我的盘点」页标题「我的任务」→「我的盘点」；③移除「我的盘点」页刷新图标按钮；④新增 Tab 切换自动刷新逻辑——切换至「我的盘点任务」Tab 触发 fetchTasks(true)，切换至「我的盘点记录」Tab 因条件渲染重挂载使 MyRecords 挂载即拉取最新数据，该逻辑覆盖全部 Tab 页面。';
+export const RELEASE_TIME = '2026-07-26 23:15';
+export const RELEASE_NOTES = '新增「我的资产」Tab 与清理冗余标题：①「我的盘点」页新增第三个 Tab「我的资产」，复用管理页「固资查询」的 AssetLocalTable 组件（列字段/搜索/分页/导出CSV 展示方式完全一致），通过 ownerName 属性按当前登录用户姓名（责任人字段）过滤其名下固定资产；②移除「我的盘点任务」Tab 内重复的「我的盘点」标题（仅保留「共 N 个待盘点任务」副标题）；③移除管理页「资产对比同步」Tab 内重复的「资产对比同步」标题；④移除管理页「固资查询」/「我的资产」共用的 AssetLocalTable 内重复的「固资查询」标题（与 Tab 名重复）。仅 UI 文字与新增 Tab，不影响现有功能。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607262315',
+    time: '2026-07-26 23:15',
+    notes: '新增「我的资产」Tab 与清理冗余标题：①「我的盘点」页新增第三 Tab「我的资产」，复用 AssetLocalTable（列/搜索/分页/导出完全一致），ownerName 按当前用户姓名过滤名下固定资产；②移除「我的盘点任务」Tab 内重复「我的盘点」标题；③移除管理页「资产对比同步」内重复「资产对比同步」标题；④移除 AssetLocalTable 内重复「固资查询」标题（与 Tab 名重复）。仅 UI 与新增 Tab。',
+  },
   {
     version: 'v202607262300',
     time: '2026-07-26 23:00',

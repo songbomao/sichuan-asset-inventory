@@ -218,11 +218,6 @@ export default function AssetSyncCompare() {
 
   return (
     <div className="space-y-4">
-      {/* 页面标题 */}
-      <Typography variant="h6" sx={{ fontWeight: 700 }}>
-        资产对比同步
-      </Typography>
-
       {/* 三步骤 Stepper：①差异对比 ②同步预览 ③确认同步 */}
       <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 1 }}>
         <Step><StepLabel>差异对比</StepLabel></Step>

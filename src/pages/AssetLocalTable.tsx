@@ -55,9 +55,9 @@ function fmt(v: string | number | null | undefined): string {
  * - 搜索按资产编号 / 名称 / 责任人三字段模糊匹配
  * - 全量 CSV 导出（移动端钉钉兼容，见 utils/download）
  */
-export default function AssetLocalTable() {
+export default function AssetLocalTable({ ownerName }: { ownerName?: string }) {
   /* ---------- 表格 + 搜索 + 分页 ---------- */
-  const [keyword, setKeyword] = useState('');
+  const [keyword, setKeyword] = useState(ownerName ?? '');
   const [debounced, setDebounced] = useState('');
   const [page, setPage] = useState(0); // MUI TablePagination 从 0 开始
   const [pageSize, setPageSize] = useState(20);
@@ -133,9 +133,6 @@ export default function AssetLocalTable() {
 
   return (
     <div className="space-y-4">
-      {/* 页面标题 */}
-      <Typography variant="h6" sx={{ fontWeight: 700 }}>固资查询</Typography>
-
       {/* 资产表（搜索 / 刷新 / 导出CSV 已移入卡片头部） */}
       <Card className="glow-border">
         <CardContent sx={{ p: '8px !important' }}>
