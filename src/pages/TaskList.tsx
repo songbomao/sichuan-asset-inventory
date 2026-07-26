@@ -201,7 +201,13 @@ export default function TaskListPage() {
       )}
 
       {tab === 'assets' && (
-        <AssetLocalTable ownerName={user?.name} />
+        <AssetLocalTable
+          ownerName={user?.name}
+          lockToOwner
+          hideDownload
+          pageSize={40}
+          pageSizeOptions={[40]}
+        />
       )}
     </div>
   );

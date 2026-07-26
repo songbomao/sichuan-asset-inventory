@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607262315';
+export const APP_VERSION = 'v202607262327';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-26 23:15';
-export const RELEASE_NOTES = '新增「我的资产」Tab 与清理冗余标题：①「我的盘点」页新增第三个 Tab「我的资产」，复用管理页「固资查询」的 AssetLocalTable 组件（列字段/搜索/分页/导出CSV 展示方式完全一致），通过 ownerName 属性按当前登录用户姓名（责任人字段）过滤其名下固定资产；②移除「我的盘点任务」Tab 内重复的「我的盘点」标题（仅保留「共 N 个待盘点任务」副标题）；③移除管理页「资产对比同步」Tab 内重复的「资产对比同步」标题；④移除管理页「固资查询」/「我的资产」共用的 AssetLocalTable 内重复的「固资查询」标题（与 Tab 名重复）。仅 UI 文字与新增 Tab，不影响现有功能。';
+export const RELEASE_TIME = '2026-07-26 23:27';
+export const RELEASE_NOTES = '「我的资产」Tab 受限改造：复用组件 AssetLocalTable 新增可选 props——lockToOwner（隐藏搜索框、关键字锁定为当前登录用户名、仅展示本人名下固定资产）、hideDownload（移除「下载全量CSV」按钮）、pageSize/pageSizeOptions（每页条数）。「我的资产」Tab 传 lockToOwner hideDownload pageSize={40} pageSizeOptions={[40]}；管理页「固资查询」仍走默认 props（搜索/下载/分页20 不变），互不影响。仅组件复用层与 UI 改造，不影响现有功能。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607262327',
+    time: '2026-07-26 23:27',
+    notes: '「我的资产」Tab 受限改造：AssetLocalTable 新增可选 props——lockToOwner（隐藏搜索框、关键字锁定当前登录用户名、仅展示本人名下固定资产）、hideDownload（移除「下载全量CSV」按钮）、pageSize/pageSizeOptions（每页条数）。「我的资产」Tab 传 lockToOwner hideDownload pageSize={40} pageSizeOptions={[40]}；管理页「固资查询」仍走默认 props（搜索/下载/分页20 不变），互不影响。仅组件复用层与 UI 改造，不影响现有功能。',
+  },
   {
     version: 'v202607262315',
     time: '2026-07-26 23:15',
