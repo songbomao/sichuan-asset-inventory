@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607270022';
+export const APP_VERSION = 'v202607270035';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-27 00:22';
-export const RELEASE_NOTES = '盘点详情页与记录筛选改造：①「我的盘点记录」移除按时间段（开始/结束日期）筛选，仅保留状态 chip + 关键字；②重构盘点详情抽屉——内聚照片灯箱（默认缩略图网格，点击放大全屏、再次点击还原、多图支持左右翻页与键盘切换），整体分为「基本信息」（蓝，来自 sai_assets 经 GetAssetByCode）与「盘点信息」（紫，来自责任人提交：状态/数量/盘点人/功能/外观/时间/地点/备注/照片）两大区块，蓝紫左border+标题强区分，层次清晰；③移除两页原外部 showPhoto/setFullscreen 状态与各自全屏 Dialog，灯箱逻辑全部内聚进抽屉，MyRecords 与 AdminTaskRecords 同步精简。';
+export const RELEASE_TIME = '2026-07-27 00:35';
+export const RELEASE_NOTES = '真·多图盘点提交打通（配套后端 v202607270040）：①提交页 Inventory.tsx 移除多图垂直拼接为单长图逻辑，改为直接传 photoUrls 字符串数组（仍约束≤4张、≥2张）；②api SubmitRecordParams 由单 photoBase64 改为 photoUrls:string[]（保留 photoBase64 可选兼容旧端）；③后端 sai_inventory_records 新增 PhotoUrls(mediumtext JSON数组) 列，AccountController/InventoryTaskController 的 SubmitRecord 解析 photoUrls 数组(兼容旧 photoBase64)、GetRecordDetail 返回 photoUrls(string[])，详情灯箱(上轮已做)即可按序翻页切换预览。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607270035',
+    time: '2026-07-27 00:35',
+    notes: '真·多图盘点提交打通（配套后端 v202607270040）：①提交页 Inventory.tsx 移除多图垂直拼接为单长图逻辑，改为直接传 photoUrls 字符串数组（仍约束≤4张、≥2张）；②api SubmitRecordParams 由单 photoBase64 改为 photoUrls:string[]（保留 photoBase64 可选兼容旧端）；③后端 sai_inventory_records 新增 PhotoUrls(mediumtext JSON数组) 列，AccountController/InventoryTaskController 的 SubmitRecord 解析 photoUrls 数组(兼容旧 photoBase64)、GetRecordDetail 返回 photoUrls(string[])，详情灯箱(上轮已做)即可按序翻页切换预览。',
+  },
   {
     version: 'v202607270022',
     time: '2026-07-27 00:22',

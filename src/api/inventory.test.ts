@@ -24,6 +24,7 @@ describe('submitRecord', () => {
     assetCode: 'ZC-001',
     status: '正常',
     remark: '',
+    photoUrls: ['data:image/jpeg;base64,...'],
     photoBase64: 'data:image/jpeg;base64,...',
     longitude: '104.0657',
     latitude: '30.6599',

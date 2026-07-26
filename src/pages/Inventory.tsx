@@ -29,53 +29,6 @@ const STATUS_OPTIONS = [
   { value: '丢失', label: '❌ 丢失' },
 ];
 
-/** 把多张照片垂直拼接成一张长图，用于后端单字段存储 */
-function combinePhotos(dataUrls: string[]): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const images: HTMLImageElement[] = [];
-    let loaded = 0;
-
-    dataUrls.forEach((url, idx) => {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => {
-        loaded += 1;
-        images[idx] = img;
-        if (loaded === dataUrls.length) {
-          const maxWidth = 960;
-          let totalHeight = 0;
-          const sizes = images.map((img) => {
-            const scale = img.width > maxWidth ? maxWidth / img.width : 1;
-            const w = Math.round(img.width * scale);
-            const h = Math.round(img.height * scale);
-            totalHeight += h;
-            return { w, h };
-          });
-
-          const canvas = document.createElement('canvas');
-          canvas.width = maxWidth;
-          canvas.height = totalHeight;
-          const ctx = canvas.getContext('2d');
-          if (!ctx) {
-            reject(new Error('Canvas 初始化失败'));
-            return;
-          }
-
-          let y = 0;
-          images.forEach((img, i) => {
-            ctx.drawImage(img, 0, y, sizes[i].w, sizes[i].h);
-            y += sizes[i].h;
-          });
-
-          resolve(canvas.toDataURL('image/jpeg', 0.7));
-        }
-      };
-      img.onerror = () => reject(new Error('图片加载失败'));
-      img.src = url;
-    });
-  });
-}
-
 /**
  * 盘点操作页面
  * 核心功能：刷卡切换资产、拍照（至少2张）、选状态、提交
@@ -271,13 +224,12 @@ export default function InventoryPage() {
 
     setSubmitting(true);
     try {
-      const combined = await combinePhotos(photos);
       await submitRecord({
         taskId,
         assetCode: asset.assetCode,
         status: assetStatus,
         remark,
-        photoBase64: combined,
+        photoUrls: photos,
         longitude: gpsCoords.longitude,
         latitude: gpsCoords.latitude,
         location: gpsLocation,
