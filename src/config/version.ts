@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607261743';
+export const APP_VERSION = 'v202607261941';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-26 17:43';
-export const RELEASE_NOTES = '六项优化：①盘点操作页恢复固定资产详情卡片（资产编号/名称/类别/使用部门/责任人/存放地点/使用状态/成本中心，来自 sai_assets 经 GetTaskDetail 关联返回）；②新建任务「按盘点部门」改为「按资产责任人」，部门选择与人员选择合并为单一「选择盘点责任人」弹窗（左侧部门树 + 右侧人员多选，支持按姓名搜索与多选），可直接从部门或子部门勾选责任人；③盘点方式文案「按盘点部门」→「按资产责任人」（保留「按盘点类别」）；④下达任务必填校验：任务名称、盘点方式、截止时间（datetime-local 精确到秒）、创建人四项非空，未填拦截并提示；⑤全部盘点项完成后自动跳回任务卡片页（/tasks）；⑥后端 CreateTask 按责任人筛选时改为跨全部部门匹配其名下全部资产，修复责任人资产分布多部门时漏项（如宋伯茂 7 项仅显示 1 项）。';
+export const RELEASE_TIME = '2026-07-26 19:41';
+export const RELEASE_NOTES = '启用三项 P0 AI 能力前端入口：①盘点报告页「AI 生成盘点报告」恢复真实调用 WriteReport（天翼云大模型生成 Markdown 报告并弹窗展示，失败时降级提示）；②盘点操作页相机组件接入 AI 识别——传入当前任务全部资产作为候选（candidates），拍照后显示「AI 识别资产」按钮，识别命中后自动切换到对应资产项（onAIRecognized）；③差异诊断入口保留不变。配套后端 v202607261942（appsettings 注入天翼云 Wishub ApiKey 与模型 ID）。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607261941',
+    time: '2026-07-26 19:41',
+    notes: '启用三项 P0 AI 能力前端入口：①盘点报告页「AI 生成盘点报告」恢复真实调用 WriteReport（天翼云大模型生成 Markdown 报告并弹窗展示，失败时降级提示）；②盘点操作页相机组件接入 AI 识别——传入当前任务全部资产作为候选（candidates），拍照后显示「AI 识别资产」按钮，识别命中后自动切换到对应资产项（onAIRecognized）；③差异诊断入口保留不变。配套后端 v202607261942（appsettings 注入天翼云 Wishub ApiKey 与模型 ID）。',
+  },
   {
     version: 'v202607261743',
     time: '2026-07-26 17:43',

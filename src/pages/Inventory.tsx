@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
@@ -19,6 +19,7 @@ import { getCurrentLocation } from '../api/reverseGeocode';
 import { useAuth } from '../contexts/AuthContext';
 import CameraCapture from '../components/CameraCapture';
 import ProgressBar from '../components/ProgressBar';
+import type { RecognizeAssetResult } from '../api/ai';
 
 /** 盘点状态选项 */
 const STATUS_OPTIONS = [
@@ -198,6 +199,28 @@ export default function InventoryPage() {
   const handlePhotoCapture = useCallback((dataUrl: string) => {
     setPhotos((prev) => [...prev, dataUrl]);
   }, []);
+
+  /** AI 识别候选：当前任务全部资产（传入后相机组件显示「AI 识别资产」按钮） */
+  const aiCandidates = useMemo(
+    () =>
+      assets.map((a) => ({
+        assetCode: a.assetCode,
+        name: a.assetName,
+        spec: a.standard || '',
+      })),
+    [assets],
+  );
+
+  /** AI 识别命中后：若识别到的资产与当前展示资产不同，自动切换到该资产 */
+  const handleAIRecognized = useCallback(
+    (result: RecognizeAssetResult) => {
+      const idx = assets.findIndex((a) => a.assetCode === result.assetCode);
+      if (idx >= 0 && idx !== currentIndex) {
+        setCurrentIndex(idx);
+      }
+    },
+    [assets, currentIndex],
+  );
 
   /** 删除某张照片 */
   const handleRemovePhoto = useCallback((idx: number) => {
@@ -458,6 +481,8 @@ export default function InventoryPage() {
             photoCount={photos.length}
             minPhotos={2}
             maxPhotos={4}
+            candidates={aiCandidates}
+            onAIRecognized={handleAIRecognized}
           />
         </div>
 

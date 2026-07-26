@@ -18,6 +18,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Divider from '@mui/material/Divider';
 import { generateReport, type ReportData } from '../api/report';
+import { WriteReport } from '../api/ai';
 import { getTaskList, type TaskItem } from '../api/tasks';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -121,16 +122,16 @@ export default function ReportPage() {
     );
   }
 
-  /** AI 生成盘点报告（当前服务暂不可用，点击即提示已回退人工流程） */
+  /** AI 生成盘点报告（调用后端 WriteReport，走天翼云大模型） */
   const handleGenerateReport = useCallback(async () => {
     if (!taskId) return;
     setAiLoading(true);
     setAiError(null);
     setAiMarkdown('');
     try {
-      // AI 服务当前不可用，统一提示已回退人工流程，不再请求后端
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      setAiError('AI服务暂不可用，已回退人工流程');
+      const result = await WriteReport({ taskId });
+      setAiMarkdown(result.markdown || result.actionCardText || '');
+      setAiDialogOpen(true);
     } catch (err: unknown) {
       setAiError(err instanceof Error ? err.message : 'AI服务暂不可用，已回退人工流程');
     } finally {
