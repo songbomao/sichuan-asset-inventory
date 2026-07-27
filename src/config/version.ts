@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607271449';
+export const APP_VERSION = 'v202607271516';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-27 14:49';
-export const RELEASE_NOTES = '资产对比同步差异对比清晰展示去重数量（配套后端 v202607271450）：①对比/预览 summary 增加 deduplicatedLocalCount/deduplicatedViewCount/dedupRule 字段；②差异对比与同步预览信息卡片新增「SAP视图原始行数 / 按 add_date 最新去重后保留有效记录数 / 合并重复编码数 / 去重规则」展示，明确一笔固定资产只保留一行（取 add_date 最新）。';
+export const RELEASE_TIME = '2026-07-27 15:16';
+export const RELEASE_NOTES = '资产对比同步页统一为「SAP 在左、本地表在右」：①顶部信息区改为「SAP视图 X 条 · 本地表 Y 条」；②差异对比 Tab 顺序改为「仅SAP视图 | 仅本地表 | 字段不一致」并同步明细数据映射；③同步预览无变更文案改为「SAP 视图与本地表已一致」。去重提示文案与规则保持原样。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -17,9 +17,15 @@ export const VERSION_HISTORY: Array<{
   notes: string;
 }> = [
   {
+    version: 'v202607271516',
+    time: '2026-07-27 15:16',
+    notes: '资产对比同步页统一为「SAP 在左、本地表在右」：①顶部信息区改为「SAP视图 X 条 · 本地表 Y 条」；②差异对比 Tab 顺序改为「仅SAP视图 | 仅本地表 | 字段不一致」并同步明细数据映射；③同步预览无变更文案改为「SAP 视图与本地表已一致」。去重提示文案与规则保持原样。',
+  },
+
+  {
     version: 'v202607271449',
     time: '2026-07-27 14:49',
-    notes: '资产对比同步差异对比清晰展示去重数量（配套后端 v202607271450）：①对比/预览 summary 增加 deduplicatedLocalCount/deduplicatedViewCount/dedupRule 字段；②差异对比与同步预览信息卡片新增「SAP视图原始行数 / 按 add_date 最新去重后保留有效记录数 / 合并重复编码数 / 去重规则」展示，明确一笔固定资产只保留一行（取 add_date 最新）。',
+    notes: '资产对比同步差异对比清晰展示去重数量（配套后端 v202607271450）：①对比/预览 summary 增加 deduplicatedLocalCount/deduplicatedViewCount/dedupRule 字段；②差异对比与同步预览信息卡片新增「SAP视图原始行数 / 按 add_date 最新去重后保留有效记录数 / 合并��复编码数 / 去重规则」展示，明确一笔固定资产只保留一行（取 add_date 最新）。',
   },
 
   {

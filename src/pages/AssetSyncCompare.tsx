@@ -81,8 +81,8 @@ function fmt(v: string | number | null | undefined): string {
 
 /** 差异对比三个分类的展示元数据 */
 const DIFF_TABS = [
-  { key: 'onlyInTable' as const, label: '仅本地表', color: 'error' as const },
   { key: 'onlyInView' as const, label: '仅SAP视图', color: 'success' as const },
+  { key: 'onlyInTable' as const, label: '仅本地表', color: 'error' as const },
   { key: 'different' as const, label: '字段不一致', color: 'warning' as const },
 ];
 
@@ -198,9 +198,9 @@ export default function AssetSyncCompare() {
     compare == null
       ? []
       : diffTab === 0
-        ? compare.onlyInTable
+        ? compare.onlyInView
         : diffTab === 1
-          ? compare.onlyInView
+          ? compare.onlyInTable
           : compare.different;
 
   const filteredActive = useMemo(() => {
@@ -247,7 +247,7 @@ export default function AssetSyncCompare() {
             <>
               <Alert severity="info" sx={{ fontSize: '0.8rem' }}>
                 <Box>
-                  <div>本地表 {compare.summary.localCount} 条 · SAP视图 {compare.summary.viewCount} 条</div>
+                  <div>SAP视图 {compare.summary.viewCount} 条 · 本地表 {compare.summary.localCount} 条</div>
                   {(compare.summary.rawLocalCount !== undefined || compare.summary.rawViewCount !== undefined) && (
                     <div style={{ marginTop: 4, color: '#ed6c02', fontSize: '0.75rem' }}>
                       SAP视图原始 {compare.summary.rawViewCount ?? compare.summary.viewCount} 行，按 add_date 最新去重后保留 {compare.summary.deduplicatedViewCount ?? compare.summary.viewCount} 条，合并重复 {compare.summary.duplicateViewCodeCount ?? 0} 行
@@ -269,7 +269,7 @@ export default function AssetSyncCompare() {
                 sx={{ minHeight: 36, '& .MuiTab-root': { minHeight: 36, fontSize: '0.8rem', textTransform: 'none' } }}
               >
                 {DIFF_TABS.map((t, i) => (
-                  <Tab key={t.key} label={`${t.label} (${i === 0 ? compare.summary.onlyInTableCount : i === 1 ? compare.summary.onlyInViewCount : compare.summary.differentCount})`} />
+                  <Tab key={t.key} label={`${t.label} (${i === 0 ? compare.summary.onlyInViewCount : i === 1 ? compare.summary.onlyInTableCount : compare.summary.differentCount})`} />
                 ))}
               </Tabs>
 
@@ -400,7 +400,7 @@ export default function AssetSyncCompare() {
 
                 {totalChanges === 0 ? (
                   <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.82rem', mb: 1 }}>
-                    无变更：本地表已与 SAP 视图一致
+                    无变更：SAP 视图与本地表已一致
                   </Typography>
                 ) : (
                   <Box sx={{ maxHeight: 220, overflow: 'auto' }}>
