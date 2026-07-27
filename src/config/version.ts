@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607271740';
+export const APP_VERSION = 'v202607271753';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-27 17:40';
-export const RELEASE_NOTES = '新建盘点任务截止时间选择器改造为自定义 DeadlinePicker：替换原生 type="datetime-local" 输入，改用只读展示框 + Dialog 弹窗，内含独立的日期（type=date）和时间（type=time）输入框，底部提供「取消」「完成」按钮，确保在 PC 钉钉桌面端也能显式确认选择，解决原先无完成按钮的问题。';
+export const RELEASE_TIME = '2026-07-27 17:53';
+export const RELEASE_NOTES = '修复切换「盘点任务管理」Tab 自动差异对比提示逻辑反转：①原逻辑写反——数据存在差异时错误提示「无需同步」、数据一致时反而提示「请先执行同步操作」，现修正为：存在差异→警告「数据存在差异（含仅本地/仅SAP视图/字段不一致明细），请先到资产对比同步执行同步后再下达任务」；一致→成功「数据一致，无需同步，可正常下达任务」；②「下达任务」按钮就绪条件与实时对比结果联动——实时对比一致即可下达，实时对比发现差异即使之前同步过也须先重新同步，实时对比未返回时回退到是否已完成同步(isLatest)；③按钮 Tooltip 按差异原因给出对应提示。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,12 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607271753',
+    time: '2026-07-27 17:53',
+    notes: '修复切换「盘点任务管理」Tab 自动差异对比提示逻辑反转：①原逻辑写反——数据存在差异时错误提示「无需同步」、数据一致时反而提示「请先执行同步操作」，现修正为：存在差异→警告「数据存在差异（含仅本地/仅SAP视图/字段不一致明细），请先到资产对比同步执行同步后再下达任务」；一致→成功「数据一致，无需同步，可正常下达任务」；②「下达任务」按钮就绪条件与实时对比结果联动——实时对比一致即可下达，实时对比发现差异即使之前同步过也须先重新同步，实时对比未返回时回退到是否已完成同步(isLatest)；③按钮 Tooltip 按差异原因给出对应提示。',
+  },
+
   {
     version: 'v202607271740',
     time: '2026-07-27 17:40',

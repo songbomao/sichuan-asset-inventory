@@ -398,14 +398,17 @@ export default function AdminTasks() {
     setCompareChecking(true);
     try {
       const res: CompareAssetsResult = await compareAssets();
-      const diffCount =
-        (res.summary?.onlyInViewCount ?? 0) +
-        (res.summary?.onlyInTableCount ?? 0) +
-        (res.summary?.differentCount ?? 0);
+      const onlyInView = res.summary?.onlyInViewCount ?? 0;
+      const onlyInTable = res.summary?.onlyInTableCount ?? 0;
+      const different = res.summary?.differentCount ?? 0;
+      const diffCount = onlyInView + onlyInTable + different;
       if (diffCount > 0) {
-        setCompareCheck({ type: 'warning', msg: '数据存在差异，无需同步' });
+        setCompareCheck({
+          type: 'warning',
+          msg: `数据存在差异（共 ${diffCount} 条：仅本地 ${onlyInTable} / 仅 SAP视图 ${onlyInView} / 字段不一致 ${different}），请先到「资产对比同步」执行同步操作后再下达任务`,
+        });
       } else {
-        setCompareCheck({ type: 'success', msg: '数据一致，请先执行同步操作' });
+        setCompareCheck({ type: 'success', msg: '数据一致，无需同步，可正常下达任务' });
       }
     } catch {
       setCompareCheck({ type: 'info', msg: '差异对比检查失败，请手动执行「资产对比同步」' });
@@ -420,7 +423,13 @@ export default function AdminTasks() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchTasks]);
 
-  const syncReady = !!syncStatus?.isLatest;
+  // 下达任务就绪条件：实时差异对比一致(success)即可下达；
+  // 若实时对比发现差异(warning)，即使之前同步过也要先重新同步；
+  // 实时对比结果尚未返回时，回退到「是否已完成过同步」(isLatest)。
+  const syncReady =
+    compareCheck?.type === 'success' ? true :
+    compareCheck?.type === 'warning' ? false :
+    !!syncStatus?.isLatest;
 
   /** 打开新建任务弹窗 */
   const openDialog = () => {
@@ -728,7 +737,7 @@ export default function AdminTasks() {
                         盘点记录
                       </Button>
                       {task.status === 'draft' && (
-                        <Tooltip title={!syncReady ? '请先完成数据同步后再下达任务' : ''}>
+                        <Tooltip title={!syncReady ? (compareCheck?.type === 'warning' ? '实时对比发现数据差异，请先到「资产对比同步」同步后再下达任务' : '请先完成数据同步后再下达任务') : ''}>
                           <span>
                             <Button
                               size="small"
