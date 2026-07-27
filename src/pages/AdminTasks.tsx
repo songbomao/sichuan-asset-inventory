@@ -44,6 +44,7 @@ import {
   previewAssetsByCategories,
   previewPersonnelByDepartments,
   compareAssets,
+  validateCategoryResponsibles,
   type AdminTaskItem,
   type CreateTaskParams,
   type CreateTaskErrorDetail,
@@ -53,6 +54,7 @@ import {
   type PreviewAssetItem,
   type PreviewPersonnelItem,
   type CompareAssetsResult,
+  type CategoryResponsibleCheckResult,
 } from '../api/admin';
 import { useAuth } from '../contexts/AuthContext';
 import AssetSyncCompare from './AssetSyncCompare';
@@ -133,6 +135,10 @@ export default function AdminTasks() {
   // 切换「盘点任务管理」Tab 时自动差异对比检查的结果提示
   const [compareCheck, setCompareCheck] = useState<{ type: 'success' | 'warning' | 'info'; msg: string } | null>(null);
   const [compareChecking, setCompareChecking] = useState(false);
+  /** 最近一次差异对比的完整结果（含样例明细，用于一致性拦截弹窗展示） */
+  const [compareResult, setCompareResult] = useState<CompareAssetsResult | null>(null);
+  /** 校验①：SAP 与本地数据不一致时，点击「新建任务」弹出的拦截弹窗 */
+  const [consistencyBlockOpen, setConsistencyBlockOpen] = useState(false);
 
   // 下达任务的页面级反馈
   const [dispatchMsg, setDispatchMsg] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
@@ -157,6 +163,8 @@ export default function AdminTasks() {
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
   /** 创建任务后端校验拦截（empty_user / match_failed）的结构化明细弹窗 */
   const [validationError, setValidationError] = useState<CreateTaskErrorDetail | null>(null);
+  /** 校验②：by_category 确认创建前责任人完整性预校验拦截（缺失/无效责任人）的结构化明细弹窗 */
+  const [categoryCheckError, setCategoryCheckError] = useState<CategoryResponsibleCheckResult | null>(null);
   const [inventoryOptions, setInventoryOptions] = useState<InventoryOptionsResult>({ departments: [], categories: [] });
   const [optionsLoading, setOptionsLoading] = useState(false);
 
@@ -394,6 +402,7 @@ export default function AdminTasks() {
     setCompareChecking(true);
     try {
       const res: CompareAssetsResult = await compareAssets();
+      setCompareResult(res);
       const onlyInView = res.summary?.onlyInViewCount ?? 0;
       const onlyInTable = res.summary?.onlyInTableCount ?? 0;
       const different = res.summary?.differentCount ?? 0;
@@ -407,6 +416,7 @@ export default function AdminTasks() {
         setCompareCheck({ type: 'success', msg: '数据一致，无需同步，可正常下达任务' });
       }
     } catch {
+      setCompareResult(null);
       setCompareCheck({ type: 'info', msg: '差异对比检查失败，请手动执行「资产对比同步」' });
     } finally {
       setCompareChecking(false);
@@ -442,6 +452,49 @@ export default function AdminTasks() {
       .finally(() => setOptionsLoading(false));
   };
 
+  /**
+   * 校验①：点击「新建任务」时，比对 SAP 系统数据与本地数据。
+   * 若已有实时对比结论则直接复用；否则实时跑一次差异对比。
+   * 不一致 → 弹出拦截弹窗，禁止继续创建；一致 → 打开新建任务弹窗。
+   */
+  const handleNewTaskClick = async () => {
+    // 已有结论直接复用，避免重复比对
+    if (compareCheck?.type === 'warning') {
+      setConsistencyBlockOpen(true);
+      return;
+    }
+    if (compareCheck?.type === 'success') {
+      openDialog();
+      return;
+    }
+    setCompareChecking(true);
+    try {
+      const res = await compareAssets();
+      setCompareResult(res);
+      const onlyInView = res.summary?.onlyInViewCount ?? 0;
+      const onlyInTable = res.summary?.onlyInTableCount ?? 0;
+      const different = res.summary?.differentCount ?? 0;
+      const diffCount = onlyInView + onlyInTable + different;
+      if (diffCount > 0) {
+        setCompareCheck({
+          type: 'warning',
+          msg: `数据存在差异（共 ${diffCount} 条：仅本地 ${onlyInTable} / 仅 SAP视图 ${onlyInView} / 字段不一致 ${different}），请先到「资产对比同步」执行同步操作后再下达任务`,
+        });
+        setConsistencyBlockOpen(true);
+        return;
+      }
+      setCompareCheck({ type: 'success', msg: '数据一致，无需同步，可正常下达任务' });
+      openDialog();
+    } catch {
+      setCompareResult(null);
+      setCompareCheck({ type: 'info', msg: '差异对比检查失败，可手动执行「资产对比同步」后再尝试' });
+      // 检查失败≠不一致，不强制拦截，但保留提示，允许打开弹窗
+      openDialog();
+    } finally {
+      setCompareChecking(false);
+    }
+  };
+
   /** 提交新建任务 */
   const handleCreate = async () => {
     if (!form.TaskName.trim()) {
@@ -471,6 +524,15 @@ export default function AdminTasks() {
     setSubmitting(true);
     setFeedback(null);
     try {
+      // 校验②：by_category 确认创建前，反向校验所选类别下资产的责任人完整性
+      if (form.method === 'by_category') {
+        const check = await validateCategoryResponsibles({ categoryNames: form.categories });
+        if (check.missingCount + check.invalidCount > 0) {
+          setCategoryCheckError(check);
+          setSubmitting(false);
+          return;
+        }
+      }
       const scopeValues: number[] | string[] =
         form.method === 'by_dept'
           ? Object.keys(selectedDeptMap).map(Number)
@@ -587,7 +649,8 @@ export default function AdminTasks() {
             variant="contained"
             size="small"
             startIcon={<AddIcon />}
-            onClick={openDialog}
+            onClick={handleNewTaskClick}
+            disabled={compareChecking}
             sx={{ borderRadius: '10px', textTransform: 'none', whiteSpace: 'nowrap' }}
           >
             新建任务
@@ -1226,6 +1289,152 @@ export default function AdminTasks() {
           <Button
             variant="contained"
             onClick={() => setValidationError(null)}
+            sx={{ borderRadius: '10px', textTransform: 'none' }}
+          >
+            我知道了
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ---- 校验①：SAP 与本地数据不一致拦截弹窗 ---- */}
+      <Dialog
+        open={consistencyBlockOpen}
+        onClose={() => setConsistencyBlockOpen(false)}
+        fullWidth
+        maxWidth="sm"
+        sx={{ '& .MuiDialog-paper': { margin: { xs: 2, sm: 4 } } }}
+      >
+        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.1rem', color: 'error.main', pb: 1 }}>
+          数据不一致，禁止创建任务
+        </DialogTitle>
+        <DialogContent sx={{ pt: '8px !important' }}>
+          <Alert severity="error" sx={{ fontSize: '0.85rem', mb: 1.5 }}>
+            SAP 系统数据与本地数据存在差异，请先到「资产对比同步」执行同步后再下达盘点任务。
+          </Alert>
+          {(() => {
+            const r = compareResult?.summary;
+            const onlyInView = r?.onlyInViewCount ?? 0;
+            const onlyInTable = r?.onlyInTableCount ?? 0;
+            const different = r?.differentCount ?? 0;
+            return (
+              <Stack spacing={1.2}>
+                <Typography variant="body2">
+                  本地表 <strong>{r?.localCount ?? 0}</strong> 条 · SAP 视图 <strong>{r?.viewCount ?? 0}</strong> 条；
+                  差异合计 <strong>{onlyInView + onlyInTable + different}</strong> 条
+                  （仅本地 {onlyInTable} / 仅 SAP 视图 {onlyInView} / 字段不一致 {different}）。
+                </Typography>
+                {onlyInTable > 0 && (
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>仅本地存在（{onlyInTable} 条，示例）：</Typography>
+                    <Box sx={{ maxHeight: 160, overflowY: 'auto', pl: 1 }}>
+                      {(compareResult?.onlyInTable ?? []).slice(0, 20).map((a) => (
+                        <Typography key={a.assetCode} variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                          {a.assetCode} {a.assetName}
+                        </Typography>
+                      ))}
+                    </Box>
+                  </Box>
+                )}
+                {onlyInView > 0 && (
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>仅 SAP 视图存在（{onlyInView} 条，示例）：</Typography>
+                    <Box sx={{ maxHeight: 160, overflowY: 'auto', pl: 1 }}>
+                      {(compareResult?.onlyInView ?? []).slice(0, 20).map((a) => (
+                        <Typography key={a.assetCode} variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                          {a.assetCode} {a.assetName}
+                        </Typography>
+                      ))}
+                    </Box>
+                  </Box>
+                )}
+                {different > 0 && (
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>字段不一致（{different} 条，示例）：</Typography>
+                    <Box sx={{ maxHeight: 160, overflowY: 'auto', pl: 1 }}>
+                      {(compareResult?.different ?? []).slice(0, 20).map((a) => (
+                        <Typography key={a.assetCode} variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                          {a.assetCode} {a.assetName}
+                          {a.diffs?.length ? `（${a.diffs.map((d) => d.field).join('、')}）` : ''}
+                        </Typography>
+                      ))}
+                    </Box>
+                  </Box>
+                )}
+              </Stack>
+            );
+          })()}
+        </DialogContent>
+        <DialogActions sx={{ px: 2, pb: 2 }}>
+          <Button onClick={() => setConsistencyBlockOpen(false)} color="inherit" sx={{ textTransform: 'none' }}>
+            我知道了
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              setConsistencyBlockOpen(false);
+              setTab('sync');
+              setRefreshNonce((n) => n + 1);
+            }}
+            sx={{ borderRadius: '10px', textTransform: 'none' }}
+          >
+            去资产对比同步
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ---- 校验②：by_category 责任人完整性拦截弹窗 ---- */}
+      <Dialog
+        open={categoryCheckError !== null}
+        onClose={() => setCategoryCheckError(null)}
+        fullWidth
+        maxWidth="sm"
+        sx={{ '& .MuiDialog-paper': { margin: { xs: 2, sm: 4 } } }}
+      >
+        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.1rem', color: 'error.main', pb: 1 }}>
+          责任人信息不完整，禁止创建任务
+        </DialogTitle>
+        <DialogContent sx={{ pt: '8px !important' }}>
+          <Alert severity="error" sx={{ fontSize: '0.85rem', mb: 1.5 }}>
+            所选盘点类别下存在责任人缺失或无效（已不在组织/无法唯一匹配）的资产，请通过财辅更正责任人信息后再创建任务。
+          </Alert>
+          <Stack spacing={1} divider={<Divider flexItem />}>
+            <Typography variant="body2">
+              共 <strong>{categoryCheckError?.total ?? 0}</strong> 项资产；
+              责任人缺失 <strong>{categoryCheckError?.missingCount ?? 0}</strong> 项；
+              责任人无效 <strong>{categoryCheckError?.invalidCount ?? 0}</strong> 项。
+            </Typography>
+            <Box sx={{ maxHeight: 360, overflowY: 'auto' }}>
+              <Stack spacing={0.5}>
+                {(categoryCheckError?.list ?? []).map((a, idx) => (
+                  <Box key={`${a.assetCode}-${idx}`} sx={{ py: 0.5 }}>
+                    <Typography variant="body2" sx={{ fontSize: '0.85rem' }}>
+                      <strong>{a.assetCode}</strong> {a.assetName}
+                      {a.deptName ? `（${a.deptName}）` : ''}
+                    </Typography>
+                    {a.issue === 'empty' ? (
+                      <Typography variant="caption" color="error" sx={{ display: 'block' }}>
+                        责任人缺失（user 为空）
+                      </Typography>
+                    ) : (
+                      <Typography variant="caption" color="error" sx={{ display: 'block' }}>
+                        责任人「{a.userName}」无效：已不在当前组织（疑似离职）或无法唯一匹配
+                      </Typography>
+                    )}
+                  </Box>
+                ))}
+              </Stack>
+            </Box>
+            {categoryCheckError?.truncated && (
+              <Typography variant="caption" color="text.secondary">
+                仅展示前 {(categoryCheckError.list ?? []).length} 条，完整明细请在财辅系统核对。
+              </Typography>
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 2, pb: 2 }}>
+          <Button
+            variant="contained"
+            onClick={() => setCategoryCheckError(null)}
             sx={{ borderRadius: '10px', textTransform: 'none' }}
           >
             我知道了

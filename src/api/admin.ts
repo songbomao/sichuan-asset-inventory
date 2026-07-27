@@ -127,6 +127,43 @@ export async function previewPersonnelByDepartments(params: {
   throw new Error(data.msg || data.message || '预览人员失败');
 }
 
+/** 盘点类别责任人完整性校验：单条问题资产 */
+export interface CategoryResponsibleIssue {
+  assetCode: string;
+  assetName: string;
+  categoryName: string;
+  deptName: string;
+  userName: string;
+  /** empty=责任人缺失(空/null)；invalid=责任人不在组织(疑似离职)/无法唯一匹配 */
+  issue: 'empty' | 'invalid';
+}
+
+/** 盘点类别责任人完整性校验结果（新建任务 by_category 确认创建前预校验） */
+export interface CategoryResponsibleCheckResult {
+  valid: number;
+  total: number;
+  missingCount: number;
+  invalidCount: number;
+  truncated: boolean;
+  list: CategoryResponsibleIssue[];
+}
+
+/**
+ * 校验所选盘点类别下资产的「责任人完整性」（反向校验）。
+ * 检查 user 为空/null，或 user 已不在当前组织（如离职）/无法唯一匹配的情况。
+ * POST /api/Account/UniGetToken/ValidateCategoryResponsibles
+ */
+export async function validateCategoryResponsibles(params: {
+  categoryNames: string[];
+}): Promise<CategoryResponsibleCheckResult> {
+  const { data } = await client.post<{ code: number; data: CategoryResponsibleCheckResult; msg?: string; message?: string }>(
+    '/api/Account/UniGetToken',
+    { action: 'ValidateCategoryResponsibles', categoryNames: params.categoryNames },
+  );
+  if (data.code === 0 || data.code === 200) return data.data;
+  throw new Error(data.msg || data.message || '责任人完整性校验失败');
+}
+
 /** 启动任务响应 */
 interface StartTaskResponse {
   code: number;
