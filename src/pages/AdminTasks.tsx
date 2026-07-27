@@ -29,6 +29,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import HistoryIcon from '@mui/icons-material/History';
+import DeleteIcon from '@mui/icons-material/Delete';
 import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import {
@@ -566,11 +567,19 @@ export default function AdminTasks() {
           severity={syncStatus.isLatest ? 'success' : 'warning'}
           sx={{ fontSize: '0.82rem', alignItems: 'center' }}
         >
-          <strong>数据同步状态：</strong>
-          {syncStatus.isLatest ? '已是最新' : '未同步或非最新'}
-          {' · '}最后同步：{syncStatus.lastSyncTime ? new Date(syncStatus.lastSyncTime).toLocaleString('zh-CN') : '从未'}
-          {' · '}本地 {syncStatus.localCount} 行 / SAP视图 {syncStatus.viewCount} 行
-          {!syncStatus.isLatest && ' —— 请先到「资产对比同步」完成数据同步后再下达任务。'}
+          <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', flexWrap: 'wrap', gap: 0.5 }}>
+            <strong>数据同步状态：</strong>
+            {syncStatus.isLatest ? '已是最新' : '未同步或非最新'}
+            <span>· 最后同步：{syncStatus.lastSyncTime ? new Date(syncStatus.lastSyncTime).toLocaleString('zh-CN') : '从未'}</span>
+            <span>· 本地 {syncStatus.localCount} 行 / SAP视图去重后 {syncStatus.viewCount} 条</span>
+            {syncStatus.rawViewCount !== undefined && (
+              <span style={{ color: '#ed6c02', fontSize: '0.75rem' }}>
+                （原始 {syncStatus.rawViewCount} 行，合并重复 {syncStatus.duplicateViewCount ?? 0} 行
+                {(syncStatus.emptyViewCodeCount ?? 0) > 0 && `，空编码 ${syncStatus.emptyViewCodeCount} 行`}）
+              </span>
+            )}
+            {!syncStatus.isLatest && <span>—— 请先到「资产对比同步」完成数据同步后再下达任务。</span>}
+          </Box>
         </Alert>
       )}
 
@@ -637,14 +646,15 @@ export default function AdminTasks() {
                         <span>
                           <Button
                             size="small"
-                            variant="contained"
+                            variant="outlined"
                             color="error"
+                            startIcon={<DeleteIcon fontSize="small" />}
                             disabled={task.status === 'completed'}
                             onClick={(e) => {
                               e.stopPropagation();
                               setDeleteTarget(task);
                             }}
-                            sx={{ borderRadius: '8px', textTransform: 'none', px: 1.5 }}
+                            sx={{ borderRadius: '8px', textTransform: 'none', px: 1 }}
                           >
                             删除
                           </Button>

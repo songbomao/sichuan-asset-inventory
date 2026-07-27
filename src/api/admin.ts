@@ -230,8 +230,14 @@ export interface SyncStatusResult {
   lastSyncTime: string | null;
   /** 本地资产表行数 */
   localCount: number;
-  /** SAP 视图行数 */
+  /** SAP 视图按 add_date 最新去重后的有效记录数 */
   viewCount: number;
+  /** SAP 视图原始行数 */
+  rawViewCount?: number;
+  /** SAP 视图中被合并的重复行数 */
+  duplicateViewCount?: number;
+  /** SAP 视图中空资产编码行数 */
+  emptyViewCodeCount?: number;
   /** 是否最新（已同步且一致） */
   isLatest: boolean;
 }

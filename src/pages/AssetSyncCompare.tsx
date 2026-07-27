@@ -382,8 +382,8 @@ export default function AssetSyncCompare({ refreshKey = 0 }: { refreshKey?: numb
             const totalChanges =
               preview.summary.insertCount + preview.summary.updateCount + preview.summary.deleteCount;
             return (
-            <Card className="glow-border" sx={{ minHeight: '78vh', display: 'flex', flexDirection: 'column' }}>
-              <CardContent sx={{ p: 2, '&:last-child': { pb: 2 }, flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <Card className="glow-border">
+              <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
                   同步预览（SAP视图 → 本地表）
                 </Typography>
@@ -405,17 +405,16 @@ export default function AssetSyncCompare({ refreshKey = 0 }: { refreshKey?: numb
                 )}
 
                 {totalChanges === 0 ? (
-                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.82rem', mb: 1, flex: 1 }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.82rem', mb: 1 }}>
                     无变更：SAP 视图与本地表已一致
                   </Typography>
                 ) : (
                   <Box
                     sx={{
-                      flex: 1,
-                      minHeight: 0,
                       maxHeight: { xs: '45vh', sm: '380px' },
                       overflow: 'auto',
                       borderRadius: 1,
+                      mb: 1.5,
                     }}
                   >
                     <Table size="small">
@@ -453,7 +452,6 @@ export default function AssetSyncCompare({ refreshKey = 0 }: { refreshKey?: numb
                   sx={{
                     borderRadius: '10px',
                     textTransform: 'none',
-                    mt: 'auto',
                     backgroundColor: '#6a1b9a',
                     color: '#fff',
                     fontWeight: 600,
