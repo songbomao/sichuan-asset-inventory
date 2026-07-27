@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607270035';
+export const APP_VERSION = 'v202607270953';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-27 00:35';
-export const RELEASE_NOTES = '真·多图盘点提交打通（配套后端 v202607270040）：①提交页 Inventory.tsx 移除多图垂直拼接为单长图逻辑，改为直接传 photoUrls 字符串数组（仍约束≤4张、≥2张）；②api SubmitRecordParams 由单 photoBase64 改为 photoUrls:string[]（保留 photoBase64 可选兼容旧端）；③后端 sai_inventory_records 新增 PhotoUrls(mediumtext JSON数组) 列，AccountController/InventoryTaskController 的 SubmitRecord 解析 photoUrls 数组(兼容旧 photoBase64)、GetRecordDetail 返回 photoUrls(string[])，详情灯箱(上轮已做)即可按序翻页切换预览。';
+export const RELEASE_TIME = '2026-07-27 09:53';
+export const RELEASE_NOTES = '修复任务进度在移动端显示不完整：HorizontalTimeline 改为响应式——宽屏(≥600px)保持横向 5 节点，窄屏自动切纵向(vertical)，移除原 minWidth:520 + overflowX:auto 强制滚动与 nowrap 截断，标题/时间戳/状态在各类移动分辨率下完整可见、无需横向滑动；时间戳与「待到达」改由 StepLabel optional 统一呈现，标题窄屏允许换行并缩字号。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607270953',
+    time: '2026-07-27 09:53',
+    notes: '修复任务进度在移动端显示不完整：HorizontalTimeline 改为响应式——宽屏(≥600px)保持横向 5 节点，窄屏自动切纵向(vertical)，移除原 minWidth:520 + overflowX:auto 强制滚动与 nowrap 截断，标题/时间戳/状态在各类移动分辨率下完整可见、无需横向滑动；时间戳与「待到达」改由 StepLabel optional 统一呈现，标题窄屏允许换行并缩字号。',
+  },
   {
     version: 'v202607270035',
     time: '2026-07-27 00:35',

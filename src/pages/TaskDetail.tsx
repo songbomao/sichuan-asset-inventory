@@ -148,7 +148,7 @@ export default function TaskDetailPage() {
       </header>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {/* 任务进度时间轴（横向 5 节点） */}
+        {/* 任务进度时间轴（响应式 5 节点：宽屏横向 / 窄屏纵向） */}
         <Card className="hover:shadow-md transition-shadow">
           <CardContent>
             <Typography variant="subtitle1" className="font-semibold text-gray-900 mb-3">
