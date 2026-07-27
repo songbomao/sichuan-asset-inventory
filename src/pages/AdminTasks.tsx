@@ -127,9 +127,8 @@ export default function AdminTasks() {
   /** 切换 Tab 时自增，用于驱动子模块（如「资产对比同步」）自动刷新 */
   const [refreshNonce, setRefreshNonce] = useState(0);
 
-  // 数据同步状态（下达任务前置校验）
+  // 数据同步状态（下达任务前置校验，不再渲染 Alert，仅用于按钮就绪回退）
   const [syncStatus, setSyncStatus] = useState<SyncStatusResult | null>(null);
-  const [syncLoading, setSyncLoading] = useState(false);
 
   // 切换「盘点任务管理」Tab 时自动差异对比检查的结果提示
   const [compareCheck, setCompareCheck] = useState<{ type: 'success' | 'warning' | 'info'; msg: string } | null>(null);
@@ -381,14 +380,11 @@ export default function AdminTasks() {
   }, []);
 
   const fetchSyncStatus = useCallback(async () => {
-    setSyncLoading(true);
     try {
       const s = await getSyncStatus();
       setSyncStatus(s);
     } catch {
       // 获取失败时不阻塞页面，syncReady 保持 false
-    } finally {
-      setSyncLoading(false);
     }
   }, []);
 
@@ -598,29 +594,6 @@ export default function AdminTasks() {
           </Button>
         </div>
       </div>
-
-      {/* 数据同步状态条 */}
-      {syncLoading && <Skeleton variant="rectangular" height={56} sx={{ borderRadius: 2 }} />}
-      {!syncLoading && syncStatus && (
-        <Alert
-          severity={syncStatus.isLatest ? 'success' : 'warning'}
-          sx={{ fontSize: '0.82rem', alignItems: 'center' }}
-        >
-          <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', flexWrap: 'wrap', gap: 0.5 }}>
-            <strong>数据同步状态：</strong>
-            {syncStatus.isLatest ? '已是最新' : '未同步或非最新'}
-            <span>· 最后同步：{syncStatus.lastSyncTime ? new Date(syncStatus.lastSyncTime).toLocaleString('zh-CN') : '从未'}</span>
-            <span>· 本地 {syncStatus.localCount} 行 / SAP视图去重后 {syncStatus.viewCount} 条</span>
-            {syncStatus.rawViewCount !== undefined && (
-              <span style={{ color: '#ed6c02', fontSize: '0.75rem' }}>
-                （原始 {syncStatus.rawViewCount} 行，合并重复 {syncStatus.duplicateViewCount ?? 0} 行
-                {(syncStatus.emptyViewCodeCount ?? 0) > 0 && `，空编码 ${syncStatus.emptyViewCodeCount} 行`}）
-              </span>
-            )}
-            {!syncStatus.isLatest && <span>—— 请先到「资产对比同步」完成数据同步后再下达任务。</span>}
-          </Box>
-        </Alert>
-      )}
 
       {/* 切换 Tab 时自动差异对比检查提示 */}
       {compareChecking && (

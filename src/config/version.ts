@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607271753';
+export const APP_VERSION = 'v202607271800';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-27 17:53';
-export const RELEASE_NOTES = '修复切换「盘点任务管理」Tab 自动差异对比提示逻辑反转：①原逻辑写反——数据存在差异时错误提示「无需同步」、数据一致时反而提示「请先执行同步操作」，现修正为：存在差异→警告「数据存在差异（含仅本地/仅SAP视图/字段不一致明细），请先到资产对比同步执行同步后再下达任务」；一致→成功「数据一致，无需同步，可正常下达任务」；②「下达任务」按钮就绪条件与实时对比结果联动——实时对比一致即可下达，实时对比发现差异即使之前同步过也须先重新同步，实时对比未返回时回退到是否已完成同步(isLatest)；③按钮 Tooltip 按差异原因给出对应提示。';
+export const RELEASE_TIME = '2026-07-27 18:00';
+export const RELEASE_NOTES = '移除盘点任务管理页顶部「数据同步状态」Alert，避免冗余文案与实时差异对比提示冲突；保留 syncStatus 后台数据用于下达任务按钮就绪回退。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,12 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607271800',
+    time: '2026-07-27 18:00',
+    notes: '移除盘点任务管理页顶部「数据同步状态」Alert，避免冗余文案与实时差异对比提示冲突；保留 syncStatus 后台数据用于下达任务按钮就绪回退。',
+  },
+
   {
     version: 'v202607271753',
     time: '2026-07-27 17:53',
