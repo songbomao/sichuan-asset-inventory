@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607270953';
+export const APP_VERSION = 'v202607271135';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-27 09:53';
-export const RELEASE_NOTES = '修复任务进度在移动端显示不完整：HorizontalTimeline 改为响应式——宽屏(≥600px)保持横向 5 节点，窄屏自动切纵向(vertical)，移除原 minWidth:520 + overflowX:auto 强制滚动与 nowrap 截断，标题/时间戳/状态在各类移动分辨率下完整可见、无需横向滑动；时间戳与「待到达」改由 StepLabel optional 统一呈现，标题窄屏允许换行并缩字号。';
+export const RELEASE_TIME = '2026-07-27 11:35';
+export const RELEASE_NOTES = '盘点报告页权限与预览重构：①权限控制——GetReportArchive 网关权限降为 requiredLevel=0（任意登录用户可查看已生成报告），GenerateReport 保持管理员(requiredLevel=1)；仅管理员可见/可点「生成盘点报告」按钮，普通用户无按钮、未生成时显示空状态占位「暂无报告，请联系管理员生成」。②生成后同页内嵌预览（无需跳转），先查 GetReportArchive 取最新归档 content 解析展示。③排版——报告头卡片列报告名称/盘点日期/截止日期/创建人/盘点范围(scopeText)；新增「资产盘点明细」表格（序号/物品名称/账面数量/实盘数量/差异数量/备注），差异盘盈绿色、盘亏红色高亮；独立「盘点结果统计」卡片(完成率/异常率/正常件/异常件)。后端 GenerateReport 扩展返回 items(逐项差异)与 scopeText 并写入归档 content。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607271135',
+    time: '2026-07-27 11:35',
+    notes: '盘点报告页权限与预览重构：①权限控制——GetReportArchive 网关权限降为 requiredLevel=0（任意登录用户可查看已生成报告），GenerateReport 保持管理员(requiredLevel=1)；仅管理员可见/可点「生成盘点报告」按钮，普通用户无按钮、未生成时显示空状态占位「暂无报告，请联系管理员生成」。②生成后同页内嵌预览（无需跳转），先查 GetReportArchive 取最新归档 content 解析展示。③排版——报告头卡片列报告名称/盘点日期/截止日期/创建人/盘点范围(scopeText)；新增「资产盘点明细」表格（序号/物品名称/账面数量/实盘数量/差异数量/备注），差异盘盈绿色、盘亏红色高亮；独立「盘点结果统计」卡片(完成率/异常率/正常件/异常件)。后端 GenerateReport 扩展返回 items(逐项差异)与 scopeText 并写入归档 content。',
+  },
   {
     version: 'v202607270953',
     time: '2026-07-27 09:53',
