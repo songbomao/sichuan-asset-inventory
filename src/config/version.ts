@@ -1,14 +1,14 @@
-/**
+﻿/**
  * 应用版本信息
  * 每次发布前更新：
  *   version: vYYYYMMDDhhmm 格式
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607271135';
+export const APP_VERSION = 'v202607271449';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-27 11:35';
-export const RELEASE_NOTES = '盘点报告页权限与预览重构：①权限控制——GetReportArchive 网关权限降为 requiredLevel=0（任意登录用户可查看已生成报告），GenerateReport 保持管理员(requiredLevel=1)；仅管理员可见/可点「生成盘点报告」按钮，普通用户无按钮、未生成时显示空状态占位「暂无报告，请联系管理员生成」。②生成后同页内嵌预览（无需跳转），先查 GetReportArchive 取最新归档 content 解析展示。③排版——报告头卡片列报告名称/盘点日期/截止日期/创建人/盘点范围(scopeText)；新增「资产盘点明细」表格（序号/物品名称/账面数量/实盘数量/差异数量/备注），差异盘盈绿色、盘亏红色高亮；独立「盘点结果统计」卡片(完成率/异常率/正常件/异常件)。后端 GenerateReport 扩展返回 items(逐项差异)与 scopeText 并写入归档 content。';
+export const RELEASE_TIME = '2026-07-27 14:49';
+export const RELEASE_NOTES = '资产对比同步差异对比清晰展示去重数量（配套后端 v202607271450）：①对比/预览 summary 增加 deduplicatedLocalCount/deduplicatedViewCount/dedupRule 字段；②差异对比与同步预览信息卡片新增「SAP视图原始行数 / 按 add_date 最新去重后保留有效记录数 / 合并重复编码数 / 去重规则」展示，明确一笔固定资产只保留一行（取 add_date 最新）。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,12 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607271449',
+    time: '2026-07-27 14:49',
+    notes: '资产对比同步差异对比清晰展示去重数量（配套后端 v202607271450）：①对比/预览 summary 增加 deduplicatedLocalCount/deduplicatedViewCount/dedupRule 字段；②差异对比与同步预览信息卡片新增「SAP视图原始行数 / 按 add_date 最新去重后保留有效记录数 / 合并重复编码数 / 去重规则」展示，明确一笔固定资产只保留一行（取 add_date 最新）。',
+  },
+
   {
     version: 'v202607271135',
     time: '2026-07-27 11:35',

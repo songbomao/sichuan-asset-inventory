@@ -698,6 +698,11 @@ export interface CompareAssetsResult {
     /** 资产编码重复的记录数 */
     duplicateLocalCodeCount?: number;
     duplicateViewCodeCount?: number;
+    /** 去重后有效记录数（按 add_date 最新去重） */
+    deduplicatedLocalCount?: number;
+    deduplicatedViewCount?: number;
+    /** 去重规则说明 */
+    dedupRule?: string;
   };
 }
 
@@ -761,6 +766,20 @@ export interface PreviewSyncResult {
     insertCount: number;
     updateCount: number;
     deleteCount: number;
+    /** 原始查询行数（含空编码） */
+    rawLocalCount?: number;
+    rawViewCount?: number;
+    /** 资产编码为空的记录数 */
+    emptyLocalCodeCount?: number;
+    emptyViewCodeCount?: number;
+    /** 资产编码重复的记录数 */
+    duplicateLocalCodeCount?: number;
+    duplicateViewCodeCount?: number;
+    /** 去重后有效记录数（按 add_date 最新去重） */
+    deduplicatedLocalCount?: number;
+    deduplicatedViewCount?: number;
+    /** 去重规则说明 */
+    dedupRule?: string;
   };
 }
 

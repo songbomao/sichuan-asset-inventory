@@ -250,12 +250,13 @@ export default function AssetSyncCompare() {
                   <div>本地表 {compare.summary.localCount} 条 · SAP视图 {compare.summary.viewCount} 条</div>
                   {(compare.summary.rawLocalCount !== undefined || compare.summary.rawViewCount !== undefined) && (
                     <div style={{ marginTop: 4, color: '#ed6c02', fontSize: '0.75rem' }}>
-                      原始数据：本地 {compare.summary.rawLocalCount ?? compare.summary.localCount} 行 / SAP视图 {compare.summary.rawViewCount ?? compare.summary.viewCount} 行
+                      SAP视图原始 {compare.summary.rawViewCount ?? compare.summary.viewCount} 行，按 add_date 最新去重后保留 {compare.summary.deduplicatedViewCount ?? compare.summary.viewCount} 条，合并重复 {compare.summary.duplicateViewCodeCount ?? 0} 行
                       {((compare.summary.emptyLocalCodeCount ?? 0) > 0 || (compare.summary.emptyViewCodeCount ?? 0) > 0) &&
                         ` · 空编码：本地 ${compare.summary.emptyLocalCodeCount ?? 0} / SAP视图 ${compare.summary.emptyViewCodeCount ?? 0}`}
-                      {((compare.summary.duplicateLocalCodeCount ?? 0) > 0 || (compare.summary.duplicateViewCodeCount ?? 0) > 0) &&
-                        ` · 重复编码：本地 ${compare.summary.duplicateLocalCodeCount ?? 0} / SAP视图 ${compare.summary.duplicateViewCodeCount ?? 0}`}
                     </div>
+                  )}
+                  {compare.summary.dedupRule && (
+                    <div style={{ marginTop: 2, color: '#1976d2', fontSize: '0.72rem' }}>去重规则：{compare.summary.dedupRule}</div>
                   )}
                 </Box>
               </Alert>
@@ -385,6 +386,17 @@ export default function AssetSyncCompare() {
                   <Chip color="warning" size="small" label={`更新 ${preview.summary.updateCount}`} />
                   <Chip color="error" size="small" label={`删除 ${preview.summary.deleteCount}`} />
                 </Stack>
+
+                {(preview.summary.rawLocalCount !== undefined || preview.summary.rawViewCount !== undefined) && (
+                  <div style={{ color: '#ed6c02', fontSize: '0.75rem', marginBottom: 4 }}>
+                    SAP视图原始 {preview.summary.rawViewCount ?? (preview.summary.insertCount + preview.summary.updateCount + preview.summary.deleteCount)} 行，按 add_date 最新去重后保留 {preview.summary.deduplicatedViewCount ?? preview.summary.rawViewCount ?? (preview.summary.insertCount + preview.summary.updateCount + preview.summary.deleteCount)} 条，合并重复 {preview.summary.duplicateViewCodeCount ?? 0} 行
+                    {((preview.summary.emptyLocalCodeCount ?? 0) > 0 || (preview.summary.emptyViewCodeCount ?? 0) > 0) &&
+                      ` · 空编码：本地 ${preview.summary.emptyLocalCodeCount ?? 0} / SAP视图 ${preview.summary.emptyViewCodeCount ?? 0}`}
+                  </div>
+                )}
+                {preview.summary.dedupRule && (
+                  <div style={{ color: '#1976d2', fontSize: '0.72rem', marginBottom: 4 }}>去重规则：{preview.summary.dedupRule}</div>
+                )}
 
                 {totalChanges === 0 ? (
                   <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.82rem', mb: 1 }}>
