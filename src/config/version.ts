@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607271717';
+export const APP_VERSION = 'v202607271733';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-27 17:17';
-export const RELEASE_NOTES = '资产对比同步流程交互优化：①同步预览无变更（新增/更新/删除均为 0）时，底部主按钮文字由「确认同步」改为「无需同步」；②同步成功后 Stepper 第三步文字变为「同步完成」并标记 completed（MUI 默认绿色），同时页面显示同步完成摘要卡片与「重新差异对比」按钮，流程闭环更清晰。';
+export const RELEASE_TIME = '2026-07-27 17:33';
+export const RELEASE_NOTES = '差异对比按钮加载态可读性修复 + 盘点任务管理 Tab 自动差异对比提示：①「差异对比」按钮进入「对比中...」loading 态时保持紫色背景与白色文字，避免默认 disabled 样式导致黑字在紫底上看不见；②切换到「盘点任务管理」Tab 时自动调用 compareAssets 差异对比，有差异提示「数据存在差异，无需同步」，无差异提示「数据一致，请先执行同步操作」。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,12 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607271733',
+    time: '2026-07-27 17:33',
+    notes: '差异对比按钮加载态可读性修复 + 盘点任务管理 Tab 自动差异对比提示：①「差异对比」按钮进入「对比中...」loading 态时保持紫色背景与白色文字，避免默认 disabled 样式导致黑字在紫底上看不见；②切换到「盘点任务管理」Tab 时自动调用 compareAssets 差异对比，有差异提示「数据存在差异，无需同步」，无差异提示「数据一致，请先执行同步操作」。',
+  },
+
   {
     version: 'v202607271717',
     time: '2026-07-27 17:17',

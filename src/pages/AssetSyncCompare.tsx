@@ -242,10 +242,22 @@ export default function AssetSyncCompare({ refreshKey = 0 }: { refreshKey?: numb
           <Button
             variant="contained"
             size="small"
-            startIcon={<CompareArrowsIcon />}
+            startIcon={compareLoading ? <CircularProgress size={14} sx={{ color: '#fff' }} /> : <CompareArrowsIcon />}
             onClick={handleCompare}
             disabled={compareLoading}
-            sx={{ borderRadius: '10px', textTransform: 'none', alignSelf: 'flex-start' }}
+            sx={{
+              borderRadius: '10px',
+              textTransform: 'none',
+              alignSelf: 'flex-start',
+              backgroundColor: '#6a1b9a',
+              color: '#fff',
+              '&:hover': { backgroundColor: '#4a148c' },
+              '&.Mui-disabled': {
+                backgroundColor: '#6a1b9a',
+                color: '#fff',
+                opacity: 0.72,
+              },
+            }}
           >
             {compareLoading ? '对比中...' : '差异对比'}
           </Button>

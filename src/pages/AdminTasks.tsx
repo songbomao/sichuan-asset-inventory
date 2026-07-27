@@ -43,6 +43,7 @@ import {
   getDingtalkSubDepartments,
   previewAssetsByCategories,
   previewPersonnelByDepartments,
+  compareAssets,
   type AdminTaskItem,
   type CreateTaskParams,
   type CreateTaskErrorDetail,
@@ -51,6 +52,7 @@ import {
   type DingtalkDepartmentNode,
   type PreviewAssetItem,
   type PreviewPersonnelItem,
+  type CompareAssetsResult,
 } from '../api/admin';
 import { useAuth } from '../contexts/AuthContext';
 import AssetSyncCompare from './AssetSyncCompare';
@@ -127,6 +129,10 @@ export default function AdminTasks() {
   // 数据同步状态（下达任务前置校验）
   const [syncStatus, setSyncStatus] = useState<SyncStatusResult | null>(null);
   const [syncLoading, setSyncLoading] = useState(false);
+
+  // 切换「盘点任务管理」Tab 时自动差异对比检查的结果提示
+  const [compareCheck, setCompareCheck] = useState<{ type: 'success' | 'warning' | 'info'; msg: string } | null>(null);
+  const [compareChecking, setCompareChecking] = useState(false);
 
   // 下达任务的页面级反馈
   const [dispatchMsg, setDispatchMsg] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
@@ -385,6 +391,28 @@ export default function AdminTasks() {
     }
   }, []);
 
+  /** 切换「盘点任务管理」Tab 时自动跑一次差异对比，并按结果给出提示 */
+  const runCompareCheck = useCallback(async () => {
+    setCompareCheck(null);
+    setCompareChecking(true);
+    try {
+      const res: CompareAssetsResult = await compareAssets();
+      const diffCount =
+        (res.summary?.onlyInViewCount ?? 0) +
+        (res.summary?.onlyInTableCount ?? 0) +
+        (res.summary?.differentCount ?? 0);
+      if (diffCount > 0) {
+        setCompareCheck({ type: 'warning', msg: '数据存在差异，无需同步' });
+      } else {
+        setCompareCheck({ type: 'success', msg: '数据一致，请先执行同步操作' });
+      }
+    } catch {
+      setCompareCheck({ type: 'info', msg: '差异对比检查失败，请手动执行「资产对比同步」' });
+    } finally {
+      setCompareChecking(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchTasks();
     fetchSyncStatus();
@@ -530,6 +558,7 @@ export default function AdminTasks() {
           if (v === 'tasks') {
             void fetchTasks();
             void fetchSyncStatus();
+            void runCompareCheck();
           }
         }}
         variant="fullWidth"
@@ -580,6 +609,18 @@ export default function AdminTasks() {
             )}
             {!syncStatus.isLatest && <span>—— 请先到「资产对比同步」完成数据同步后再下达任务。</span>}
           </Box>
+        </Alert>
+      )}
+
+      {/* 切换 Tab 时自动差异对比检查提示 */}
+      {compareChecking && (
+        <Alert severity="info" sx={{ fontSize: '0.82rem' }} icon={<CircularProgress size={16} />}>
+          正在检查数据差异...
+        </Alert>
+      )}
+      {compareCheck && !compareChecking && (
+        <Alert severity={compareCheck.type} sx={{ fontSize: '0.82rem' }}>
+          {compareCheck.msg}
         </Alert>
       )}
 
