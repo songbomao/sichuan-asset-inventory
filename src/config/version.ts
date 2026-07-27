@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607271733';
+export const APP_VERSION = 'v202607271740';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-27 17:33';
-export const RELEASE_NOTES = '差异对比按钮加载态可读性修复 + 盘点任务管理 Tab 自动差异对比提示：①「差异对比」按钮进入「对比中...」loading 态时保持紫色背景与白色文字，避免默认 disabled 样式导致黑字在紫底上看不见；②切换到「盘点任务管理」Tab 时自动调用 compareAssets 差异对比，有差异提示「数据存在差异，无需同步」，无差异提示「数据一致，请先执行同步操作」。';
+export const RELEASE_TIME = '2026-07-27 17:40';
+export const RELEASE_NOTES = '新建盘点任务截止时间选择器改造为自定义 DeadlinePicker：替换原生 type="datetime-local" 输入，改用只读展示框 + Dialog 弹窗，内含独立的日期（type=date）和时间（type=time）输入框，底部提供「取消」「完成」按钮，确保在 PC 钉钉桌面端也能显式确认选择，解决原先无完成按钮的问题。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,12 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607271740',
+    time: '2026-07-27 17:40',
+    notes: '新建盘点任务截止时间选择器改造为自定义 DeadlinePicker：替换原生 type="datetime-local" 输入，改用只读展示框 + Dialog 弹窗，内含独立的日期（type=date）和时间（type=time）输入框，底部提供「取消」「完成」按钮，确保在 PC 钉钉桌面端也能显式确认选择，解决原先无完成按钮的问题。',
+  },
+
   {
     version: 'v202607271733',
     time: '2026-07-27 17:33',

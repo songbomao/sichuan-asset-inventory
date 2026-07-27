@@ -57,6 +57,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import AssetSyncCompare from './AssetSyncCompare';
 import AssetLocalTable from './AssetLocalTable';
+import DeadlinePicker from '../components/DeadlinePicker';
 
 const scopeTypeOptions = [
   { value: 'all', label: '全部资产' },
@@ -903,16 +904,11 @@ export default function AdminTasks() {
               </>
             )}
 
-            <TextField
+            <DeadlinePicker
               label="截止时间"
-              type="datetime-local"
               required
-              size="small"
-              InputLabelProps={{ shrink: true }}
-              inputProps={{ step: 1 }}
               value={form.Deadline}
-              onChange={(e) => setForm((f) => ({ ...f, Deadline: e.target.value }))}
-              fullWidth
+              onChange={(v) => setForm((f) => ({ ...f, Deadline: v }))}
             />
             <TextField
               label="创建人"
