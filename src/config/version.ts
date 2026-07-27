@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607271657';
+export const APP_VERSION = 'v202607271703';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-27 16:57';
-export const RELEASE_NOTES = '修复任务卡片删除按钮风格、同步预览留白、同步状态文案（配套后端 v202607271658）：①盘点任务卡片右上角删除由红色实心按钮改为红色描边+删除图标按钮，与「运行中」Chip 及「盘点记录」按钮风格协调；②同步预览卡片移除 minHeight:78vh 与 flex 撑满，列表与「确认同步」按钮间距恢复正常，消除内容少时的大片留白；③数据同步状态 Alert 按 SAP 视图 add_date 去重后有效记录数展示（本地 X 行 / SAP视图去重后 Y 条），并补充原始行数/合并重复数。';
+export const RELEASE_TIME = '2026-07-27 17:03';
+export const RELEASE_NOTES = '固定资产查询（本地资产表）隐藏「状态」列与「部门」列：COLUMNS 列定义移除 useStatus/状态 与 deptName/部门 两项，资产列表仅保留资产编号/名称/类别/地址/责任人/成本中心/原值/净值，列表更聚焦。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,12 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607271703',
+    time: '2026-07-27 17:03',
+    notes: '固定资产查询（本地资产表）隐藏「状态」列与「部门」列：COLUMNS 列定义移除 useStatus/状态 与 deptName/部门 两项，资产列表仅保留资产编号/名称/类别/地址/责任人/成本中心/原值/净值，列表更聚焦。',
+  },
+
   {
     version: 'v202607271657',
     time: '2026-07-27 16:57',
