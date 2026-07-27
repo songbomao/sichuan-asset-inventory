@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607271703';
+export const APP_VERSION = 'v202607271717';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-27 17:03';
-export const RELEASE_NOTES = '固定资产查询（本地资产表）隐藏「状态」列与「部门」列：COLUMNS 列定义移除 useStatus/状态 与 deptName/部门 两项，资产列表仅保留资产编号/名称/类别/地址/责任人/成本中心/原值/净值，列表更聚焦。';
+export const RELEASE_TIME = '2026-07-27 17:17';
+export const RELEASE_NOTES = '资产对比同步流程交互优化：①同步预览无变更（新增/更新/删除均为 0）时，底部主按钮文字由「确认同步」改为「无需同步」；②同步成功后 Stepper 第三步文字变为「同步完成」并标记 completed（MUI 默认绿色），同时页面显示同步完成摘要卡片与「重新差异对比」按钮，流程闭环更清晰。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,12 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607271717',
+    time: '2026-07-27 17:17',
+    notes: '资产对比同步流程交互优化：①同步预览无变更（新增/更新/删除均为 0）时，底部主按钮文字由「确认同步」改为「无需同步」；②同步成功后 Stepper 第三步文字变为「同步完成」并标记 completed（MUI 默认绿色），同时页面显示同步完成摘要卡片与「重新差异对比」按钮，流程闭环更清晰。',
+  },
+
   {
     version: 'v202607271703',
     time: '2026-07-27 17:03',

@@ -148,6 +148,8 @@ export default function AssetSyncCompare({ refreshKey = 0 }: { refreshKey?: numb
   /* ---------- 三步骤流程（Stepper）---------- */
   // 0 = 差异对比，1 = 同步预览，2 = 确认同步（弹窗）
   const [activeStep, setActiveStep] = useState(0);
+  // 同步成功后标记第三步为 completed，文字变为“同步完成”
+  const [syncCompleted, setSyncCompleted] = useState(false);
 
   /* ---------- 确认同步 ---------- */
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -161,10 +163,10 @@ export default function AssetSyncCompare({ refreshKey = 0 }: { refreshKey?: numb
       const res = await syncAssets();
       setSyncResult(res);
       setConfirmOpen(false);
-      // 同步成功后：清空预览/对比、回到第一步并自动重新差异对比
-      setPreview(null);
-      setCompare(null);
-      setActiveStep(0);
+      // 同步成功后：标记第三步完成，文字变为“同步完成”并变色；保持在第三步视图
+      setSyncCompleted(true);
+      setActiveStep(2);
+      // 后台重新差异对比，刷新数据
       handleCompare();
     } catch (err) {
       setSyncResult({
@@ -182,6 +184,7 @@ export default function AssetSyncCompare({ refreshKey = 0 }: { refreshKey?: numb
 
   /** 进入下一步：同步预览 */
   const goToPreview = () => {
+    setSyncCompleted(false);
     setActiveStep(1);
     handlePreview();
   };
@@ -228,7 +231,9 @@ export default function AssetSyncCompare({ refreshKey = 0 }: { refreshKey?: numb
       <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 1 }}>
         <Step><StepLabel>差异对比</StepLabel></Step>
         <Step><StepLabel>同步预览</StepLabel></Step>
-        <Step><StepLabel>确认同步</StepLabel></Step>
+        <Step completed={syncCompleted}>
+          <StepLabel>{syncCompleted ? '同步完成' : '确认同步'}</StepLabel>
+        </Step>
       </Stepper>
 
       {/* ===== 步骤一：差异对比 ===== */}
@@ -459,7 +464,7 @@ export default function AssetSyncCompare({ refreshKey = 0 }: { refreshKey?: numb
                     '&:disabled': { backgroundColor: '#e0e0e0', color: '#9e9e9e' },
                   }}
                 >
-                  确认同步
+                  {totalChanges === 0 ? '无需同步' : '确认同步'}
                 </Button>
               </CardContent>
             </Card>
@@ -468,8 +473,48 @@ export default function AssetSyncCompare({ refreshKey = 0 }: { refreshKey?: numb
         </Stack>
       )}
 
-      {/* 同步结果 */}
-      {syncResult && (
+      {/* ===== 步骤三：确认同步 / 同步完成 ===== */}
+      {activeStep === 2 && (
+        <Stack spacing={1.5}>
+          {!syncCompleted ? (
+            <Alert severity="info" sx={{ fontSize: '0.85rem' }}>
+              请在弹窗中确认是否执行同步
+            </Alert>
+          ) : (
+            <>
+              <Alert
+                severity="success"
+                icon={<CheckCircleIcon />}
+                sx={{ fontSize: '0.9rem' }}
+              >
+                <Box>
+                  <div style={{ fontWeight: 600 }}>同步完成</div>
+                  <div style={{ marginTop: 4 }}>
+                    新增 {syncResult?.inserted ?? 0} · 更新 {syncResult?.updated ?? 0} · 删除 {syncResult?.deleted ?? 0}
+                  </div>
+                </Box>
+              </Alert>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<CompareArrowsIcon />}
+                onClick={() => {
+                  setSyncCompleted(false);
+                  setActiveStep(0);
+                  setPreview(null);
+                  handleCompare();
+                }}
+                sx={{ borderRadius: '10px', textTransform: 'none', alignSelf: 'flex-start' }}
+              >
+                重新差异对比
+              </Button>
+            </>
+          )}
+        </Stack>
+      )}
+
+      {/* 同步结果（非步骤三视图时显示） */}
+      {syncResult && activeStep !== 2 && (
         <Alert
           severity={syncResult.success ? 'success' : 'error'}
           icon={syncResult.success ? <CheckCircleIcon /> : <ErrorIcon />}
