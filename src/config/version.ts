@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607271516';
+export const APP_VERSION = 'v202607271617';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-27 15:16';
-export const RELEASE_NOTES = '资产对比同步页统一为「SAP 在左、本地表在右」：①顶部信息区改为「SAP视图 X 条 · 本地表 Y 条」；②差异对比 Tab 顺序改为「仅SAP视图 | 仅本地表 | 字段不一致」并同步明细数据映射；③同步预览无变更文案改为「SAP 视图与本地表已一致」。去重提示文案与规则保持原样。';
+export const RELEASE_TIME = '2026-07-27 16:17';
+export const RELEASE_NOTES = '盘点任务管理页交互与同步预览布局优化：①Tab 切换自动刷新对应模块（切「盘点任务管理」刷新任务列表与同步状态、切「资产对比同步」自动重跑差异对比），移除独立刷新图标按钮；②任务卡片删除图标改为红色文字「删除」按钮，completed 状态禁用，与状态 Chip 视觉区分；③同步预览卡片高度自适应并撑满可用空间（min-height 78vh + flex 布局，确认同步按钮顶到底部），消除卡片下方留白、适配移动端。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,12 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607271617',
+    time: '2026-07-27 16:17',
+    notes: '盘点任务管理页交互与同步预览布局优化：①Tab 切换自动刷新对应模块（切「盘点任务管理」刷新任务列表与同步状态、切「资产对比同步」自动重跑差异对比），移除独立刷新图标按钮；②任务卡片删除图标改为红色文字「删除」按钮，completed 状态禁用，与状态 Chip 视觉区分；③同步预览卡片高度自适应并撑满可用空间（min-height 78vh + flex 布局，确认同步按钮顶到底部），消除卡片下方留白、适配移动端。',
+  },
+
   {
     version: 'v202607271516',
     time: '2026-07-27 15:16',

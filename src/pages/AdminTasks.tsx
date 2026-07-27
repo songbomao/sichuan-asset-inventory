@@ -24,10 +24,8 @@ import Autocomplete from '@mui/material/Autocomplete';
 import CircularProgress from '@mui/material/CircularProgress';
 import Divider from '@mui/material/Divider';
 import AddIcon from '@mui/icons-material/Add';
-import RefreshIcon from '@mui/icons-material/Refresh';
 import SendIcon from '@mui/icons-material/Send';
 import CloseIcon from '@mui/icons-material/Close';
-import DeleteIcon from '@mui/icons-material/Delete';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import HistoryIcon from '@mui/icons-material/History';
@@ -122,6 +120,8 @@ export default function AdminTasks() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<'tasks' | 'sync' | 'asset'>('tasks');
+  /** 切换 Tab 时自增，用于驱动子模块（如「资产对比同步」）自动刷新 */
+  const [refreshNonce, setRefreshNonce] = useState(0);
 
   // 数据同步状态（下达任务前置校验）
   const [syncStatus, setSyncStatus] = useState<SyncStatusResult | null>(null);
@@ -522,7 +522,15 @@ export default function AdminTasks() {
       {/* 版块切换 */}
       <Tabs
         value={tab}
-        onChange={(_e, v) => setTab(v)}
+        onChange={(_e, v) => {
+          setTab(v);
+          setRefreshNonce((n) => n + 1);
+          // 选中 Tab 时自动刷新对应模块数据（不弹窗）
+          if (v === 'tasks') {
+            void fetchTasks();
+            void fetchSyncStatus();
+          }
+        }}
         variant="fullWidth"
         sx={{ mb: 1, minHeight: 40, '& .MuiTab-root': { minHeight: 40, textTransform: 'none', fontSize: '0.9rem' } }}
       >
@@ -539,17 +547,6 @@ export default function AdminTasks() {
           创建和下发盘点任务
         </div>
         <div className="flex gap-1 shrink-0 items-center">
-          <IconButton
-            onClick={() => {
-              void fetchSyncStatus();
-              void fetchTasks();
-            }}
-            color="primary"
-            size="small"
-            title="刷新数据"
-          >
-            <RefreshIcon />
-          </IconButton>
           <Button
             variant="contained"
             size="small"
@@ -634,22 +631,23 @@ export default function AdminTasks() {
                     <Typography variant="subtitle1" component="h3" className="font-semibold text-gray-900" sx={{ flex: 1, minWidth: 0 }}>
                       {task.taskName}
                     </Typography>
-                    <div className="flex items-center gap-1.5 shrink-0">
+                    <div className="flex items-center gap-3 shrink-0">
                       <Chip label={st.label} color={st.color} size="small" />
                       <Tooltip title={task.status === 'completed' ? '已完成任务不可删除' : '删除任务'}>
                         <span>
-                          <IconButton
+                          <Button
                             size="small"
+                            variant="contained"
                             color="error"
+                            disabled={task.status === 'completed'}
                             onClick={(e) => {
                               e.stopPropagation();
                               setDeleteTarget(task);
                             }}
-                            disabled={task.status === 'completed'}
-                            sx={{ bgcolor: 'rgba(255,255,255,0.85)' }}
+                            sx={{ borderRadius: '8px', textTransform: 'none', px: 1.5 }}
                           >
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
+                            删除
+                          </Button>
                         </span>
                       </Tooltip>
                     </div>
@@ -1208,7 +1206,7 @@ export default function AdminTasks() {
       </>
       )}
 
-      {tab === 'sync' && <AssetSyncCompare />}
+      {tab === 'sync' && <AssetSyncCompare refreshKey={refreshNonce} />}
       {tab === 'asset' && <AssetLocalTable />}
     </div>
   );

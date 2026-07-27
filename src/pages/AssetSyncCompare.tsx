@@ -92,7 +92,7 @@ const DIFF_TABS = [
  * - 同步流程（差异对比 → 同步预览 → 确认同步）保持不变
  * （本地资产查询已拆分为独立组件 AssetLocalTable）
  */
-export default function AssetSyncCompare() {
+export default function AssetSyncCompare({ refreshKey = 0 }: { refreshKey?: number }) {
   /* ---------- 差异对比 ---------- */
   const [compare, setCompare] = useState<CompareAssetsResult | null>(null);
   const [compareLoading, setCompareLoading] = useState(false);
@@ -120,6 +120,12 @@ export default function AssetSyncCompare() {
       setCompareLoading(false);
     }
   };
+
+  // 进入页面 / 父组件切换 Tab 时（refreshKey 变化）自动刷新差异对比，无需手动点击
+  useEffect(() => {
+    handleCompare();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshKey]);
 
   /* ---------- 同步预览 ---------- */
   const [preview, setPreview] = useState<PreviewSyncResult | null>(null);
@@ -376,8 +382,8 @@ export default function AssetSyncCompare() {
             const totalChanges =
               preview.summary.insertCount + preview.summary.updateCount + preview.summary.deleteCount;
             return (
-            <Card className="glow-border">
-              <CardContent>
+            <Card className="glow-border" sx={{ minHeight: '78vh', display: 'flex', flexDirection: 'column' }}>
+              <CardContent sx={{ p: 2, '&:last-child': { pb: 2 }, flex: 1, display: 'flex', flexDirection: 'column' }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
                   同步预览（SAP视图 → 本地表）
                 </Typography>
@@ -399,11 +405,19 @@ export default function AssetSyncCompare() {
                 )}
 
                 {totalChanges === 0 ? (
-                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.82rem', mb: 1 }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.82rem', mb: 1, flex: 1 }}>
                     无变更：SAP 视图与本地表已一致
                   </Typography>
                 ) : (
-                  <Box sx={{ maxHeight: 220, overflow: 'auto' }}>
+                  <Box
+                    sx={{
+                      flex: 1,
+                      minHeight: 0,
+                      maxHeight: { xs: '45vh', sm: '380px' },
+                      overflow: 'auto',
+                      borderRadius: 1,
+                    }}
+                  >
                     <Table size="small">
                       <TableHead>
                         <TableRow>
@@ -439,7 +453,7 @@ export default function AssetSyncCompare() {
                   sx={{
                     borderRadius: '10px',
                     textTransform: 'none',
-                    mt: 1,
+                    mt: 'auto',
                     backgroundColor: '#6a1b9a',
                     color: '#fff',
                     fontWeight: 600,
