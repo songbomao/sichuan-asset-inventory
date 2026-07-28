@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607280928';
+export const APP_VERSION = 'v202607281053';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-28 09:28';
-export const RELEASE_NOTES = '差异提醒 Alert 两行分层：第一行为「SAP视图 X 条 · 本地表 Y 条」（粗体主色），第二行为「仅SAP视图 a · 仅本地表 b · 字段不一致 c」（弱化灰蓝 #5f6b7a，与首行明显区分），主次清晰；有差异时 Alert 仍切 warning，无差异 success。替换原先单行拼接 + 状态词的写法。';
+export const RELEASE_TIME = '2026-07-28 10:53';
+export const RELEASE_NOTES = '修复按盘点类别资产预览弹窗「全选」仅选中当前页 50 项的问题：新增 handleSelectAllAssets，当当前列表未覆盖筛选总数时，自动以较大 pageSize 拉取全部资产后再统一选中，确保「全选」一次性选中当前筛选条件下全部资产（如 84/84）。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -17,9 +17,9 @@ export const VERSION_HISTORY: Array<{
   notes: string;
 }> = [
   {
-    version: 'v202607280928',
-    time: '2026-07-28 09:28',
-    notes: '差异提醒 Alert 两行分层：第一行为「SAP视图 X 条 · 本地表 Y 条」（粗体主色），第二行为「仅SAP视图 a · 仅本地表 b · 字段不一致 c」（弱化灰蓝 #5f6b7a，与首行明显区分），主次清晰；有差异时 Alert 仍切 warning，无差异 success。替换原先单行拼接 + 状态词的写法。',
+    version: 'v202607281053',
+    time: '2026-07-28 10:53',
+    notes: '修复按盘点类别资产预览弹窗「全选」仅选中当前页 50 项的问题：新增 handleSelectAllAssets，当当前列表未覆盖筛选总数时，自动以较大 pageSize 拉取全部资产后再统一选中，确保「全选」一次性选中当前筛选条件下全部资产（如 84/84）。',
   },
 
   {

@@ -186,6 +186,7 @@ export default function AdminTasks() {
   const [assetSelected, setAssetSelected] = useState<Set<string>>(new Set());
   const [assetPage, setAssetPage] = useState(1);
   const ASSET_PAGE_SIZE = 50;
+  const [assetSelectingAll, setAssetSelectingAll] = useState(false);
 
   /** 拉取资产预览列表（按类别 + 关键字过滤，重置到第一页） */
   const fetchAssetPreview = useCallback(
@@ -220,6 +221,28 @@ export default function AdminTasks() {
     setAssetPreviewOpen(true);
     void fetchAssetPreview('', 1);
   };
+
+  /** 全选资产：若当前列表未覆盖全部，则拉取全部页数据后再选中 */
+  const handleSelectAllAssets = useCallback(async () => {
+    if (assetList.length >= assetTotal) {
+      setAssetSelected(new Set(assetList.map((i) => i.assetCode)));
+      return;
+    }
+    setAssetSelectingAll(true);
+    try {
+      const res = await previewAssetsByCategories({
+        categoryNames: form.categories,
+        keyword: assetKeyword,
+        page: 1,
+        pageSize: Math.max(assetTotal, 1000),
+      });
+      setAssetSelected(new Set((res.list ?? []).map((i) => i.assetCode)));
+    } catch (err) {
+      console.error('全选加载资产失败', err);
+    } finally {
+      setAssetSelectingAll(false);
+    }
+  }, [assetList, assetTotal, form.categories, assetKeyword]);
 
   /* 人员预览状态已并入 personPickerOpen 合并选人弹窗 */
   const [personKeyword, setPersonKeyword] = useState('');
@@ -1189,9 +1212,11 @@ export default function AdminTasks() {
             <Box sx={{ display: 'flex', gap: 1 }}>
               <Button
                 size="small"
-                onClick={() => setAssetSelected(new Set(assetList.map((i) => i.assetCode)))}
+                onClick={() => void handleSelectAllAssets()}
+                disabled={assetSelectingAll || assetLoading || assetList.length === 0}
                 sx={{ textTransform: 'none' }}
               >
+                {assetSelectingAll ? <CircularProgress size={16} sx={{ mr: 0.5 }} /> : null}
                 全选
               </Button>
               <Button
