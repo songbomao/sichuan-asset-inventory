@@ -58,12 +58,14 @@ interface CreateTaskResponse {
 
 /**
  * 创建盘点任务（仅管理员，创建后即时按责任人推送钉钉）
- * POST /api/Account/UniGetToken/CreateTask
+ * GET /api/Account/UniGetToken（走 query string 绕过钉钉 WebView POST 掐断）
  */
 export async function createTask(params: CreateTaskParams): Promise<{ Id: number; TaskName: string; Status: string; assetCount: number; dispatchedUsers: number; failedUserNames: string[]; notifyJobId?: string }> {
-  const { data } = await client.post<CreateTaskResponse>('/api/Account/UniGetToken', {
-    action: 'CreateTask',
-    ...params,
+  const { data } = await client.get<CreateTaskResponse>('/api/Account/UniGetToken', {
+    params: {
+      action: 'CreateTask',
+      ...params,
+    },
   });
   if (data.code === 0 || data.code === 200) {
     return data.data;

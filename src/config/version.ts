@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607281535';
+export const APP_VERSION = 'v202607281648';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-28 15:35';
-export const RELEASE_NOTES = '新建任务责任人异常拦截弹窗：适配后端 responsible_person_anomaly 校验结果，在创建任务被阻断时展示 null/空/不在组织架构三类异常资产明细与处理建议，满足「任一不通过需明确提醒」要求。';
+export const RELEASE_TIME = '2026-07-28 16:48';
+export const RELEASE_NOTES = '修复按盘点类别创建任务30s超时：CreateTask API 由 POST 改为 GET + query string，绕过钉钉 WebView 对 POST body 的网络掐断（gateway.log 证据：ValidateCategoryResponsibles GET 正常进网关，CreateTask POST 从未到达后端）。与 GetTaskList/ValidateCategoryResponsibles 走同一 WAF 放行路径。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -17,9 +17,9 @@ export const VERSION_HISTORY: Array<{
   notes: string;
 }> = [
   {
-    version: 'v202607281535',
-    time: '2026-07-28 15:35',
-    notes: '新建任务责任人异常拦截弹窗：适配后端 responsible_person_anomaly 校验结果，在创建任务被阻断时展示 null/空/不在组织架构三类异常资产明细与处理建议，满足「任一不通过需明确提醒」要求。',
+    version: 'v202607281648',
+    time: '2026-07-28 16:48',
+    notes: '修复按盘点类别创建任务30s超时：CreateTask API 由 POST 改为 GET + query string，绕过钉钉 WebView 对 POST body 的网络掐断（gateway.log 证据：ValidateCategoryResponsibles GET 正常进网关，CreateTask POST 从未到达后端）。与 GetTaskList/ValidateCategoryResponsibles 走同一 WAF 放行路径。',
   },
 
   {
