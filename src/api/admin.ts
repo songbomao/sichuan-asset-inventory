@@ -32,9 +32,10 @@ export interface CreateTaskParams {
  * 创建任务失败时的结构化校验明细（code !== 0 时由后端在 data.data 返回）
  *  - empty_user：存在资产责任人为空，无法匹配责任人
  *  - match_failed：责任人匹配失败（钉钉搜不到/疑似离职 或 重名无法唯一确定）
+ *  - responsible_person_anomaly：责任人异常（null/空/不在钉钉组织架构）
  */
 export interface CreateTaskErrorDetail {
-  reason: 'empty_user' | 'match_failed';
+  reason: 'empty_user' | 'match_failed' | 'responsible_person_anomaly';
   /** reason === 'empty_user' 时返回的问题资产列表 */
   assets?: { assetCode: string; assetName: string; deptName?: string }[];
   /** reason === 'match_failed' 时返回的匹配失败责任人列表 */
@@ -43,6 +44,8 @@ export interface CreateTaskErrorDetail {
     type: 'not_found' | 'ambiguous';
     assets: { assetCode: string; assetName: string }[];
   }[];
+  /** reason === 'responsible_person_anomaly' 时返回的异常资产明细 */
+  anomalies?: { assetCode: string; assetName: string; currentValue: string; type: 'null' | 'empty' | 'not_in_org'; suggestion: string }[];
 }
 
 /** 创建任务响应 */

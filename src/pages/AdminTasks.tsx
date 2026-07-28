@@ -164,7 +164,7 @@ export default function AdminTasks() {
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
   /** 后台异步推送进度提示（创建/下达/删除任务成功后，notifyJob 轮询完成后的静默一次性提示） */
   const [notifyMsg, setNotifyMsg] = useState<{ type: 'success' | 'warning' | 'error'; msg: string } | null>(null);
-  /** 创建任务后端校验拦截（empty_user / match_failed）的结构化明细弹窗 */
+  /** 创建任务后端校验拦截（empty_user / match_failed / responsible_person_anomaly）的结构化明细弹窗 */
   const [validationError, setValidationError] = useState<CreateTaskErrorDetail | null>(null);
   /** 校验②：by_category 确认创建前责任人完整性预校验拦截（缺失/无效责任人）的结构化明细弹窗 */
   const [categoryCheckError, setCategoryCheckError] = useState<CategoryResponsibleCheckResult | null>(null);
@@ -630,7 +630,7 @@ export default function AdminTasks() {
       }, 1500);
     } catch (err) {
       const detail = (err as Error & { detail?: CreateTaskErrorDetail })?.detail;
-      if (detail && (detail.reason === 'empty_user' || detail.reason === 'match_failed')) {
+      if (detail && (detail.reason === 'empty_user' || detail.reason === 'match_failed' || detail.reason === 'responsible_person_anomaly')) {
         setValidationError(detail);
       } else {
         setFeedback({ type: 'error', msg: err instanceof Error ? err.message : '创建失败' });
@@ -1301,7 +1301,7 @@ export default function AdminTasks() {
 
       {/* 人员预览已合并至「选择盘点责任人」弹窗（personPickerOpen） */}
 
-      {/* 创建任务后端校验拦截明细（empty_user / match_failed） */}
+      {/* 创建任务后端校验拦截明细（empty_user / match_failed / responsible_person_anomaly） */}
       <Dialog
         open={validationError !== null}
         onClose={() => setValidationError(null)}
@@ -1364,6 +1364,39 @@ export default function AdminTasks() {
               </Box>
               <Typography variant="caption" color="text.secondary">
                 共 {validationError.failed?.length ?? 0} 名责任人待处理
+              </Typography>
+            </Stack>
+          )}
+
+          {validationError?.reason === 'responsible_person_anomaly' && (
+            <Stack spacing={1.5}>
+              <Alert severity="error" sx={{ fontSize: '0.85rem' }}>
+                以下资产的责任人存在异常，请处理后再创建任务。
+              </Alert>
+              <Box sx={{ maxHeight: 320, overflowY: 'auto' }}>
+                <Stack spacing={1} divider={<Divider flexItem />}>
+                  {(validationError.anomalies ?? []).map((a, idx) => (
+                    <Box key={`${a.assetCode}-${idx}`} sx={{ py: 0.5 }}>
+                      <Typography variant="body2" sx={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                        {a.assetCode} {a.assetName}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{ fontSize: '0.8rem', color: 'error.main', mt: 0.25 }}
+                      >
+                        {a.type === 'null' && '责任人：null'}
+                        {a.type === 'empty' && '责任人：空'}
+                        {a.type === 'not_in_org' && `责任人：${a.currentValue}（不在组织架构）`}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
+                        {a.suggestion}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Stack>
+              </Box>
+              <Typography variant="caption" color="text.secondary">
+                共 {validationError.anomalies?.length ?? 0} 项资产待处理
               </Typography>
             </Stack>
           )}

@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607281436';
+export const APP_VERSION = 'v202607281535';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-28 14:36';
-export const RELEASE_NOTES = '移除工作台统一顶栏（AppHeader），将「退出应用」提取为独立按钮，以固定定位（右上角 z-50 浅色圆角容器 + 紫色图标）置于所有页面右上角，不被内容或底部导航遮挡；全局看板页自身顶栏移除重复退出按钮、仅保留返回工作台，避免双层与重复。';
+export const RELEASE_TIME = '2026-07-28 15:35';
+export const RELEASE_NOTES = '新建任务责任人异常拦截弹窗：适配后端 responsible_person_anomaly 校验结果，在创建任务被阻断时展示 null/空/不在组织架构三类异常资产明细与处理建议，满足「任一不通过需明确提醒」要求。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,12 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607281535',
+    time: '2026-07-28 15:35',
+    notes: '新建任务责任人异常拦截弹窗：适配后端 responsible_person_anomaly 校验结果，在创建任务被阻断时展示 null/空/不在组织架构三类异常资产明细与处理建议，满足「任一不通过需明确提醒」要求。',
+  },
+
   {
     version: 'v202607281436',
     time: '2026-07-28 14:36',
