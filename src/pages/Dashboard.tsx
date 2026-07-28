@@ -14,7 +14,7 @@ import LinearProgress from '@mui/material/LinearProgress';
 import { getDashboard, type DashboardData } from '../api/dashboard';
 import { getTaskDetail } from '../api/tasks';
 import { useAuth } from '../contexts/AuthContext';
-import { HeaderActions } from '../components/ExitControls';
+import { ReturnHomeButton } from '../components/ExitControls';
 
 /**
  * 进度监控看板
@@ -86,12 +86,12 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <header className="sticky top-0 z-10 bg-gradient-to-r from-primary to-[#4a148c] text-white px-4 py-3 flex items-center gap-3 shadow-lg">
+        <header className="sticky top-0 z-10 bg-gradient-to-r from-primary to-[#4a148c] text-white px-4 py-3 pr-14 flex items-center gap-3 shadow-lg">
           <IconButton color="inherit" size="small" onClick={goBack}>
             <ArrowBackIosNewIcon fontSize="small" />
           </IconButton>
           <h2 className="text-sm font-semibold">{isGlobal ? '全局进度' : '进度看板'}</h2>
-          <HeaderActions isAdmin={isAdmin} showHome={false} />
+          <ReturnHomeButton isAdmin={isAdmin} />
         </header>
         <div className="p-4 space-y-4">
           {[1, 2, 3].map((i) => <Card key={i}><CardContent><Skeleton variant="text" /></CardContent></Card>)}
@@ -116,7 +116,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <header className="sticky top-0 z-10 bg-gradient-to-r from-primary to-[#4a148c] text-white px-4 py-3 flex items-center gap-3 shadow-lg">
+      <header className="sticky top-0 z-10 bg-gradient-to-r from-primary to-[#4a148c] text-white px-4 py-3 pr-14 flex items-center gap-3 shadow-lg">
         <IconButton color="inherit" size="small" onClick={goBack}>
           <ArrowBackIosNewIcon fontSize="small" />
         </IconButton>
@@ -125,7 +125,7 @@ export default function DashboardPage() {
             {isGlobal ? '全局进度' : `进度看板 · ${taskName}`}
           </h2>
         </div>
-        <HeaderActions isAdmin={isAdmin} showHome={!isGlobal} />
+        <ReturnHomeButton isAdmin={isAdmin} />
         <IconButton color="inherit" size="small" onClick={fetchData}>
           <RefreshIcon fontSize="small" />
         </IconButton>

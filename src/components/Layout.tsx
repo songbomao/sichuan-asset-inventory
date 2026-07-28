@@ -9,7 +9,7 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import Paper from '@mui/material/Paper';
 import { useAuth } from '../contexts/AuthContext';
-import AppHeader from './AppHeader';
+import { ExitAppButton } from './ExitControls';
 
 /** 责任人（业主）底部导航 */
 const ownerTabs = [
@@ -49,19 +49,24 @@ export default function Layout() {
     tabs.find((t) => location.pathname.startsWith(t.path))?.path ??
     (isAdmin ? '/admin/tasks' : '/tasks');
 
-  // 全局进度看板（/admin/dashboard）自身已渲染顶栏，避免双层顶栏
-  const showTopBar = location.pathname !== '/admin/dashboard';
-  const currentLabel =
-    tabs.find((t) => t.path === currentTab)?.label ??
-    (isAdmin ? '管理' : '我的盘点');
-
-  // 我的盘点页：顶部标题与底部导航「我的盘点」入口重复，故顶部改为「盘点任务」，底部保持不动
-  const headerTitle = currentTab === '/tasks' ? '盘点任务' : currentLabel;
-
   return (
     <div className="flex flex-col h-full">
-      {/* 统一工作台顶栏：显示当前页签标题 + 退出应用入口（全局看板页自身带顶栏，跳过） */}
-      {showTopBar && <AppHeader title={headerTitle} />}
+      {/* 退出应用：固定定位右上角，所有页面可见，不被内容或底部导航遮挡 */}
+      <div
+        style={{
+          position: 'fixed',
+          top: 8,
+          right: 8,
+          zIndex: 50,
+        }}
+      >
+        <div
+          className="rounded-full shadow-md bg-white/90"
+          style={{ color: '#7b1fa2', padding: 2 }}
+        >
+          <ExitAppButton />
+        </div>
+      </div>
 
       {/* 主内容区 */}
       <main className="flex-1 overflow-y-auto pb-2">

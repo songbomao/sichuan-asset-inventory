@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607281420';
+export const APP_VERSION = 'v202607281436';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-28 14:20';
-export const RELEASE_NOTES = '资产对比同步页差异对比新增「责任人异常」Tab：展示责任人为空/为null/不在组织架构的异常明细（含类型 Chip、资产编号、名称、当前责任人值、建议处理方式），支持分类内搜索与加载更多，并纳入差异摘要计数。后端 CompareAssetsResult 新增 responsiblePersonAnomalies 与 summary.responsiblePersonAnomalyCount。';
+export const RELEASE_TIME = '2026-07-28 14:36';
+export const RELEASE_NOTES = '移除工作台统一顶栏（AppHeader），将「退出应用」提取为独立按钮，以固定定位（右上角 z-50 浅色圆角容器 + 紫色图标）置于所有页面右上角，不被内容或底部导航遮挡；全局看板页自身顶栏移除重复退出按钮、仅保留返回工作台，避免双层与重复。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,12 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607281436',
+    time: '2026-07-28 14:36',
+    notes: '移除工作台统一顶栏（AppHeader），将「退出应用」提取为独立按钮，以固定定位（右上角 z-50 浅色圆角容器 + 紫色图标）置于所有页面右上角，不被内容或底部导航遮挡；全局看板页自身顶栏移除重复退出按钮、仅保留返回工作台，避免双层与重复。',
+  },
+
   {
     version: 'v202607281420',
     time: '2026-07-28 14:20',
