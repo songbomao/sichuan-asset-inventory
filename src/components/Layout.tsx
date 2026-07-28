@@ -55,10 +55,13 @@ export default function Layout() {
     tabs.find((t) => t.path === currentTab)?.label ??
     (isAdmin ? '管理' : '我的盘点');
 
+  // 我的盘点页：顶部标题与底部导航「我的盘点」入口重复，故顶部改为「盘点任务」，底部保持不动
+  const headerTitle = currentTab === '/tasks' ? '盘点任务' : currentLabel;
+
   return (
     <div className="flex flex-col h-full">
       {/* 统一工作台顶栏：显示当前页签标题 + 退出应用入口（全局看板页自身带顶栏，跳过） */}
-      {showTopBar && <AppHeader title={currentLabel} />}
+      {showTopBar && <AppHeader title={headerTitle} />}
 
       {/* 主内容区 */}
       <main className="flex-1 overflow-y-auto pb-2">
