@@ -604,7 +604,7 @@ export default function AdminTasks() {
       const scopeConfig = JSON.stringify({
         scopeType: form.method,
         scopeValues,
-        selectedAssetCodes: form.method === 'by_category' ? form.selectedAssetCodes : undefined,
+        selectedAssetCodes: (form.method === 'by_category' && form.selectedAssetCodes.length > 0 && form.selectedAssetCodes.length < assetTotal) ? form.selectedAssetCodes : undefined,
         selectedPersonNames: form.method === 'by_dept' ? form.selectedPersonNames : undefined,
       });
       const body: CreateTaskParams = {

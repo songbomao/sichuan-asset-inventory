@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607281648';
+export const APP_VERSION = 'v202607281703';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-28 16:48';
-export const RELEASE_NOTES = '修复按盘点类别创建任务30s超时：CreateTask API 由 POST 改为 GET + query string，绕过钉钉 WebView 对 POST body 的网络掐断（gateway.log 证据：ValidateCategoryResponsibles GET 正常进网关，CreateTask POST 从未到达后端）。与 GetTaskList/ValidateCategoryResponsibles 走同一 WAF 放行路径。';
+export const RELEASE_TIME = '2026-07-28 17:03';
+export const RELEASE_NOTES = '根因修复：按类别全选资产时ScopeConfig含84个编码导致URL超长被截断——改为全选时不留selectedAssetCodes（后端按类别名自动匹配），仅部分选时才传；与按责任人下达走同一GET+query短URL路径。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -17,9 +17,9 @@ export const VERSION_HISTORY: Array<{
   notes: string;
 }> = [
   {
-    version: 'v202607281648',
-    time: '2026-07-28 16:48',
-    notes: '修复按盘点类别创建任务30s超时：CreateTask API 由 POST 改为 GET + query string，绕过钉钉 WebView 对 POST body 的网络掐断（gateway.log 证据：ValidateCategoryResponsibles GET 正常进网关，CreateTask POST 从未到达后端）。与 GetTaskList/ValidateCategoryResponsibles 走同一 WAF 放行路径。',
+    version: 'v202607281703',
+    time: '2026-07-28 17:03',
+    notes: '根因修复：按类别全选资产时ScopeConfig含84个编码导致URL超长被截断——改为全选时不留selectedAssetCodes（后端按类别名自动匹配），仅部分选时才传；与按责任人下达走同一GET+query短URL路径。',
   },
 
   {
