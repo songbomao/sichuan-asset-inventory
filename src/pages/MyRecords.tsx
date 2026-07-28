@@ -1,5 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { HeaderActions } from '../components/ExitControls';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
@@ -39,6 +41,7 @@ const FILTERS = [
  */
 export default function MyRecords({ embedded = false }: { embedded?: boolean }) {
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
 
   const [records, setRecords] = useState<RecordItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -161,6 +164,7 @@ export default function MyRecords({ embedded = false }: { embedded?: boolean }) 
             {records.length > 0 ? `已显示 ${records.length} / 共 ${total} 条` : '按条件筛选你的盘点记录'}
           </p>
         </div>
+        <HeaderActions isAdmin={isAdmin} />
       </div>
       )}
 

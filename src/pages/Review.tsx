@@ -21,6 +21,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import { getAssignments, submitReview, type ReviewAssignment } from '../api/review';
 import { getTaskDetail, type AssetInfo } from '../api/tasks';
 import { useAuth } from '../contexts/AuthContext';
+import { HeaderActions } from '../components/ExitControls';
 import StatusBadge from '../components/StatusBadge';
 import CameraCapture from '../components/CameraCapture';
 
@@ -37,7 +38,7 @@ const STATUS_OPTIONS = [
 export default function ReviewPage() {
   const { taskId } = useParams<{ taskId: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
 
   const [assignments, setAssignments] = useState<ReviewAssignment[]>([]);
   const [assets, setAssets] = useState<AssetInfo[]>([]);
@@ -105,6 +106,7 @@ export default function ReviewPage() {
             <ArrowBackIosNewIcon fontSize="small" />
           </IconButton>
           <h2 className="text-sm font-semibold">复盘管理</h2>
+          <HeaderActions isAdmin={isAdmin} />
         </header>
         <div className="p-4 space-y-4">
           {[1, 2, 3].map((i) => (
@@ -143,6 +145,7 @@ export default function ReviewPage() {
             {conflictAssignments.length > 0 && ` · ${conflictAssignments.length} 冲突`}
           </p>
         </div>
+        <HeaderActions isAdmin={isAdmin} />
         <IconButton color="inherit" size="small" onClick={fetchData}>
           <RefreshIcon fontSize="small" />
         </IconButton>

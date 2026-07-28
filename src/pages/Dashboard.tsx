@@ -14,6 +14,7 @@ import LinearProgress from '@mui/material/LinearProgress';
 import { getDashboard, type DashboardData } from '../api/dashboard';
 import { getTaskDetail } from '../api/tasks';
 import { useAuth } from '../contexts/AuthContext';
+import { HeaderActions } from '../components/ExitControls';
 
 /**
  * 进度监控看板
@@ -23,7 +24,7 @@ import { useAuth } from '../contexts/AuthContext';
 export default function DashboardPage() {
   const { taskId } = useParams<{ taskId: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
 
   const isGlobal = !taskId;
 
@@ -90,6 +91,7 @@ export default function DashboardPage() {
             <ArrowBackIosNewIcon fontSize="small" />
           </IconButton>
           <h2 className="text-sm font-semibold">{isGlobal ? '全局进度' : '进度看板'}</h2>
+          <HeaderActions isAdmin={isAdmin} showHome={false} />
         </header>
         <div className="p-4 space-y-4">
           {[1, 2, 3].map((i) => <Card key={i}><CardContent><Skeleton variant="text" /></CardContent></Card>)}
@@ -123,6 +125,7 @@ export default function DashboardPage() {
             {isGlobal ? '全局进度' : `进度看板 · ${taskName}`}
           </h2>
         </div>
+        <HeaderActions isAdmin={isAdmin} showHome={!isGlobal} />
         <IconButton color="inherit" size="small" onClick={fetchData}>
           <RefreshIcon fontSize="small" />
         </IconButton>

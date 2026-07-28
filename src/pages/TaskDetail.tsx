@@ -15,6 +15,7 @@ import RateReviewIcon from '@mui/icons-material/RateReview';
 import DescriptionIcon from '@mui/icons-material/Description';
 import { getTaskDetail, getProgress } from '../api/tasks';
 import { useAuth } from '../contexts/AuthContext';
+import { HeaderActions } from '../components/ExitControls';
 import HorizontalTimeline, { type MilestoneNode } from '../components/HorizontalTimeline';
 
 /**
@@ -23,7 +24,7 @@ import HorizontalTimeline, { type MilestoneNode } from '../components/Horizontal
 export default function TaskDetailPage() {
   const { taskId } = useParams<{ taskId: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
 
   const [taskName, setTaskName] = useState('');
   const [detail, setDetail] = useState<{
@@ -79,6 +80,7 @@ export default function TaskDetailPage() {
             <ArrowBackIosNewIcon fontSize="small" />
           </IconButton>
           <h2 className="text-sm font-semibold">加载中...</h2>
+          <HeaderActions isAdmin={isAdmin} />
         </header>
         <div className="p-4 space-y-4">
           {[1, 2, 3].map((i) => <Card key={i}><CardContent><Skeleton variant="text" /></CardContent></Card>)}
@@ -145,6 +147,7 @@ export default function TaskDetailPage() {
           <h2 className="text-sm font-semibold truncate">{taskName}</h2>
           <p className="text-xs text-white/70">{assetCount} 件资产</p>
         </div>
+        <HeaderActions isAdmin={isAdmin} />
       </header>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">

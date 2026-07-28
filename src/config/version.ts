@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607281102';
+export const APP_VERSION = 'v202607281125';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-28 11:02';
-export const RELEASE_NOTES = '资产预览列表卡片新增 assetTypeName 展示：后端 PreviewAssetsByCategories 返回 assetTypeName，前端 PreviewAssetItem 类型扩展并在每个资产卡片下方显示「责任人 · 部门 · 类别 · 资产类型」四段信息。';
+export const RELEASE_TIME = '2026-07-28 11:25';
+export const RELEASE_NOTES = '新增退出/返回工作台导航：①工作台（底部导航首页）由 Layout 统一渲染顶栏，显示当前页签标题并提供「退出应用」入口；②所有深层页面（任务详情/盘点/复盘/报告/看板/资产全生命周期/我的记录/任务记录）顶栏右侧新增「返回工作台」(家图标，一键 replace 落地首页) 与「退出应用」(登出图标，带确认弹窗)；③退出应用在钉钉环境调用 dd.biz.navigation.close 真正关闭微应用返回钉钉工作台，非钉钉环境兜底提示。原有返回箭头逻辑保持不变。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,12 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607281125',
+    time: '2026-07-28 11:25',
+    notes: '新增退出/返回工作台导航：①工作台（底部导航首页）由 Layout 统一渲染顶栏，显示当前页签标题并提供「退出应用」入口；②所有深层页面（任务详情/盘点/复盘/报告/看板/资产全生命周期/我的记录/任务记录）顶栏右侧新增「返回工作台」(家图标，一键 replace 落地首页) 与「退出应用」(登出图标，带确认弹窗)；③退出应用在钉钉环境调用 dd.biz.navigation.close 真正关闭微应用返回钉钉工作台，非钉钉环境兜底提示。原有返回箭头逻辑保持不变。',
+  },
+
   {
     version: 'v202607281102',
     time: '2026-07-28 11:02',

@@ -17,6 +17,7 @@ import { getTaskDetail, getProgress, type AssetInfo } from '../api/tasks';
 import { submitRecord } from '../api/inventory';
 import { getCurrentLocation } from '../api/reverseGeocode';
 import { useAuth } from '../contexts/AuthContext';
+import { HeaderActions } from '../components/ExitControls';
 import CameraCapture from '../components/CameraCapture';
 import ProgressBar from '../components/ProgressBar';
 import type { RecognizeAssetResult } from '../api/ai';
@@ -36,7 +37,7 @@ const STATUS_OPTIONS = [
 export default function InventoryPage() {
   const { taskId } = useParams<{ taskId: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
 
   const [assets, setAssets] = useState<AssetInfo[]>([]);
   const [completedCodes, setCompletedCodes] = useState<string[]>([]);
@@ -329,6 +330,7 @@ export default function InventoryPage() {
             {currentAsset?.assetName} · {currentIndex + 1} / {assets.length}
           </p>
         </div>
+        <HeaderActions isAdmin={isAdmin} />
       </header>
 
       {/* 进度条：根据实际盘点完成比例动态更新 */}

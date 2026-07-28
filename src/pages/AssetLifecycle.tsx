@@ -1,5 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { HeaderActions } from '../components/ExitControls';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
@@ -21,6 +23,7 @@ import { DiagnoseDifference, type DiagnoseDifferenceResult } from '../api/ai';
  */
 export default function AssetLifecyclePage() {
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
 
   const [assetCode, setAssetCode] = useState('');
   const [data, setData] = useState<LifecycleData | null>(null);
@@ -78,6 +81,7 @@ export default function AssetLifecyclePage() {
           <ArrowBackIosNewIcon fontSize="small" />
         </IconButton>
         <h2 className="text-sm font-semibold">资产全生命周期</h2>
+        <HeaderActions isAdmin={isAdmin} />
       </header>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">

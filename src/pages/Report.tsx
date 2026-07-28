@@ -28,6 +28,7 @@ import { generateReport, getReportArchive, type ReportData, type ReportArchiveEn
 import { WriteReport } from '../api/ai';
 import { getTaskList, type TaskItem } from '../api/tasks';
 import { useAuth } from '../contexts/AuthContext';
+import { HeaderActions } from '../components/ExitControls';
 
 /**
  * 盘点报告页
@@ -148,6 +149,7 @@ export default function ReportPage() {
             <ArrowBackIosNewIcon fontSize="small" />
           </IconButton>
           <h2 className="text-sm font-semibold">盘点报告</h2>
+          <HeaderActions isAdmin={isAdmin} />
         </header>
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           <p className="text-sm text-gray-500">请选择要生成报告的盘点任务</p>
@@ -179,6 +181,7 @@ export default function ReportPage() {
             <ArrowBackIosNewIcon fontSize="small" />
           </IconButton>
           <h2 className="text-sm font-semibold">盘点报告</h2>
+          <HeaderActions isAdmin={isAdmin} />
         </header>
         <div className="p-4 space-y-4">
           {[1, 2, 3].map((i) => <Card key={i}><CardContent><Skeleton variant="text" width="60%" /><Skeleton variant="text" width="40%" /></CardContent></Card>)}
@@ -206,6 +209,7 @@ export default function ReportPage() {
         <div className="flex-1 min-w-0">
           <h2 className="text-sm font-semibold truncate">盘点报告</h2>
         </div>
+        <HeaderActions isAdmin={isAdmin} />
         <IconButton color="inherit" size="small" onClick={() => loadReport(taskId)}>
           <RefreshIcon fontSize="small" />
         </IconButton>

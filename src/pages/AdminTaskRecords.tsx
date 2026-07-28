@@ -1,5 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { HeaderActions } from '../components/ExitControls';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
@@ -47,6 +49,7 @@ const FILTERS = [
 export default function AdminTaskRecords() {
   const { taskId = '' } = useParams();
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
 
   const [summary, setSummary] = useState<TaskRecordSummary | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(true);
@@ -184,6 +187,7 @@ export default function AdminTaskRecords() {
             {summary?.taskName ? summary.taskName : `任务 ${taskId}`}
           </p>
         </div>
+        <HeaderActions isAdmin={isAdmin} />
       </div>
 
       <div className="p-4 space-y-4">
