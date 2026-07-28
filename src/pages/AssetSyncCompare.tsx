@@ -266,23 +266,27 @@ export default function AssetSyncCompare({ refreshKey = 0 }: { refreshKey?: numb
             <Alert severity="error" sx={{ fontSize: '0.85rem' }}>{compareError}</Alert>
           )}
 
-          {compare && (
-            <>
-              <Alert severity="info" sx={{ fontSize: '0.8rem' }}>
-                <Box>
-                  <div>SAP视图 {compare.summary.viewCount} 条 · 本地表 {compare.summary.localCount} 条</div>
-                  {(compare.summary.rawLocalCount !== undefined || compare.summary.rawViewCount !== undefined) && (
-                    <div style={{ marginTop: 4, color: '#ed6c02', fontSize: '0.75rem' }}>
-                      SAP视图原始 {compare.summary.rawViewCount ?? compare.summary.viewCount} 行，按 add_date 最新去重后保留 {compare.summary.deduplicatedViewCount ?? compare.summary.viewCount} 条，合并重复 {compare.summary.duplicateViewCodeCount ?? 0} 行
-                      {((compare.summary.emptyLocalCodeCount ?? 0) > 0 || (compare.summary.emptyViewCodeCount ?? 0) > 0) &&
-                        ` · 空编码：本地 ${compare.summary.emptyLocalCodeCount ?? 0} / SAP视图 ${compare.summary.emptyViewCodeCount ?? 0}`}
+          {compare && (() => {
+            const onlyInView = compare.summary.onlyInViewCount ?? 0;
+            const onlyInTable = compare.summary.onlyInTableCount ?? 0;
+            const different = compare.summary.differentCount ?? 0;
+            const diffCount = onlyInView + onlyInTable + different;
+            const hasDiff = diffCount > 0;
+            return (
+              <>
+                <Alert severity={hasDiff ? 'warning' : 'success'} sx={{ fontSize: '0.85rem' }}>
+                  <Box>
+                    <div style={{ fontWeight: 600 }}>{hasDiff ? `发现 ${diffCount} 处差异` : '数据一致'}</div>
+                    <div style={{ marginTop: 4, fontSize: '0.8rem' }}>
+                      SAP视图 {compare.summary.viewCount} 条 · 本地表 {compare.summary.localCount} 条
+                      {hasDiff && (
+                        <>
+                          {' · '}仅SAP视图 {onlyInView} · 仅本地表 {onlyInTable} · 字段不一致 {different}
+                        </>
+                      )}
                     </div>
-                  )}
-                  {compare.summary.dedupRule && (
-                    <div style={{ marginTop: 2, color: '#1976d2', fontSize: '0.72rem' }}>去重规则：{compare.summary.dedupRule}</div>
-                  )}
-                </Box>
-              </Alert>
+                  </Box>
+                </Alert>
 
               {/* 三个分类 Tab 切换（数据已一次加载，仅在前端做筛选） */}
               <Tabs
@@ -367,8 +371,9 @@ export default function AssetSyncCompare({ refreshKey = 0 }: { refreshKey?: numb
               >
                 {previewLoading ? '预览中...' : '下一步：同步预览'}
               </Button>
-            </>
-          )}
+              </>
+            );
+          })()}
         </Stack>
       )}
 
@@ -409,17 +414,6 @@ export default function AssetSyncCompare({ refreshKey = 0 }: { refreshKey?: numb
                   <Chip color="warning" size="small" label={`更新 ${preview.summary.updateCount}`} />
                   <Chip color="error" size="small" label={`删除 ${preview.summary.deleteCount}`} />
                 </Stack>
-
-                {(preview.summary.rawLocalCount !== undefined || preview.summary.rawViewCount !== undefined) && (
-                  <div style={{ color: '#ed6c02', fontSize: '0.75rem', marginBottom: 4 }}>
-                    SAP视图原始 {preview.summary.rawViewCount ?? (preview.summary.insertCount + preview.summary.updateCount + preview.summary.deleteCount)} 行，按 add_date 最新去重后保留 {preview.summary.deduplicatedViewCount ?? preview.summary.rawViewCount ?? (preview.summary.insertCount + preview.summary.updateCount + preview.summary.deleteCount)} 条，合并重复 {preview.summary.duplicateViewCodeCount ?? 0} 行
-                    {((preview.summary.emptyLocalCodeCount ?? 0) > 0 || (preview.summary.emptyViewCodeCount ?? 0) > 0) &&
-                      ` · 空编码：本地 ${preview.summary.emptyLocalCodeCount ?? 0} / SAP视图 ${preview.summary.emptyViewCodeCount ?? 0}`}
-                  </div>
-                )}
-                {preview.summary.dedupRule && (
-                  <div style={{ color: '#1976d2', fontSize: '0.72rem', marginBottom: 4 }}>去重规则：{preview.summary.dedupRule}</div>
-                )}
 
                 {totalChanges === 0 ? (
                   <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.82rem', mb: 1 }}>

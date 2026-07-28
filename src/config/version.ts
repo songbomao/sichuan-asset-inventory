@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607271825';
+export const APP_VERSION = 'v202607280919';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-27 18:25';
-export const RELEASE_NOTES = '新建盘点任务强制双校验，不通过禁止创建：①点击「新建任务」先比对 SAP 系统数据与本地数据，不一致则弹出拦截弹窗（含仅本地/仅SAP视图/字段不一致明细与样例）并禁止继续，提供「去资产对比同步」入口；②按盘点类别创建任务确认前，反向校验所选类别下全部资产的责任人完整性——user 为空(null)或已不在组织(疑似离职)/无法唯一匹配时，弹出明细清单列出具体资产与责任人，提示通过财辅更正后再创建。后端新增 ValidateCategoryResponsibles 接口（requiredLevel=1）。';
+export const RELEASE_TIME = '2026-07-28 09:19';
+export const RELEASE_NOTES = '精简资产对比同步页差异提醒：步骤一 Alert 去除原始行数、去重规则等冗余解释，仅保留「数据一致/发现 X 处差异」+ SAP视图/本地表数量 + 三类差异计数；有差异时 Alert 自动切为 warning，无差异为 success。同步预览卡片同步移除重复的去重说明文案。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,12 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607280919',
+    time: '2026-07-28 09:19',
+    notes: '精简资产对比同步页差异提醒：步骤一 Alert 去除原始行数、去重规则等冗余解释，仅保留「数据一致/发现 X 处差异」+ SAP视图/本地表数量 + 三类差异计数；有差异时 Alert 自动切为 warning，无差异为 success。同步预览卡片同步移除重复的去重说明文案。',
+  },
+
   {
     version: 'v202607271825',
     time: '2026-07-27 18:25',
