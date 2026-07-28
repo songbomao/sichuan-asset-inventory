@@ -75,6 +75,7 @@ export interface PreviewAssetItem {
   assetCode: string;
   assetName: string;
   categoryName: string;
+  assetTypeName: string;
   deptName: string;
   userName: string;
 }

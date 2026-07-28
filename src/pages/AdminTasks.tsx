@@ -1198,7 +1198,7 @@ export default function AdminTasks() {
                           <strong>{item.assetCode}</strong> {item.assetName}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          {item.userName || '无责任人'} · {item.deptName || '无部门'} · {item.categoryName}
+                          {item.userName || '无责任人'} · {item.deptName || '无部门'} · {item.categoryName || '无类别'} · {item.assetTypeName || '无资产类型'}
                         </Typography>
                       </Box>
                     </Box>

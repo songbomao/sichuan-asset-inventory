@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607281053';
+export const APP_VERSION = 'v202607281102';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-28 10:53';
-export const RELEASE_NOTES = '修复按盘点类别资产预览弹窗「全选」仅选中当前页 50 项的问题：新增 handleSelectAllAssets，当当前列表未覆盖筛选总数时，自动以较大 pageSize 拉取全部资产后再统一选中，确保「全选」一次性选中当前筛选条件下全部资产（如 84/84）。';
+export const RELEASE_TIME = '2026-07-28 11:02';
+export const RELEASE_NOTES = '资产预览列表卡片新增 assetTypeName 展示：后端 PreviewAssetsByCategories 返回 assetTypeName，前端 PreviewAssetItem 类型扩展并在每个资产卡片下方显示「责任人 · 部门 · 类别 · 资产类型」四段信息。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -17,9 +17,9 @@ export const VERSION_HISTORY: Array<{
   notes: string;
 }> = [
   {
-    version: 'v202607281053',
-    time: '2026-07-28 10:53',
-    notes: '修复按盘点类别资产预览弹窗「全选」仅选中当前页 50 项的问题：新增 handleSelectAllAssets，当当前列表未覆盖筛选总数时，自动以较大 pageSize 拉取全部资产后再统一选中，确保「全选」一次性选中当前筛选条件下全部资产（如 84/84）。',
+    version: 'v202607281102',
+    time: '2026-07-28 11:02',
+    notes: '资产预览列表卡片新增 assetTypeName 展示：后端 PreviewAssetsByCategories 返回 assetTypeName，前端 PreviewAssetItem 类型扩展并在每个资产卡片下方显示「责任人 · 部门 · 类别 · 资产类型」四段信息。',
   },
 
   {
