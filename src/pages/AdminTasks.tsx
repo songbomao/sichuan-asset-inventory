@@ -45,6 +45,7 @@ import {
   previewPersonnelByDepartments,
   compareAssets,
   validateCategoryResponsibles,
+  pollNotifyJob,
   type AdminTaskItem,
   type CreateTaskParams,
   type CreateTaskErrorDetail,
@@ -161,6 +162,8 @@ export default function AdminTasks() {
   const [form, setForm] = useState<DialogForm>({ ...defaultForm });
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  /** 后台异步推送进度提示（创建/下达/删除任务成功后，notifyJob 轮询完成后的静默一次性提示） */
+  const [notifyMsg, setNotifyMsg] = useState<{ type: 'success' | 'warning' | 'error'; msg: string } | null>(null);
   /** 创建任务后端校验拦截（empty_user / match_failed）的结构化明细弹窗 */
   const [validationError, setValidationError] = useState<CreateTaskErrorDetail | null>(null);
   /** 校验②：by_category 确认创建前责任人完整性预校验拦截（缺失/无效责任人）的结构化明细弹窗 */
@@ -518,6 +521,44 @@ export default function AdminTasks() {
     }
   };
 
+  /**
+   * 后台静默跟踪钉钉推送进度：拿到后端返回的 notifyJobId 后，不阻塞 UI、不弹 loading，
+   * 仅在轮询完成后用现有 Alert 机制提示一次最终结果（成功 X/Y 人 / 失败名单 / job 错误原因）。
+   * 三处 handler 在成功分支追加调用即可，不影响既有的表单校验/列表刷新/关闭弹窗等逻辑。
+   */
+  const trackNotify = useCallback((notifyJobId: string | undefined, label: string) => {
+    if (!notifyJobId) return;
+    pollNotifyJob(notifyJobId)
+      .then((res) => {
+        if (!res.success) {
+          setNotifyMsg({
+            type: 'error',
+            msg: `${label}：钉钉推送失败${res.error ? `（${res.error}）` : '，请稍后重试'}`,
+          });
+          return;
+        }
+        if (res.failedCount > 0) {
+          const names = res.failedUserNames.slice(0, 5).join('、');
+          const more = res.failedUserNames.length > 5 ? ` 等 ${res.failedUserNames.length} 人` : '';
+          setNotifyMsg({
+            type: 'warning',
+            msg: `钉钉通知已发送 ${res.sent}/${res.total} 人；${res.failedCount} 人推送失败：${names}${more}`,
+          });
+        } else {
+          setNotifyMsg({
+            type: 'success',
+            msg: `钉钉通知已发送 ${res.sent}/${res.total} 人`,
+          });
+        }
+      })
+      .catch((err) => {
+        setNotifyMsg({
+          type: 'error',
+          msg: `${label}：推送进度查询失败，${err instanceof Error ? err.message : '未知错误'}`,
+        });
+      });
+  }, []);
+
   /** 提交新建任务 */
   const handleCreate = async () => {
     if (!form.TaskName.trim()) {
@@ -579,6 +620,8 @@ export default function AdminTasks() {
       const r = await createTask(body);
       const failedText = r.failedUserNames?.length ? `；${r.failedUserNames.length} 人未匹配到钉钉（${r.failedUserNames.join('、')}）` : '';
       setFeedback({ type: 'success', msg: `任务创建成功，覆盖 ${r.assetCount} 项资产，已通知 ${r.dispatchedUsers} 人${failedText}` });
+      // 后端改为异步推送：拿到 notifyJobId 后后台轮询进度，完成后静默提示一次
+      if (r.notifyJobId) trackNotify(r.notifyJobId, '任务创建');
       setTimeout(() => {
         setDialogOpen(false);
         setForm({ ...defaultForm });
@@ -614,6 +657,8 @@ export default function AdminTasks() {
         type: 'success',
         msg: `已通知 ${r.dispatchedUsers} 人${failedText}`,
       });
+      // 后端改为异步推送：拿到 notifyJobId 后后台轮询进度，完成后静默提示一次
+      if (r.notifyJobId) trackNotify(r.notifyJobId, '下达任务');
       fetchTasks();
     } catch (err) {
       setDispatchMsg({ type: 'error', msg: err instanceof Error ? err.message : '下达任务失败' });
@@ -625,8 +670,10 @@ export default function AdminTasks() {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
-      await deleteTask(deleteTarget.id);
+      const delJob = await deleteTask(deleteTarget.id);
       setDispatchMsg({ type: 'success', msg: `任务「${deleteTarget.taskName}」已删除` });
+      // 后端改为异步推送：拿到 notifyJobId 后后台轮询取消通知进度，完成后静默提示一次
+      if (delJob.notifyJobId) trackNotify(delJob.notifyJobId, '删除任务');
       setDeleteTarget(null);
       fetchTasks();
     } catch (err) {
@@ -701,6 +748,17 @@ export default function AdminTasks() {
           sx={{ fontSize: '0.85rem' }}
         >
           {dispatchMsg.msg}
+        </Alert>
+      )}
+
+      {/* 后台异步推送进度提示（创建/下达/删除任务后，notify 轮询完成的一次性提示） */}
+      {notifyMsg && (
+        <Alert
+          severity={notifyMsg.type}
+          onClose={() => setNotifyMsg(null)}
+          sx={{ fontSize: '0.85rem' }}
+        >
+          {notifyMsg.msg}
         </Alert>
       )}
 

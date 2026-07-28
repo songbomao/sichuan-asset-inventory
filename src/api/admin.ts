@@ -48,7 +48,7 @@ export interface CreateTaskErrorDetail {
 /** 创建任务响应 */
 interface CreateTaskResponse {
   code: number;
-  data: { Id: number; TaskName: string; Status: string; assetCount: number; dispatchedUsers: number; failedUserNames: string[] };
+  data: { Id: number; TaskName: string; Status: string; assetCount: number; dispatchedUsers: number; failedUserNames: string[]; notifyJobId?: string };
   message: string;
   msg?: string;
 }
@@ -57,7 +57,7 @@ interface CreateTaskResponse {
  * 创建盘点任务（仅管理员，创建后即时按责任人推送钉钉）
  * POST /api/Account/UniGetToken/CreateTask
  */
-export async function createTask(params: CreateTaskParams): Promise<{ Id: number; TaskName: string; Status: string; assetCount: number; dispatchedUsers: number; failedUserNames: string[] }> {
+export async function createTask(params: CreateTaskParams): Promise<{ Id: number; TaskName: string; Status: string; assetCount: number; dispatchedUsers: number; failedUserNames: string[]; notifyJobId?: string }> {
   const { data } = await client.post<CreateTaskResponse>('/api/Account/UniGetToken', {
     action: 'CreateTask',
     ...params,
@@ -347,17 +347,20 @@ export interface DispatchResult {
   dispatchedUsers: number;
   /** 未匹配到钉钉的用户名列表 */
   failedUserNames: string[];
+  /** 异步推送任务 ID（可能为空：后端仍同步推送的旧版本） */
+  notifyJobId?: string;
 }
 
 /**
  * 下达盘点任务（钉钉推送通知）
  * POST /api/Account/UniGetToken/DispatchTask
+ * 后端已改为异步 Job：立即返回并附带 notifyJobId，推送进度由 GetNotifyResult 轮询。
+ * 因此不再需要长超时，使用默认超时即可。
  */
 export async function dispatchTask(taskId: number): Promise<DispatchResult> {
   const { data } = await client.post<{ code: number; data: DispatchResult; msg?: string; message?: string }>(
     '/api/Account/UniGetToken',
     { action: 'DispatchTask', taskId },
-    { timeout: 120000 },
   );
   if (data.code === 0 || data.code === 200) return data.data;
   throw new Error(data.msg || data.message || '下达任务失败');
@@ -366,16 +369,101 @@ export async function dispatchTask(taskId: number): Promise<DispatchResult> {
 /**
  * 删除盘点任务（仅删除指定 taskId 对应的任务及关联数据，不影响其他任务）
  * POST /api/Account/UniGetToken/DeleteTask
+ * 后端已改为异步 Job：立即返回并附带 notifyJobId，取消推送进度由 GetNotifyResult 轮询。
  */
-export async function deleteTask(taskId: number): Promise<void> {
-  const { data } = await client.post<{ code: number; msg?: string; message?: string }>(
+export async function deleteTask(taskId: number): Promise<{ notifyJobId?: string }> {
+  const { data } = await client.post<{ code: number; data: { notifyJobId?: string }; msg?: string; message?: string }>(
     '/api/Account/UniGetToken',
     { action: 'DeleteTask', taskId },
-    { timeout: 60000 },
   );
-  if (data.code !== 0 && data.code !== 200) {
-    throw new Error(data.msg || data.message || '删除任务失败');
+  if (data.code === 0 || data.code === 200) {
+    return data.data ?? {};
   }
+  throw new Error(data.msg || data.message || '删除任务失败');
+}
+
+/* ============================================================
+ * 任务通知异步化（GetNotifyResult 轮询 / StartNotifyTask 失败重推）
+ * 后端 CreateTask/DispatchTask/DeleteTask 不再同步等推送完成，
+ * 而是立即返回 notifyJobId，前端轮询 GetNotifyResult 获取推送进度。
+ * ============================================================ */
+
+/** 推送进度（GetNotifyResult 回传） */
+export interface NotifyResult {
+  /** 是否结束（成功或失败均置 true） */
+  done: boolean;
+  /** 是否成功（done 为 true 时有效） */
+  success: boolean;
+  /** 应推送总人数 */
+  total: number;
+  /** 已推送人数 */
+  sent: number;
+  /** 失败人数 */
+  failedCount: number;
+  /** 失败用户名列表 */
+  failedUserNames: string[];
+  /** 任务级错误信息（success=false 时有效） */
+  error: string | null;
+}
+
+/**
+ * 查询异步推送任务进度
+ * POST /api/Account/UniGetToken/GetNotifyResult
+ */
+export async function getNotifyResult(jobId: string): Promise<NotifyResult> {
+  const { data } = await client.post<{ code: number; data: NotifyResult; msg?: string; message?: string }>(
+    '/api/Account/UniGetToken',
+    { action: 'GetNotifyResult', jobId },
+    { timeout: 30000 },
+  );
+  if (data.code === 0 || data.code === 200) return data.data;
+  throw new Error(data.msg || data.message || '查询推送进度失败');
+}
+
+/**
+ * 失败重推（备用，本次仅封装 API）
+ * POST /api/Account/UniGetToken/StartNotifyTask
+ */
+export async function startNotifyTask(params: {
+  taskId: number;
+  notifyType: 'dispatch' | 'cancel';
+}): Promise<string> {
+  const { data } = await client.post<{ code: number; data: { jobId: string }; msg?: string; message?: string }>(
+    '/api/Account/UniGetToken',
+    { action: 'StartNotifyTask', taskId: params.taskId, notifyType: params.notifyType },
+    { timeout: 30000 },
+  );
+  if (data.code === 0 || data.code === 200) return data.data.jobId;
+  throw new Error(data.msg || data.message || '启动重推失败');
+}
+
+/** 推送进度回调（每次轮询回传） */
+export interface NotifyProgress {
+  sent: number;
+  total: number;
+  failedCount: number;
+}
+
+/**
+ * 轮询已有 jobId 的推送进度（与 pollAssetJob 不同：jobId 已存在，无需先 Start）。
+ * 每 1s 查询一次 GetNotifyResult，直到 done 或超时。
+ * @param jobId        后端返回的推送任务 ID
+ * @param onProgress   每次轮询的进度回调（sent/total/failedCount）
+ * @param timeoutMs    最长等待时长，默认 180000
+ */
+export async function pollNotifyJob(
+  jobId: string,
+  onProgress?: (p: NotifyProgress) => void,
+  timeoutMs = 180000,
+): Promise<NotifyResult> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const res = await getNotifyResult(jobId);
+    onProgress?.({ sent: res.sent, total: res.total, failedCount: res.failedCount });
+    if (res.done) return res;
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+  throw new Error('钉钉推送处理超时，请稍后重试');
 }
 
 /** 任务资产摘要（卡片展示用） */
