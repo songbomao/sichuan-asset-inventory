@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607280919';
+export const APP_VERSION = 'v202607280928';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-28 09:19';
-export const RELEASE_NOTES = '精简资产对比同步页差异提醒：步骤一 Alert 去除原始行数、去重规则等冗余解释，仅保留「数据一致/发现 X 处差异」+ SAP视图/本地表数量 + 三类差异计数；有差异时 Alert 自动切为 warning，无差异为 success。同步预览卡片同步移除重复的去重说明文案。';
+export const RELEASE_TIME = '2026-07-28 09:28';
+export const RELEASE_NOTES = '差异提醒 Alert 两行分层：第一行为「SAP视图 X 条 · 本地表 Y 条」（粗体主色），第二行为「仅SAP视图 a · 仅本地表 b · 字段不一致 c」（弱化灰蓝 #5f6b7a，与首行明显区分），主次清晰；有差异时 Alert 仍切 warning，无差异 success。替换原先单行拼接 + 状态词的写法。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,12 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607280928',
+    time: '2026-07-28 09:28',
+    notes: '差异提醒 Alert 两行分层：第一行为「SAP视图 X 条 · 本地表 Y 条」（粗体主色），第二行为「仅SAP视图 a · 仅本地表 b · 字段不一致 c」（弱化灰蓝 #5f6b7a，与首行明显区分），主次清晰；有差异时 Alert 仍切 warning，无差异 success。替换原先单行拼接 + 状态词的写法。',
+  },
+
   {
     version: 'v202607280919',
     time: '2026-07-28 09:19',

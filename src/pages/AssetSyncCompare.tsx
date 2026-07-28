@@ -270,20 +270,16 @@ export default function AssetSyncCompare({ refreshKey = 0 }: { refreshKey?: numb
             const onlyInView = compare.summary.onlyInViewCount ?? 0;
             const onlyInTable = compare.summary.onlyInTableCount ?? 0;
             const different = compare.summary.differentCount ?? 0;
-            const diffCount = onlyInView + onlyInTable + different;
-            const hasDiff = diffCount > 0;
+            const hasDiff = onlyInView + onlyInTable + different > 0;
             return (
               <>
                 <Alert severity={hasDiff ? 'warning' : 'success'} sx={{ fontSize: '0.85rem' }}>
                   <Box>
-                    <div style={{ fontWeight: 600 }}>{hasDiff ? `发现 ${diffCount} 处差异` : '数据一致'}</div>
-                    <div style={{ marginTop: 4, fontSize: '0.8rem' }}>
+                    <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>
                       SAP视图 {compare.summary.viewCount} 条 · 本地表 {compare.summary.localCount} 条
-                      {hasDiff && (
-                        <>
-                          {' · '}仅SAP视图 {onlyInView} · 仅本地表 {onlyInTable} · 字段不一致 {different}
-                        </>
-                      )}
+                    </div>
+                    <div style={{ marginTop: 4, fontSize: '0.78rem', color: '#5f6b7a' }}>
+                      仅SAP视图 {onlyInView} · 仅本地表 {onlyInTable} · 字段不一致 {different}
                     </div>
                   </Box>
                 </Alert>
