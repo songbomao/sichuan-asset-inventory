@@ -810,17 +810,33 @@ export interface AssetDiffItem {
   diffs: AssetDiffField[];
 }
 
+/** 责任人异常单条明细 */
+export interface ResponsiblePersonAnomaly {
+  /** empty=责任人为空字符串；null=责任人为 null；not_in_org=责任人不在组织架构 */
+  type: 'empty' | 'null' | 'not_in_org';
+  assetCode: string;
+  assetName: string;
+  /** 当前责任人字段原始值（可能为空串/null 文本） */
+  currentValue: string;
+  /** 建议处理方式 */
+  suggestion: string;
+}
+
 /** 差异对比结果 */
 export interface CompareAssetsResult {
   onlyInTable: { assetCode: string; assetName: string }[];
   onlyInView: { assetCode: string; assetName: string }[];
   different: AssetDiffItem[];
+  /** 责任人异常明细（责任人为空 / null / 不在组织架构） */
+  responsiblePersonAnomalies: ResponsiblePersonAnomaly[];
   summary: {
     localCount: number;
     viewCount: number;
     onlyInTableCount: number;
     onlyInViewCount: number;
     differentCount: number;
+    /** 责任人异常条数 */
+    responsiblePersonAnomalyCount: number;
     /** 原始查询行数（含空编码） */
     rawLocalCount?: number;
     rawViewCount?: number;

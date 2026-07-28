@@ -79,12 +79,25 @@ function fmt(v: string | number | null | undefined): string {
   return String(v);
 }
 
-/** 差异对比三个分类的展示元数据 */
+/** 差异对比四个分类的展示元数据 */
 const DIFF_TABS = [
   { key: 'onlyInView' as const, label: '仅SAP视图', color: 'success' as const },
   { key: 'onlyInTable' as const, label: '仅本地表', color: 'error' as const },
   { key: 'different' as const, label: '字段不一致', color: 'warning' as const },
+  { key: 'responsiblePersonAnomalies' as const, label: '责任人异常', color: 'info' as const },
 ];
+
+/** 责任人异常类型中文与 Chip 配色 */
+const ANOMALY_LABEL: Record<string, string> = {
+  empty: '责任人为空',
+  null: '责任人为null',
+  not_in_org: '责任人不在组织架构',
+};
+const ANOMALY_COLOR: Record<string, 'warning' | 'error'> = {
+  empty: 'warning',
+  null: 'warning',
+  not_in_org: 'error',
+};
 
 /**
  * 固定资产对比与同步（仅管理员）
@@ -210,7 +223,9 @@ export default function AssetSyncCompare({ refreshKey = 0 }: { refreshKey?: numb
         ? compare.onlyInView
         : diffTab === 1
           ? compare.onlyInTable
-          : compare.different;
+          : diffTab === 2
+            ? compare.different
+            : compare.responsiblePersonAnomalies;
 
   const filteredActive = useMemo(() => {
     const kw = diffKeyword.trim().toLowerCase();
@@ -218,7 +233,8 @@ export default function AssetSyncCompare({ refreshKey = 0 }: { refreshKey?: numb
     return rawActive.filter((it: any) => {
       const code = (it.assetCode || '').toLowerCase();
       const name = (it.assetName || '').toLowerCase();
-      return code.includes(kw) || name.includes(kw);
+      const cur = (it.currentValue || '').toLowerCase();
+      return code.includes(kw) || name.includes(kw) || cur.includes(kw);
     });
   }, [rawActive, diffKeyword]);
 
@@ -270,7 +286,8 @@ export default function AssetSyncCompare({ refreshKey = 0 }: { refreshKey?: numb
             const onlyInView = compare.summary.onlyInViewCount ?? 0;
             const onlyInTable = compare.summary.onlyInTableCount ?? 0;
             const different = compare.summary.differentCount ?? 0;
-            const hasDiff = onlyInView + onlyInTable + different > 0;
+            const rpAnomaly = compare.summary.responsiblePersonAnomalyCount ?? 0;
+            const hasDiff = onlyInView + onlyInTable + different + rpAnomaly > 0;
             return (
               <>
                 <Alert severity={hasDiff ? 'warning' : 'success'} sx={{ fontSize: '0.85rem' }}>
@@ -279,21 +296,28 @@ export default function AssetSyncCompare({ refreshKey = 0 }: { refreshKey?: numb
                       SAP视图 {compare.summary.viewCount} 条 · 本地表 {compare.summary.localCount} 条
                     </div>
                     <div style={{ marginTop: 4, fontSize: '0.78rem', color: '#5f6b7a' }}>
-                      仅SAP视图 {onlyInView} · 仅本地表 {onlyInTable} · 字段不一致 {different}
+                      仅SAP视图 {onlyInView} · 仅本地表 {onlyInTable} · 字段不一致 {different} · 责任人异常 {rpAnomaly}
                     </div>
                   </Box>
                 </Alert>
 
-              {/* 三个分类 Tab 切换（数据已一次加载，仅在前端做筛选） */}
+              {/* 四个分类 Tab 切换（数据已一次加载，仅在前端做筛选） */}
               <Tabs
                 value={diffTab}
                 onChange={(_e, v) => setDiffTab(v)}
-                variant="fullWidth"
+                variant="scrollable"
+                scrollButtons="auto"
+                allowScrollButtonsMobile
                 sx={{ minHeight: 36, '& .MuiTab-root': { minHeight: 36, fontSize: '0.8rem', textTransform: 'none' } }}
               >
-                {DIFF_TABS.map((t, i) => (
-                  <Tab key={t.key} label={`${t.label} (${i === 0 ? compare.summary.onlyInViewCount : i === 1 ? compare.summary.onlyInTableCount : compare.summary.differentCount})`} />
-                ))}
+                {DIFF_TABS.map((t, i) => {
+                  const count =
+                    i === 0 ? compare.summary.onlyInViewCount
+                    : i === 1 ? compare.summary.onlyInTableCount
+                    : i === 2 ? compare.summary.differentCount
+                    : compare.summary.responsiblePersonAnomalyCount;
+                  return <Tab key={t.key} label={`${t.label} (${count})`} />;
+                })}
               </Tabs>
 
               {/* 分类内搜索（按资产编号 / 名称） */}
@@ -311,37 +335,56 @@ export default function AssetSyncCompare({ refreshKey = 0 }: { refreshKey?: numb
               <Box sx={{ maxHeight: 360, overflow: 'auto' }}>
                 {filteredActive.length === 0 ? (
                   <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.82rem', p: 1 }}>
-                    无匹配记录
+                    {diffTab === 3 && !diffKeyword.trim() ? '无责任人异常记录' : '无匹配记录'}
                   </Typography>
                 ) : (
                   <Stack spacing={1}>
-                    {diffTab !== 2
+                    {diffTab === 3
                       ? visibleItems.map((it: any) => (
-                          <div key={it.assetCode} className="flex items-center gap-2 text-xs">
-                            <span className="font-mono text-gray-600">{it.assetCode}</span>
-                            <span className="text-gray-800 truncate">{it.assetName}</span>
-                          </div>
-                        ))
-                      : visibleItems.map((d: any) => (
-                          <Paper key={d.assetCode} variant="outlined" sx={{ p: 1.5, borderRadius: 2 }}>
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="font-mono text-xs text-gray-700">{d.assetCode}</span>
-                              <span className="text-sm font-medium text-gray-900 truncate ml-2">{d.assetName}</span>
+                          <Paper key={it.assetCode} variant="outlined" sx={{ p: 1.5, borderRadius: 2 }}>
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <span className="font-mono text-xs text-gray-700 truncate">{it.assetCode}</span>
+                              <Chip
+                                size="small"
+                                label={ANOMALY_LABEL[it.type] ?? it.type}
+                                color={ANOMALY_COLOR[it.type] ?? 'default'}
+                                sx={{ height: 20, fontSize: '0.7rem', flexShrink: 0 }}
+                              />
                             </div>
-                            <Stack spacing={0.5}>
-                              {d.diffs.map((f: any, idx: number) => (
-                                <div key={idx} className="flex items-center gap-2 text-xs flex-wrap">
-                                  <Chip label={fieldLabel(f)} size="small" variant="outlined" sx={{ height: 20, fontSize: '0.7rem' }} />
-                                  <span className="text-gray-400">SAP视图</span>
-                                  <span className="font-medium" style={{ color: '#2e7d32' }}>{fmt(f.viewValue)}</span>
-                                  <span className="text-gray-400">→</span>
-                                  <span className="text-gray-400">本地</span>
-                                  <span className="font-medium" style={{ color: '#d32f2f' }}>{fmt(f.tableValue)}</span>
-                                </div>
-                              ))}
-                            </Stack>
+                            <div className="text-sm text-gray-900 mb-0.5 truncate">{it.assetName}</div>
+                            <div className="text-xs text-gray-500">
+                              当前责任人值：<span className="font-mono">{fmt(it.currentValue)}</span>
+                            </div>
+                            <div className="text-xs text-gray-400 mt-1 leading-relaxed">建议：{it.suggestion}</div>
                           </Paper>
-                        ))}
+                        ))
+                      : diffTab !== 2
+                        ? visibleItems.map((it: any) => (
+                            <div key={it.assetCode} className="flex items-center gap-2 text-xs">
+                              <span className="font-mono text-gray-600">{it.assetCode}</span>
+                              <span className="text-gray-800 truncate">{it.assetName}</span>
+                            </div>
+                          ))
+                        : visibleItems.map((d: any) => (
+                            <Paper key={d.assetCode} variant="outlined" sx={{ p: 1.5, borderRadius: 2 }}>
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="font-mono text-xs text-gray-700">{d.assetCode}</span>
+                                <span className="text-sm font-medium text-gray-900 truncate ml-2">{d.assetName}</span>
+                              </div>
+                              <Stack spacing={0.5}>
+                                {d.diffs.map((f: any, idx: number) => (
+                                  <div key={idx} className="flex items-center gap-2 text-xs flex-wrap">
+                                    <Chip label={fieldLabel(f)} size="small" variant="outlined" sx={{ height: 20, fontSize: '0.7rem' }} />
+                                    <span className="text-gray-400">SAP视图</span>
+                                    <span className="font-medium" style={{ color: '#2e7d32' }}>{fmt(f.viewValue)}</span>
+                                    <span className="text-gray-400">→</span>
+                                    <span className="text-gray-400">本地</span>
+                                    <span className="font-medium" style={{ color: '#d32f2f' }}>{fmt(f.tableValue)}</span>
+                                  </div>
+                                ))}
+                              </Stack>
+                            </Paper>
+                          ))}
                   </Stack>
                 )}
               </Box>

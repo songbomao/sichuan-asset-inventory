@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607281235';
+export const APP_VERSION = 'v202607281420';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-28 12:35';
-export const RELEASE_NOTES = '我的盘点页顶部标题优化：将顶部 AppHeader 在 /tasks 路由下的标题由「我的盘点」改为「盘点任务」，避免与底部导航栏「我的盘点」入口重复；底部导航保持不动。';
+export const RELEASE_TIME = '2026-07-28 14:20';
+export const RELEASE_NOTES = '资产对比同步页差异对比新增「责任人异常」Tab：展示责任人为空/为null/不在组织架构的异常明细（含类型 Chip、资产编号、名称、当前责任人值、建议处理方式），支持分类内搜索与加载更多，并纳入差异摘要计数。后端 CompareAssetsResult 新增 responsiblePersonAnomalies 与 summary.responsiblePersonAnomalyCount。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,12 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607281420',
+    time: '2026-07-28 14:20',
+    notes: '资产对比同步页差异对比新增「责任人异常」Tab：展示责任人为空/为null/不在组织架构的异常明细（含类型 Chip、资产编号、名称、当前责任人值、建议处理方式），支持分类内搜索与加载更多，并纳入差异摘要计数。后端 CompareAssetsResult 新增 responsiblePersonAnomalies 与 summary.responsiblePersonAnomalyCount。',
+  },
+
   {
     version: 'v202607281235',
     time: '2026-07-28 12:35',
