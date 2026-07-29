@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607291216';
+export const APP_VERSION = 'v202607291228';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-29 12:16';
-export const RELEASE_NOTES = '资产对比同步 Tab 优化：四个差异分类 Tab 改为响应式 flex 换行布局，彻底避免「责任人异常」等长标签被滚动按钮截断；差异对比完成后自动选中首个 count>0 的异常 Tab，让用户第一时间定位需处理的数据。';
+export const RELEASE_TIME = '2026-07-29 12:28';
+export const RELEASE_NOTES = '资产对比同步 Tab 改为单行 nowrap 等宽布局：4 个差异分类始终排在同一行、间距均匀、移动端不折行；Tab 文字精简为「仅SAP/仅本地/不一致/责任人」。功能逻辑与异常自动选中不变。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607291228',
+    time: '2026-07-29 12:28',
+    notes: '资产对比同步 Tab 改为单行 nowrap 等宽布局：4 个差异分类始终排在同一行、间距均匀、移动端不折行；Tab 文字精简为「仅SAP/仅本地/不一致/责任人」。功能逻辑与异常自动选中不变。',
+  },
   {
     version: 'v202607291216',
     time: '2026-07-29 12:16',

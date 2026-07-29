@@ -79,10 +79,10 @@ function fmt(v: string | number | null | undefined): string {
 
 /** 差异对比四个分类的展示元数据 */
 const DIFF_TABS = [
-  { key: 'onlyInView' as const, label: '仅SAP视图', color: 'success' as const },
-  { key: 'onlyInTable' as const, label: '仅本地表', color: 'error' as const },
-  { key: 'different' as const, label: '字段不一致', color: 'warning' as const },
-  { key: 'responsiblePersonAnomalies' as const, label: '责任人异常', color: 'info' as const },
+  { key: 'onlyInView' as const, label: '仅SAP', color: 'success' as const },
+  { key: 'onlyInTable' as const, label: '仅本地', color: 'error' as const },
+  { key: 'different' as const, label: '不一致', color: 'warning' as const },
+  { key: 'responsiblePersonAnomalies' as const, label: '责任人', color: 'info' as const },
 ];
 
 /** 责任人异常类型中文与 Chip 配色 */
@@ -309,18 +309,20 @@ export default function AssetSyncCompare({ refreshKey = 0 }: { refreshKey?: numb
                 </Alert>
 
               {/* 四个分类 Tab 切换（数据已一次加载，仅在前端做筛选）
-                  使用响应式 flex 换行布局，避免 MUI Tabs 在窄屏/滚动按钮下截断 Tab 文字 */}
+                  单行 nowrap 等宽布局：4 个 Tab 始终排在同一行，间距均匀，移动端不折行 */}
               <Box
                 sx={{
                   display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: 1,
+                  flexWrap: 'nowrap',
+                  width: '100%',
+                  gap: 0.75,
                   '& > button': {
-                    flex: '1 1 auto',
-                    minWidth: { xs: '48%', sm: '23%' },
-                    fontSize: '0.8rem',
+                    flex: '1 1 0',
+                    minWidth: 0,
+                    fontSize: { xs: '0.72rem', sm: '0.8rem' },
                     textTransform: 'none',
                     py: 0.5,
+                    px: 0.5,
                     borderRadius: '8px',
                     whiteSpace: 'nowrap',
                   },
