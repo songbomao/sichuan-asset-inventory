@@ -208,6 +208,8 @@ export interface AdminTaskItem {
   createdAt: string;
   /** 任务覆盖资产数（列表接口可能带回，缺省 undefined） */
   assetCount?: number;
+  /** 任务已分配人员数 */
+  personCount?: number;
   /** 已完成盘点资产数 */
   completedCount?: number;
   /** 报告生成时间（后端回填，前端据以展示"报告生成"节点） */
@@ -227,6 +229,7 @@ interface RawAdminTaskItem {
   createTime?: string;
   location?: string;
   createdBy?: string;
+  personCount?: number;
   scopeType?: string;
   scopeConfig?: string;
   needReview?: boolean;
@@ -266,6 +269,7 @@ export async function getAdminTaskList(status?: string): Promise<AdminTaskItem[]
       createdBy: item.createdBy ?? '',
       createdAt: item.createTime ?? '',
       assetCount: item.assetCount ?? undefined,
+      personCount: item.personCount ?? undefined,
       completedCount: item.completedCount ?? undefined,
       reportTime: item.reportTime ?? null,
       archiveTime: item.archiveTime ?? null,

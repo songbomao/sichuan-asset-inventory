@@ -922,15 +922,20 @@ export default function AdminTasks() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4 text-sm text-gray-500 mb-3 flex-wrap">
+                  <div className="flex items-center gap-4 text-sm text-gray-500 mb-2 flex-wrap">
                     <span>范围：{scopeTypeOptions.find((o) => o.value === task.scopeType)?.label ?? task.scopeType}</span>
-                    {task.assetCount !== undefined && <span>资产：{task.assetCount}</span>}
-                    {task.deadline && <span>截止：{formatDateTime(task.deadline)}</span>}
+                    <span>人员：{task.personCount ?? '--'} 人</span>
+                    <span>资产：{task.assetCount ?? '--'} 项</span>
                     {task.needReview && <span>复盘 {(task.reviewRatio ?? 0.3) * 100}%</span>}
                   </div>
 
+                  <div className="flex items-center gap-4 text-sm text-gray-500 mb-3 flex-wrap">
+                    <span>盘点截止：{formatDateTime(task.deadline)}</span>
+                    <span>任务创建：{task.createdBy || '--'}</span>
+                    <span>创建时间：{formatDateTime(task.createdAt)}</span>
+                  </div>
+
                   <div className="flex items-center justify-between text-xs text-gray-400">
-                    <span>{task.createdBy || '--'}{task.createdAt ? ` · ${formatDateTime(task.createdAt)}` : ''}</span>
                     <div className="flex items-center gap-1.5">
                       <Button
                         size="small"
