@@ -60,10 +60,14 @@ function GlobalAppBar() {
   // 目标页判定同时参考 isAdmin 与当前路径前缀：在任意 /admin/* 页（如全局进度页）一律回管理员控制台，
   // 避免 isAdmin 异步就绪前点击错判为责任人首页导致跳转失效。
   const handleConsoleClick = () => {
+    // 目标页：管理员或在 /admin/* 域下一律回管理员控制台；
+    // 其余（责任人）回责任人控制台。双判据避免 isAdmin 异步就绪前错判为责任人首页。
     const target =
       isAdmin || location.pathname.startsWith('/admin') ? '/admin/tasks' : '/tasks';
     if (location.pathname === target) {
+      // 已在控制台：回到顶部并强制重新挂载，确保点击有可见反馈（否则视觉上像没反应）
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      navigate(target, { replace: true });
     } else {
       navigate(target, { replace: true });
     }
@@ -93,6 +97,7 @@ function GlobalAppBar() {
           蜀资点兵
         </Typography>
         <Button
+          type="button"
           size="small"
           startIcon={<HomeIcon />}
           onClick={handleConsoleClick}
@@ -103,6 +108,9 @@ function GlobalAppBar() {
             fontSize: '0.85rem',
             px: 1,
             borderRadius: 8,
+            position: 'relative',
+            zIndex: 1,
+            pointerEvents: 'auto',
             '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.16)' },
             '&:active': { bgcolor: 'rgba(255, 255, 255, 0.28)' },
           }}
