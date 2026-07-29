@@ -590,7 +590,8 @@ export default function AdminTasks() {
     try {
       // 校验②：by_category 确认创建前，反向校验所选类别下资产的责任人完整性
       if (form.method === 'by_category') {
-        const check = await validateCategoryResponsibles({ categoryNames: form.categories });
+        const selectedAssetCodes = (form.selectedAssetCodes.length > 0 && form.selectedAssetCodes.length < assetTotal) ? form.selectedAssetCodes : undefined;
+        const check = await validateCategoryResponsibles({ categoryNames: form.categories, selectedAssetCodes });
         if (check.missingCount + check.invalidCount > 0) {
           setCategoryCheckError(check);
           setSubmitting(false);
