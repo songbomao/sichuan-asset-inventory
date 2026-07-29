@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607291111';
+export const APP_VERSION = 'v202607291216';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-29 11:11';
-export const RELEASE_NOTES = 'UI/UX 四合一改造：①全局右上角固定「返回控制台」按钮，移除各页面顶部导航栏；②「新建盘点」「确认创建」按钮锁定紫底白字，避免响应态黑字对比度不足；③新建盘点弹窗实时展示盘点数量（按类别/按责任人，未选手动选则全量、选手则精确匹配）；④任务卡片状态改为「盘点中/报告生成/盘点完成归档」三节点，截止与下达时间显示秒级，归档后禁止删除。配套后端 v202607291110。';
+export const RELEASE_TIME = '2026-07-29 12:16';
+export const RELEASE_NOTES = '资产对比同步 Tab 优化：四个差异分类 Tab 改为响应式 flex 换行布局，彻底避免「责任人异常」等长标签被滚动按钮截断；差异对比完成后自动选中首个 count>0 的异常 Tab，让用户第一时间定位需处理的数据。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607291216',
+    time: '2026-07-29 12:16',
+    notes: '资产对比同步 Tab 优化：四个差异分类 Tab 改为响应式 flex 换行布局，彻底避免「责任人异常」等长标签被滚动按钮截断；差异对比完成后自动选中首个 count>0 的异常 Tab，让用户第一时间定位需处理的数据。',
+  },
   {
     version: 'v202607291111',
     time: '2026-07-29 11:11',

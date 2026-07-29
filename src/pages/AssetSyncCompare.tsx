@@ -23,8 +23,6 @@ import Stepper from '@mui/material/Stepper';
 import Step from '@mui/material/Step';
 import StepLabel from '@mui/material/StepLabel';
 import CircularProgress from '@mui/material/CircularProgress';
-import Tabs from '@mui/material/Tabs';
-import Tab from '@mui/material/Tab';
 import SearchIcon from '@mui/icons-material/Search';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import SyncIcon from '@mui/icons-material/Sync';
@@ -127,6 +125,15 @@ export default function AssetSyncCompare({ refreshKey = 0 }: { refreshKey?: numb
     try {
       const res = await compareAssets();
       setCompare(res);
+      // 自动选中首个存在异常的 Tab，让用户第一时间看到需要处理的信息
+      const counts = [
+        res.summary.onlyInViewCount ?? 0,
+        res.summary.onlyInTableCount ?? 0,
+        res.summary.differentCount ?? 0,
+        res.summary.responsiblePersonAnomalyCount ?? 0,
+      ];
+      const firstAbnormal = counts.findIndex((c) => c > 0);
+      setDiffTab(firstAbnormal >= 0 ? firstAbnormal : 0);
     } catch (err) {
       setCompareError(err instanceof Error ? err.message : '差异对比失败');
     } finally {
@@ -301,14 +308,23 @@ export default function AssetSyncCompare({ refreshKey = 0 }: { refreshKey?: numb
                   </Box>
                 </Alert>
 
-              {/* 四个分类 Tab 切换（数据已一次加载，仅在前端做筛选） */}
-              <Tabs
-                value={diffTab}
-                onChange={(_e, v) => setDiffTab(v)}
-                variant="scrollable"
-                scrollButtons="auto"
-                allowScrollButtonsMobile
-                sx={{ minHeight: 36, '& .MuiTab-root': { minHeight: 36, fontSize: '0.8rem', textTransform: 'none' } }}
+              {/* 四个分类 Tab 切换（数据已一次加载，仅在前端做筛选）
+                  使用响应式 flex 换行布局，避免 MUI Tabs 在窄屏/滚动按钮下截断 Tab 文字 */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 1,
+                  '& > button': {
+                    flex: '1 1 auto',
+                    minWidth: { xs: '48%', sm: '23%' },
+                    fontSize: '0.8rem',
+                    textTransform: 'none',
+                    py: 0.5,
+                    borderRadius: '8px',
+                    whiteSpace: 'nowrap',
+                  },
+                }}
               >
                 {DIFF_TABS.map((t, i) => {
                   const count =
@@ -316,9 +332,28 @@ export default function AssetSyncCompare({ refreshKey = 0 }: { refreshKey?: numb
                     : i === 1 ? compare.summary.onlyInTableCount
                     : i === 2 ? compare.summary.differentCount
                     : compare.summary.responsiblePersonAnomalyCount;
-                  return <Tab key={t.key} label={`${t.label} (${count})`} />;
+                  const selected = diffTab === i;
+                  return (
+                    <Button
+                      key={t.key}
+                      variant={selected ? 'contained' : 'outlined'}
+                      size="small"
+                      onClick={() => setDiffTab(i)}
+                      sx={{
+                        bgcolor: selected ? '#7b1fa2' : 'transparent',
+                        color: selected ? '#fff' : '#7b1fa2',
+                        borderColor: '#7b1fa2',
+                        '&:hover': {
+                          bgcolor: selected ? '#6a1b9a' : 'rgba(123, 31, 162, 0.08)',
+                          borderColor: '#7b1fa2',
+                        },
+                      }}
+                    >
+                      {t.label} ({count})
+                    </Button>
+                  );
                 })}
-              </Tabs>
+              </Box>
 
               {/* 分类内搜索（按资产编号 / 名称） */}
               <TextField
