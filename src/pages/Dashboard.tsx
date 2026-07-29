@@ -23,6 +23,9 @@ export default function DashboardPage() {
   const { user } = useAuth();
 
   const isGlobal = !taskId;
+  // 全局视图（/admin/dashboard）渲染在 Layout 内，顶部留白已由 Layout 的 <main> 提供（pt-12）；
+  // 任务级视图（/tasks/:taskId/dashboard）为独立页，无 Layout，需自身补 pt-12 避开 fixed 顶栏。
+  const topPad = isGlobal ? '' : 'pt-12';
 
   const [data, setData] = useState<DashboardData | null>(null);
   const [taskName, setTaskName] = useState('');
@@ -81,7 +84,7 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 pt-12">
+      <div className={`min-h-screen bg-gray-50 ${topPad}`}>
         <div className="p-4 space-y-4">
           {[1, 2, 3].map((i) => <Card key={i}><CardContent><Skeleton variant="text" /></CardContent></Card>)}
         </div>
@@ -104,7 +107,7 @@ export default function DashboardPage() {
   const { overall, deptStats, personStats, categoryStats, tasks } = data;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col pt-12">
+    <div className={`min-h-screen bg-gray-50 flex flex-col ${topPad}`}>
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* 整体进度 */}
         <Card className="glow-border">

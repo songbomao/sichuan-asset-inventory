@@ -54,16 +54,18 @@ function GlobalAppBar() {
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
   if (location.pathname === '/login') return null;
-  const homePath = isAdmin ? '/admin/tasks' : '/tasks';
-
   // 点击「返回控制台」：
-  // - 不在首页时，跳转回角色首页（replace 避免堆积历史）；
+  // - 不在控制台首页时，跳转回角色首页（replace 避免堆积历史）；
   // - 已在首页时，回到顶部（路径相同 React Router 不会重复跳转，回到顶部即有可见反馈）。
+  // 目标页判定同时参考 isAdmin 与当前路径前缀：在任意 /admin/* 页（如全局进度页）一律回管理员控制台，
+  // 避免 isAdmin 异步就绪前点击错判为责任人首页导致跳转失效。
   const handleConsoleClick = () => {
-    if (location.pathname === homePath) {
+    const target =
+      isAdmin || location.pathname.startsWith('/admin') ? '/admin/tasks' : '/tasks';
+    if (location.pathname === target) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
-      navigate(homePath, { replace: true });
+      navigate(target, { replace: true });
     }
   };
 
@@ -79,6 +81,7 @@ function GlobalAppBar() {
         width: '100%',
         maxWidth: '480px',
         height: 48,
+        borderRadius: '0 0 12px 12px',
         bgcolor: 'transparent',
         backgroundImage: 'linear-gradient(135deg, #1a237e 0%, #4a148c 100%)',
         color: '#ffffff',
