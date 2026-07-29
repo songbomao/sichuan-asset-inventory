@@ -1198,7 +1198,15 @@ export default function AdminTasks() {
         open={personPickerOpen}
         onClose={() => setPersonPickerOpen(false)}
         fullScreen
-        PaperProps={{ sx: { bgcolor: 'background.paper' } }}
+        PaperProps={{
+          sx: {
+            bgcolor: 'background.paper',
+            maxWidth: '480px',
+            width: '100%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+          },
+        }}
       >
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1.5 }}>
@@ -1308,7 +1316,15 @@ export default function AdminTasks() {
         open={assetPreviewOpen}
         onClose={() => setAssetPreviewOpen(false)}
         fullScreen
-        PaperProps={{ sx: { bgcolor: 'background.paper' } }}
+        PaperProps={{
+          sx: {
+            bgcolor: 'background.paper',
+            maxWidth: '480px',
+            width: '100%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+          },
+        }}
       >
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1.5 }}>
