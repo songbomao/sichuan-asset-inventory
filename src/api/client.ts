@@ -15,14 +15,23 @@ const BYPASS_GATEWAY = ['/api/Account/UniGetToken'];
  */
 function toFormUrlEncoded(data: Record<string, unknown>): string {
   return Object.entries(data)
-    .map(([key, value]) => {
-      const v =
-        value === null || value === undefined
-          ? ''
-          : typeof value === 'object'
-            ? JSON.stringify(value)
-            : String(value);
-      return encodeURIComponent(key) + '=' + encodeURIComponent(v);
+    .flatMap(([key, value]) => {
+      if (value === null || value === undefined) {
+        return [encodeURIComponent(key) + '='];
+      }
+      if (Array.isArray(value)) {
+        // 数组展开为 repeat 风格：selectedAssetCodes=100000013373&selectedAssetCodes=100000013374
+        // ASP.NET Core Request.Form 会把这些同名参数合并为 StringValues，
+        // 后端 MergeQueryValue 再组装为 JArray（与 query string 行为完全一致）
+        return value.map(v =>
+          encodeURIComponent(key) + '=' + encodeURIComponent(String(v))
+        );
+      }
+      if (typeof value === 'object') {
+        // 非数组 object 保持 JSON.stringify（如 scopeConfig 本身是复杂 JSON）
+        return [encodeURIComponent(key) + '=' + encodeURIComponent(JSON.stringify(value))];
+      }
+      return [encodeURIComponent(key) + '=' + encodeURIComponent(String(value))];
     })
     .join('&');
 }

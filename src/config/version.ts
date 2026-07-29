@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607290955';
+export const APP_VERSION = 'v202607291008';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-29 09:55';
-export const RELEASE_NOTES = '恢复 validateCategoryResponsibles 为 POST 调用（GET 导致 URL 超长 30s 超时）；后端修复 form body 多值 key 丢失：AccountController form-urlencoded 解析改用 MergeQueryValue 处理数组参数。配套后端 v202607290954。';
+export const RELEASE_TIME = '2026-07-29 10:08';
+export const RELEASE_NOTES = '根治 toFormUrlEncoded 数组参数传输：原 JSON.stringify 把数组打包成单个 JSON 字符串（后端靠 JArray.Parse 反序列化不可靠），改为 key=v1&key=v2 repeat 风格，ASP.NET Core Request.Form 自然合并为 StringValues→后端 MergeQueryValue→JArray，与 query string 行为100%一致。同时覆盖 SubmitRecord 的 photoUrls 数组传输。配套后端 v202607291007（v202607290954 的 MergeQueryValue 已就绪）。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607291008',
+    time: '2026-07-29 10:08',
+    notes: '根治 toFormUrlEncoded 数组参数：原 JSON.stringify 打包为单个 JSON 字符串→后端 JArray.Parse 反序列化不可靠，改为 repeat 风格 key=v1&key=v2，ASP.NET Core Request.Form 自然合并 StringValues→MergeQueryValue→JArray。同时覆盖 SubmitRecord photoUrls。配套后端 v202607291007。',
+  },
   {
     version: 'v202607290955',
     time: '2026-07-29 09:55',
