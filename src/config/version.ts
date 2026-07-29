@@ -5,17 +5,21 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607291725';
+export const APP_VERSION = 'v202607291749';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-29 17:25';
-export const RELEASE_NOTES = '水印照片区域文案优化：①移除 CameraCapture 中「至少还需拍 N 张」黄色 Chip，仅保留已拍提示；②AssetDetailTabs 字段精简为 3 组 18 字段 + AI 识别按钮常驻（未拍照时禁用）。另含 v202607291704 的资产详情字段精简；③水印照片标题右侧提示文案改为「至少 2 张，一张包含固资标签，另一张为固资正面照片」。
-
+export const RELEASE_TIME = '2026-07-29 17:49';
+export const RELEASE_NOTES = '修复 GitHub Actions 构建失败：闭合 version.ts 中未终止的字符串字面量。并含 v202607291725 改动：①移除 CameraCapture 中「至少还需拍 N 张」黄色 Chip；②AssetDetailTabs 字段精简为 3 组 18 字段 + AI 识别按钮常驻（未拍照时禁用）；③水印照片标题右侧提示文案改为「至少 2 张，一张包含固资标签，另一张为固资正面照片」。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607291749',
+    time: '2026-07-29 17:49',
+    notes: '修复 GitHub Actions 构建失败：闭合 version.ts 中未终止的字符串字面量。',
+  },
   {
     version: 'v202607291725',
     time: '2026-07-29 17:25',
