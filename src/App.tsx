@@ -1,8 +1,12 @@
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout';
 import RequireAdmin from './components/RequireAdmin';
-import { ConsoleButton } from './components/ExitControls';
+import AppBar from '@mui/material/AppBar';
+import Toolbar from '@mui/material/Toolbar';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import HomeIcon from '@mui/icons-material/Home';
 import Login from './pages/Login';
 import TaskList from './pages/TaskList';
 import Inventory from './pages/Inventory';
@@ -42,17 +46,55 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-/** 全局返回控制台按钮：登录后所有页面固定右上角可见，登录页隐藏 */
-function GlobalConsoleButton() {
+/** 全局顶部工具栏：登录后所有页面固定顶部可见，登录页隐藏。
+ * 左侧显示应用名，右侧提供「返回控制台」文字按钮，避免漂浮图标游离于系统之外。
+ */
+function GlobalAppBar() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { isAdmin } = useAuth();
   if (location.pathname === '/login') return null;
-  return <ConsoleButton />;
+  const homePath = isAdmin ? '/admin/tasks' : '/tasks';
+  return (
+    <AppBar
+      position="fixed"
+      elevation={1}
+      sx={{
+        zIndex: 50,
+        height: 48,
+        bgcolor: '#ffffff',
+        color: '#1f2937',
+        borderBottom: '1px solid #e5e7eb',
+      }}
+    >
+      <Toolbar variant="dense" sx={{ minHeight: 48, px: 2, justifyContent: 'space-between' }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#7b1fa2', fontSize: '0.95rem' }}>
+          蜀资点兵
+        </Typography>
+        <Button
+          size="small"
+          startIcon={<HomeIcon />}
+          onClick={() => navigate(homePath, { replace: true })}
+          sx={{
+            color: '#7b1fa2',
+            textTransform: 'none',
+            fontWeight: 600,
+            fontSize: '0.85rem',
+            px: 1,
+            '&:hover': { bgcolor: 'rgba(123, 31, 162, 0.08)' },
+          }}
+        >
+          返回控制台
+        </Button>
+      </Toolbar>
+    </AppBar>
+  );
 }
 
 export default function App() {
   return (
     <>
-      <GlobalConsoleButton />
+      <GlobalAppBar />
       <Routes>
       {/* 公开路由 */}
       <Route
