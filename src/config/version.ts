@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607291518';
+export const APP_VERSION = 'v202607291524';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-29 15:18';
-export const RELEASE_NOTES = '修复系统顶栏与下方内容宽度不一致：AppBar 由视口满宽改为 max-width 480px 水平居中（与 #root 移动端容器一致），左右边距与页面 p-4 对齐，顶栏不再比下方内容宽。';
+export const RELEASE_TIME = '2026-07-29 15:24';
+export const RELEASE_NOTES = '修复「返回控制台」点击无效：拆分为非首页跳转首页 / 已在首页则回到顶部；消除目标路径与当前相同导致 React Router 判定无变化而 no-op 的死点。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607291524',
+    time: '2026-07-29 15:24',
+    notes: '修复「返回控制台」点击无效：拆分为非首页跳转首页 / 已在首页则回到顶部；消除目标路径与当前相同导致 React Router 判定无变化而 no-op 的死点。',
+  },
   {
     version: 'v202607291518',
     time: '2026-07-29 15:18',

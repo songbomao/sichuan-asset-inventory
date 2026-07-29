@@ -55,6 +55,18 @@ function GlobalAppBar() {
   const { isAdmin } = useAuth();
   if (location.pathname === '/login') return null;
   const homePath = isAdmin ? '/admin/tasks' : '/tasks';
+
+  // 点击「返回控制台」：
+  // - 不在首页时，跳转回角色首页（replace 避免堆积历史）；
+  // - 已在首页时，回到顶部（路径相同 React Router 不会重复跳转，回到顶部即有可见反馈）。
+  const handleConsoleClick = () => {
+    if (location.pathname === homePath) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      navigate(homePath, { replace: true });
+    }
+  };
+
   return (
     <AppBar
       position="fixed"
@@ -79,7 +91,7 @@ function GlobalAppBar() {
         <Button
           size="small"
           startIcon={<HomeIcon />}
-          onClick={() => navigate(homePath, { replace: true })}
+          onClick={handleConsoleClick}
           sx={{
             color: '#7b1fa2',
             textTransform: 'none',
