@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607290909';
+export const APP_VERSION = 'v202607290937';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-29 09:09';
-export const RELEASE_NOTES = '修复按类别新建任务的责任人预校验范围过宽：validateCategoryResponsibles 新增 selectedAssetCodes 参数，用户仅勾选类别下部分资产时只对实际选中项校验，避免"共744项资产"误报；调用点同步传入。配套后端 v202607290908。';
+export const RELEASE_TIME = '2026-07-29 09:37';
+export const RELEASE_NOTES = '修复 validateCategoryResponsibles 参数传输：由 POST form body 改为 GET query string（与 CreateTask 一致），selectedAssetCodes 经 repeat 风格由 MergeQueryValue 合并为 JArray，避过 form body 对数组的长序列化链。配套后端 v202607290936。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -17,9 +17,9 @@ export const VERSION_HISTORY: Array<{
   notes: string;
 }> = [
   {
-    version: 'v202607290909',
-    time: '2026-07-29 09:09',
-    notes: '修复按类别新建任务的责任人预校验范围过宽：validateCategoryResponsibles 新增 selectedAssetCodes 参数，用户仅勾选类别下部分资产时只对实际选中项校验，避免"共744项资产"误报；调用点同步传入。配套后端 v202607290908。',
+    version: 'v202607290937',
+    time: '2026-07-29 09:37',
+    notes: '修复 validateCategoryResponsibles 参数传输：由 POST form body 改为 GET query string（与 CreateTask 一致），selectedAssetCodes 经 repeat 风格由 MergeQueryValue 合并为 JArray，避过 form body 对数组 JSON.stringify→Form.FirstOrDefault→JArray.Parse 的长序列化链。配套后端 v202607290936。',
   },
   {
     version: 'v202607281703',

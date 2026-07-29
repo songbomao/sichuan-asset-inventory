@@ -163,9 +163,15 @@ export async function validateCategoryResponsibles(params: {
   categoryNames: string[];
   selectedAssetCodes?: string[];
 }): Promise<CategoryResponsibleCheckResult> {
-  const { data } = await client.post<{ code: number; data: CategoryResponsibleCheckResult; msg?: string; message?: string }>(
+  const { data } = await client.get<{ code: number; data: CategoryResponsibleCheckResult; msg?: string; message?: string }>(
     '/api/Account/UniGetToken',
-    { action: 'ValidateCategoryResponsibles', categoryNames: params.categoryNames, selectedAssetCodes: params.selectedAssetCodes ?? [] },
+    {
+      params: {
+        action: 'ValidateCategoryResponsibles',
+        categoryNames: params.categoryNames,
+        selectedAssetCodes: params.selectedAssetCodes ?? [],
+      },
+    },
   );
   if (data.code === 0 || data.code === 200) return data.data;
   throw new Error(data.msg || data.message || '责任人完整性校验失败');
