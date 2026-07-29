@@ -70,7 +70,7 @@ function GlobalAppBar() {
   return (
     <AppBar
       position="fixed"
-      elevation={1}
+      elevation={0}
       sx={{
         zIndex: 50,
         top: 0,
@@ -79,13 +79,14 @@ function GlobalAppBar() {
         width: '100%',
         maxWidth: '480px',
         height: 48,
-        bgcolor: '#ffffff',
-        color: '#1f2937',
-        borderBottom: '1px solid #e5e7eb',
+        bgcolor: 'transparent',
+        backgroundImage: 'linear-gradient(135deg, #1a237e 0%, #4a148c 100%)',
+        color: '#ffffff',
+        boxShadow: '0 2px 10px rgba(26, 35, 126, 0.28)',
       }}
     >
       <Toolbar variant="dense" sx={{ minHeight: 48, px: 2, justifyContent: 'space-between' }}>
-        <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#7b1fa2', fontSize: '0.95rem' }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#ffffff', fontSize: '0.95rem', letterSpacing: '0.04em' }}>
           蜀资点兵
         </Typography>
         <Button
@@ -93,12 +94,14 @@ function GlobalAppBar() {
           startIcon={<HomeIcon />}
           onClick={handleConsoleClick}
           sx={{
-            color: '#7b1fa2',
+            color: '#ffffff',
             textTransform: 'none',
             fontWeight: 600,
             fontSize: '0.85rem',
             px: 1,
-            '&:hover': { bgcolor: 'rgba(123, 31, 162, 0.08)' },
+            borderRadius: 8,
+            '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.16)' },
+            '&:active': { bgcolor: 'rgba(255, 255, 255, 0.28)' },
           }}
         >
           返回控制台

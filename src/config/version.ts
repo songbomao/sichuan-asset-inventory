@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607291529';
+export const APP_VERSION = 'v202607291535';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-29 15:29';
-export const RELEASE_NOTES = '选择盘点责任人弹窗与资产预览弹窗宽度对齐主容器：全屏 Dialog 的 Paper 限制 max-width 480px 并水平居中，与 #root 移动端容器及系统顶栏保持同宽，消除宽屏下左右撑破的视觉割裂。';
+export const RELEASE_TIME = '2026-07-29 15:35';
+export const RELEASE_NOTES = '导航栏配色统一为全局主题渐变：由白底紫字改为深靛蓝→紫 linear-gradient(135deg,#1a237e→#4a148c) 背景 + 白色文字，与页面 containedPrimary 主按钮（同款渐变）及科技感紫调一致；悬停/激活态用半透明白叠加(rgba(255,255,255,.16/.28))，移除灰色底边框改为主题色投影。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607291535',
+    time: '2026-07-29 15:35',
+    notes: '导航栏配色统一为全局主题渐变：由白底紫字改为深靛蓝→紫 linear-gradient(135deg,#1a237e→#4a148c) 背景 + 白色文字，与页面 containedPrimary 主按钮（同款渐变）及科技感紫调一致；悬停/激活态用半透明白叠加(rgba(255,255,255,.16/.28))，移除灰色底边框改为主题色投影。',
+  },
   {
     version: 'v202607291529',
     time: '2026-07-29 15:29',
