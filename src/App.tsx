@@ -61,6 +61,11 @@ function GlobalAppBar() {
       elevation={1}
       sx={{
         zIndex: 50,
+        top: 0,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: '100%',
+        maxWidth: '480px',
         height: 48,
         bgcolor: '#ffffff',
         color: '#1f2937',
