@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607291008';
+export const APP_VERSION = 'v202607291024';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-29 10:08';
-export const RELEASE_NOTES = '根治 toFormUrlEncoded 数组参数传输：原 JSON.stringify 把数组打包成单个 JSON 字符串（后端靠 JArray.Parse 反序列化不可靠），改为 key=v1&key=v2 repeat 风格，ASP.NET Core Request.Form 自然合并为 StringValues→后端 MergeQueryValue→JArray，与 query string 行为100%一致。同时覆盖 SubmitRecord 的 photoUrls 数组传输。配套后端 v202607291007（v202607290954 的 MergeQueryValue 已就绪）。';
+export const RELEASE_TIME = '2026-07-29 10:24';
+export const RELEASE_NOTES = '诊断增强：责任人校验弹窗新增诊断行——后端收到资产编码数(selectedCount) + 前端已选资产数(form.selectedAssetCodes.length) + 类别下资产总数(assetTotal)，部署后可直观定位 selectedAssetCodes 传输/过滤的丢失环节。配套后端 v202607291023。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{

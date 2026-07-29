@@ -152,6 +152,7 @@ export interface CategoryResponsibleCheckResult {
   invalidCount: number;
   truncated: boolean;
   list: CategoryResponsibleIssue[];
+  selectedCount?: number;  // 诊断：后端实际收到的 selectedAssetCodes 数量
 }
 
 /**

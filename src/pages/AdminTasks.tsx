@@ -1520,6 +1520,10 @@ export default function AdminTasks() {
               责任人缺失 <strong>{categoryCheckError?.missingCount ?? 0}</strong> 项；
               责任人无效 <strong>{categoryCheckError?.invalidCount ?? 0}</strong> 项。
             </Typography>
+            <Typography variant="caption" color="text.secondary">
+              [诊断] 后端收到资产编码: <strong>{categoryCheckError?.selectedCount ?? '?'}</strong> 个
+              （前·端·已·选·资·产·数: <strong>{form.selectedAssetCodes.length}</strong> · assetTotal: <strong>{assetTotal}</strong>）
+            </Typography>
             <Box sx={{ maxHeight: 360, overflowY: 'auto' }}>
               <Stack spacing={0.5}>
                 {(categoryCheckError?.list ?? []).map((a, idx) => (
