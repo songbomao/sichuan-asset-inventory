@@ -218,6 +218,7 @@ export default function AdminTasks() {
   const [assetPage, setAssetPage] = useState(1);
   const ASSET_PAGE_SIZE = 50;
   const [assetSelectingAll, setAssetSelectingAll] = useState(false);
+  const [assetDefaultApplied, setAssetDefaultApplied] = useState(false);
 
   /** 拉取资产预览列表（按类别 + 关键字过滤，重置到第一页） */
   const fetchAssetPreview = useCallback(
@@ -245,10 +246,11 @@ export default function AdminTasks() {
     [form.categories],
   );
 
-  /** 打开资产预览时初始化选中集合（回显已选） */
+  /** 打开资产预览时初始化选中集合（回显已选；无已选时由下方 effect 默认全选） */
   const openAssetPreview = () => {
     setAssetSelected(new Set(form.selectedAssetCodes));
     setAssetKeyword('');
+    setAssetDefaultApplied(false);
     setAssetPreviewOpen(true);
     void fetchAssetPreview('', 1);
   };
@@ -275,12 +277,21 @@ export default function AdminTasks() {
     }
   }, [assetList, assetTotal, form.categories, assetKeyword]);
 
+  /** 资产预览弹窗首次加载完成后，若当前未选中任何资产，则默认全选全部资产 */
+  useEffect(() => {
+    if (!assetPreviewOpen || assetDefaultApplied || assetLoading || assetSelected.size > 0) return;
+    if (assetList.length === 0 && assetTotal === 0) return;
+    setAssetDefaultApplied(true);
+    void handleSelectAllAssets();
+  }, [assetPreviewOpen, assetDefaultApplied, assetLoading, assetSelected.size, assetList, assetTotal, handleSelectAllAssets]);
+
   /* 人员预览状态已并入 personPickerOpen 合并选人弹窗 */
   const [personKeyword, setPersonKeyword] = useState('');
   const [personList, setPersonList] = useState<PreviewPersonnelItem[]>([]);
   const [personTotal, setPersonTotal] = useState(0);
   const [personLoading, setPersonLoading] = useState(false);
   const [personSelected, setPersonSelected] = useState<Set<string>>(new Set());
+  const [personDefaultApplied, setPersonDefaultApplied] = useState(false);
 
   /**
    * 主弹窗「本次盘点数量」所需的部门人员列表（与选人弹窗的人员列表分离，
@@ -306,11 +317,26 @@ export default function AdminTasks() {
     }
   }, [selectedDeptMap]);
 
-  /** 打开合并选人弹窗：初始化已选人员集合（回显已选），部门树与人员列表在弹窗内加载 */
+  /** 打开合并选人弹窗：初始化已选人员集合（回显已选；无已选时由下方 effect 默认全选），部门树与人员列表在弹窗内加载 */
   const openPersonPicker = () => {
     setPersonSelected(new Set(form.selectedPersonNames));
+    setPersonKeyword('');
+    setPersonDefaultApplied(false);
     setPersonPickerOpen(true);
   };
+
+  /** 责任人选择弹窗人员列表加载完成后，若当前未选中任何责任人，则默认全选 */
+  useEffect(() => {
+    if (!personPickerOpen || personDefaultApplied || personLoading || personSelected.size > 0) return;
+    if (personList.length === 0) return;
+    setPersonDefaultApplied(true);
+    setPersonSelected(new Set(personList.map((p) => p.name)));
+  }, [personPickerOpen, personDefaultApplied, personLoading, personSelected.size, personList]);
+
+  const handleSelectAllPersons = () => {
+    setPersonSelected(new Set(personList.map((p) => p.name)));
+  };
+  const handleDeselectAllPersons = () => setPersonSelected(new Set());
 
   /** 递归更新部门树中某节点的 children（用于懒加载后回填） */
   const updateDeptChildren = (
@@ -1249,6 +1275,28 @@ export default function AdminTasks() {
                   value={personKeyword}
                   onChange={(e) => setPersonKeyword(e.target.value)}
                 />
+              </Box>
+              <Divider />
+              <Box sx={{ px: 2, py: 0.75, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Button
+                  size="small"
+                  onClick={handleSelectAllPersons}
+                  disabled={personList.length === 0}
+                  sx={{ textTransform: 'none' }}
+                >
+                  全选
+                </Button>
+                <Button
+                  size="small"
+                  onClick={handleDeselectAllPersons}
+                  disabled={personSelected.size === 0}
+                  sx={{ textTransform: 'none' }}
+                >
+                  取消全选
+                </Button>
+                <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }}>
+                  共 {personList.length} 人
+                </Typography>
               </Box>
               <Divider />
               <Box sx={{ overflowY: 'auto', flexGrow: 1, py: 1, px: 1.5 }}>

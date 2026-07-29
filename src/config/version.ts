@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607291614';
+export const APP_VERSION = 'v202607291623';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-29 16:14';
-export const RELEASE_NOTES = '修复三处UI：①全局进度页(/admin/dashboard)顶部间距过大——该页在Layout内，Layout<main>已提供pt-12，原Dashboard自身再叠加pt-12造成双重顶距(96px)，现按isGlobal条件去除Layout内页pt-12，与管理页一致；②导航栏直角与卡片圆角割裂——GlobalAppBar底部加12px圆角(borderRadius:0 0 12px 12px)与全局MuiCard统一；③返回控制台点击无效——handleConsoleClick目标页判定由单一isAdmin改为「isAdmin或当前在/admin/*路径下」双判据，消除isAdmin异步就绪前错判为责任人首页导致跳转失效的死点(ConsoleButton等浮动按钮为未渲染死代码，非根因)。';
+export const RELEASE_TIME = '2026-07-29 16:23';
+export const RELEASE_NOTES = '新建盘点任务两个选择器默认全选并增强责任人选择器：①资产预览弹窗打开时若当前无已选资产，自动全选全部资产（与底部「全选」按钮同逻辑，总量大时分批拉取）；②选择盘点责任人弹窗在人员列表加载后若当前无已选责任人，自动全选当前部门范围全部人员；③在责任人选择器右侧列表上方新增「全选」「取消全选」按钮，即时更新选中状态。默认全选仅在当前选择为空时触发，避免覆盖用户已有精确选择。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607291623',
+    time: '2026-07-29 16:23',
+    notes: '新建盘点任务两个选择器默认全选并增强责任人选择器：①资产预览弹窗打开时若当前无已选资产，自动全选全部资产（与底部「全选」按钮同逻辑，总量大时分批拉取）；②选择盘点责任人弹窗在人员列表加载后若当前无已选责任人，自动全选当前部门范围全部人员；③在责任人选择器右侧列表上方新增「全选」「取消全选」按钮，即时更新选中状态。默认全选仅在当前选择为空时触发，避免覆盖用户已有精确选择。',
+  },
   {
     version: 'v202607291614',
     time: '2026-07-29 16:14',
