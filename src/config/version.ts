@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607290937';
+export const APP_VERSION = 'v202607290955';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-29 09:37';
-export const RELEASE_NOTES = '修复 validateCategoryResponsibles 参数传输：由 POST form body 改为 GET query string（与 CreateTask 一致），selectedAssetCodes 经 repeat 风格由 MergeQueryValue 合并为 JArray，避过 form body 对数组的长序列化链。配套后端 v202607290936。';
+export const RELEASE_TIME = '2026-07-29 09:55';
+export const RELEASE_NOTES = '恢复 validateCategoryResponsibles 为 POST 调用（GET 导致 URL 超长 30s 超时）；后端修复 form body 多值 key 丢失：AccountController form-urlencoded 解析改用 MergeQueryValue 处理数组参数。配套后端 v202607290954。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607290955',
+    time: '2026-07-29 09:55',
+    notes: '恢复 validateCategoryResponsibles 为 POST 调用（GET 导致 URL 超长 30s 超时）；后端修复 form body 多值 key 丢失：AccountController form-urlencoded 解析改用 MergeQueryValue 处理数组参数。配套后端 v202607290954。',
+  },
   {
     version: 'v202607290937',
     time: '2026-07-29 09:37',
