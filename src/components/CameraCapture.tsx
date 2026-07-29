@@ -392,8 +392,8 @@ export default function CameraCapture({
         </div>
       )}
 
-      {/* AI 资产识别（提供候选后显示） */}
-      {!cameraOpen && candidates && candidates.length > 0 && lastPhoto && (
+      {/* AI 资产识别（提供候选后常驻显示，未拍照时禁用） */}
+      {!cameraOpen && candidates && candidates.length > 0 && (
         <div className="w-full space-y-2">
           <Button
             variant="contained"
@@ -401,7 +401,7 @@ export default function CameraCapture({
             color="secondary"
             startIcon={aiLoading ? <CircularProgress size={18} color="inherit" /> : <AutoAwesomeIcon />}
             onClick={handleAIRecognize}
-            disabled={aiLoading || disabled}
+            disabled={aiLoading || disabled || !lastPhoto}
             sx={{ py: 1.2, borderRadius: 2 }}
           >
             {aiLoading ? 'AI 识别中...' : '✨ AI 识别资产'}

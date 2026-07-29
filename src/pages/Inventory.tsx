@@ -411,8 +411,6 @@ export default function InventoryPage() {
             </div>
             <AssetDetailTabs
               asset={assetDetail}
-              lifecycle={null}
-              lifecycleLoading={false}
             />
           </div>
         ) : (
