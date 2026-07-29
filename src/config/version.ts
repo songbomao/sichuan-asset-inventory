@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607291401';
+export const APP_VERSION = 'v202607291403';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-29 14:01';
-export const RELEASE_NOTES = '返回控制台按钮重构：由漂浮圆形图标改为固定在页面顶部的系统级顶栏（左侧「蜀资点兵」品牌、右侧「返回控制台」文字按钮，replace 落地角色首页），彻底消除游离于系统之外的视觉割裂感；所有页面（含独立页盘点/详情/复盘/报告/看板）均固定可见，点击可靠返回控制台。';
+export const RELEASE_TIME = '2026-07-29 14:03';
+export const RELEASE_NOTES = '责任人端「我的盘点任务」卡片截止时间展示时分秒：formatDeadline 由仅显示月日扩展为「MM/DD HH:mm:ss」，保留今日截止/剩余N天/已过期等语义前缀。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607291403',
+    time: '2026-07-29 14:03',
+    notes: '责任人端「我的盘点任务」卡片截止时间展示时分秒：formatDeadline 由仅显示月日扩展为「MM/DD HH:mm:ss」，保留今日截止/剩余N天/已过期等语义前缀。',
+  },
   {
     version: 'v202607291401',
     time: '2026-07-29 14:01',

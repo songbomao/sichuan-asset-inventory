@@ -63,17 +63,24 @@ export default function TaskListPage() {
     if (tab === 'tasks') fetchTasks(true);
   }, [tab]);
 
-  /** 格式化截止时间 */
+  /** 格式化截止时间（精确到秒） */
   const formatDeadline = (deadline: string): string => {
     if (!deadline) return '--';
     try {
       const date = new Date(deadline);
       const now = new Date();
       const diffDays = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-      const formatted = date.toLocaleDateString('zh-CN', {
+      const datePart = date.toLocaleDateString('zh-CN', {
         month: '2-digit',
         day: '2-digit',
       });
+      const timePart = date.toLocaleTimeString('zh-CN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+      });
+      const formatted = `${datePart} ${timePart}`;
       if (diffDays < 0) return `已过期 ${formatted}`;
       if (diffDays === 0) return `今日截止 ${formatted}`;
       if (diffDays <= 3) return `剩余 ${diffDays} 天 · ${formatted}`;
