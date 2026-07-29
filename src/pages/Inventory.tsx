@@ -1,8 +1,6 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
-import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -17,7 +15,6 @@ import { getTaskDetail, getProgress, type AssetInfo } from '../api/tasks';
 import { submitRecord } from '../api/inventory';
 import { getCurrentLocation } from '../api/reverseGeocode';
 import { useAuth } from '../contexts/AuthContext';
-import { HeaderActions } from '../components/ExitControls';
 import CameraCapture from '../components/CameraCapture';
 import ProgressBar from '../components/ProgressBar';
 import type { RecognizeAssetResult } from '../api/ai';
@@ -37,7 +34,7 @@ const STATUS_OPTIONS = [
 export default function InventoryPage() {
   const { taskId } = useParams<{ taskId: string }>();
   const navigate = useNavigate();
-  const { user, isAdmin } = useAuth();
+  const { user } = useAuth();
 
   const [assets, setAssets] = useState<AssetInfo[]>([]);
   const [completedCodes, setCompletedCodes] = useState<string[]>([]);
@@ -315,24 +312,10 @@ export default function InventoryPage() {
 
   return (
     <div
-      className="h-dvh bg-gray-50 flex flex-col overflow-hidden"
+      className="h-dvh bg-gray-50 flex flex-col overflow-hidden pt-12"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* 顶部导航栏 */}
-      <header className="sticky top-0 z-10 bg-gradient-to-r from-primary to-[#4a148c] text-white px-3 py-2.5 flex items-center gap-2 shadow-lg shrink-0">
-        <IconButton color="inherit" size="small" onClick={() => navigate('/tasks')}>
-          <ArrowBackIosNewIcon fontSize="small" />
-        </IconButton>
-        <div className="flex-1 min-w-0">
-          <h2 className="text-sm font-semibold truncate">{taskName}</h2>
-          <p className="text-xs text-white/70 truncate">
-            {currentAsset?.assetName} · {currentIndex + 1} / {assets.length}
-          </p>
-        </div>
-        <HeaderActions isAdmin={isAdmin} />
-      </header>
-
       {/* 进度条：根据实际盘点完成比例动态更新 */}
       <div className="px-3 py-1.5 bg-white border-b border-gray-100 shrink-0">
         <ProgressBar

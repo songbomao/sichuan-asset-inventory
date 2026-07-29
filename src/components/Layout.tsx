@@ -9,7 +9,6 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import Paper from '@mui/material/Paper';
 import { useAuth } from '../contexts/AuthContext';
-import { ExitAppButton } from './ExitControls';
 
 /** 责任人（业主）底部导航 */
 const ownerTabs = [
@@ -51,25 +50,8 @@ export default function Layout() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* 退出应用：固定定位右上角，所有页面可见，不被内容或底部导航遮挡 */}
-      <div
-        style={{
-          position: 'fixed',
-          top: 8,
-          right: 8,
-          zIndex: 50,
-        }}
-      >
-        <div
-          className="rounded-full shadow-md bg-white/90"
-          style={{ color: '#7b1fa2', padding: 2 }}
-        >
-          <ExitAppButton />
-        </div>
-      </div>
-
-      {/* 主内容区 */}
-      <main className="flex-1 overflow-y-auto pb-2">
+      {/* 主内容区（顶部留白给全局返回控制台按钮） */}
+      <main className="flex-1 overflow-y-auto pt-12 pb-2">
         <Outlet />
       </main>
 

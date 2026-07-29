@@ -7,9 +7,6 @@ import Button from '@mui/material/Button';
 import Skeleton from '@mui/material/Skeleton';
 import Alert from '@mui/material/Alert';
 import Chip from '@mui/material/Chip';
-import IconButton from '@mui/material/IconButton';
-import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
-import RefreshIcon from '@mui/icons-material/Refresh';
 import InboxIcon from '@mui/icons-material/Inbox';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -21,7 +18,6 @@ import CircularProgress from '@mui/material/CircularProgress';
 import { getAssignments, submitReview, type ReviewAssignment } from '../api/review';
 import { getTaskDetail, type AssetInfo } from '../api/tasks';
 import { useAuth } from '../contexts/AuthContext';
-import { HeaderActions } from '../components/ExitControls';
 import StatusBadge from '../components/StatusBadge';
 import CameraCapture from '../components/CameraCapture';
 
@@ -38,7 +34,7 @@ const STATUS_OPTIONS = [
 export default function ReviewPage() {
   const { taskId } = useParams<{ taskId: string }>();
   const navigate = useNavigate();
-  const { user, isAdmin } = useAuth();
+  const { user } = useAuth();
 
   const [assignments, setAssignments] = useState<ReviewAssignment[]>([]);
   const [assets, setAssets] = useState<AssetInfo[]>([]);
@@ -100,14 +96,7 @@ export default function ReviewPage() {
   // ---------- 加载态 ----------
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <header className="sticky top-0 z-10 bg-gradient-to-r from-primary to-[#4a148c] text-white px-4 py-3 flex items-center gap-3 shadow-lg">
-          <IconButton color="inherit" size="small" onClick={() => navigate(-1)}>
-            <ArrowBackIosNewIcon fontSize="small" />
-          </IconButton>
-          <h2 className="text-sm font-semibold">复盘管理</h2>
-          <HeaderActions isAdmin={isAdmin} />
-        </header>
+      <div className="min-h-screen bg-gray-50 pt-12">
         <div className="p-4 space-y-4">
           {[1, 2, 3].map((i) => (
             <Card key={i}><CardContent><Skeleton variant="text" width="60%" /><Skeleton variant="text" width="40%" /></CardContent></Card>
@@ -133,24 +122,7 @@ export default function ReviewPage() {
   const conflictAssignments = assignments.filter((a) => a.status === 'conflict');
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <header className="sticky top-0 z-10 bg-gradient-to-r from-primary to-[#4a148c] text-white px-4 py-3 flex items-center gap-3 shadow-lg">
-        <IconButton color="inherit" size="small" onClick={() => navigate(-1)}>
-          <ArrowBackIosNewIcon fontSize="small" />
-        </IconButton>
-        <div className="flex-1 min-w-0">
-          <h2 className="text-sm font-semibold truncate">复盘管理 · {taskName}</h2>
-          <p className="text-xs text-white/70">
-            {pendingAssignments.length} 待复盘 · {completedAssignments.length} 已完成
-            {conflictAssignments.length > 0 && ` · ${conflictAssignments.length} 冲突`}
-          </p>
-        </div>
-        <HeaderActions isAdmin={isAdmin} />
-        <IconButton color="inherit" size="small" onClick={fetchData}>
-          <RefreshIcon fontSize="small" />
-        </IconButton>
-      </header>
-
+    <div className="min-h-screen bg-gray-50 flex flex-col pt-12">
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {assignments.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-gray-400">

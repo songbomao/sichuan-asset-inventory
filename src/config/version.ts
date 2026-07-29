@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607291024';
+export const APP_VERSION = 'v202607291111';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-29 10:24';
-export const RELEASE_NOTES = '诊断增强：责任人校验弹窗新增诊断行——后端收到资产编码数(selectedCount) + 前端已选资产数(form.selectedAssetCodes.length) + 类别下资产总数(assetTotal)，部署后可直观定位 selectedAssetCodes 传输/过滤的丢失环节。配套后端 v202607291023。';
+export const RELEASE_TIME = '2026-07-29 11:11';
+export const RELEASE_NOTES = 'UI/UX 四合一改造：①全局右上角固定「返回控制台」按钮，移除各页面顶部导航栏；②「新建盘点」「确认创建」按钮锁定紫底白字，避免响应态黑字对比度不足；③新建盘点弹窗实时展示盘点数量（按类别/按责任人，未选手动选则全量、选手则精确匹配）；④任务卡片状态改为「盘点中/报告生成/盘点完成归档」三节点，截止与下达时间显示秒级，归档后禁止删除。配套后端 v202607291110。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607291111',
+    time: '2026-07-29 11:11',
+    notes: 'UI/UX 四合一改造：①全局右上角固定「返回控制台」按钮，移除各页面顶部导航栏；②「新建盘点」「确认创建」按钮锁定紫底白字；③新建盘点弹窗实时展示盘点数量（按类别/按责任人，未选手动选则全量、选手则精确匹配）；④任务卡片状态改为「盘点中/报告生成/盘点完成归档」三节点，截止与下达时间显示秒级，归档后禁止删除。配套后端 v202607291110。',
+  },
   {
     version: 'v202607291008',
     time: '2026-07-29 10:08',

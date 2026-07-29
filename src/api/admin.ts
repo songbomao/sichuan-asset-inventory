@@ -210,6 +210,10 @@ export interface AdminTaskItem {
   assetCount?: number;
   /** 已完成盘点资产数 */
   completedCount?: number;
+  /** 报告生成时间（后端回填，前端据以展示"报告生成"节点） */
+  reportTime?: string | null;
+  /** 盘点完成归档时间（后端回填，前端据以展示"盘点完成归档"节点） */
+  archiveTime?: string | null;
 }
 
 /** 后端 GetTaskList 实际返回的原始字段（带 taskId / createTime 等） */
@@ -227,6 +231,10 @@ interface RawAdminTaskItem {
   scopeConfig?: string;
   needReview?: boolean;
   reviewRatio?: number | null;
+  /** 报告生成时间（后端回填） */
+  reportTime?: string | null;
+  /** 盘点完成归档时间（后端回填） */
+  archiveTime?: string | null;
 }
 
 /** 任务列表响应 */
@@ -259,6 +267,8 @@ export async function getAdminTaskList(status?: string): Promise<AdminTaskItem[]
       createdAt: item.createTime ?? '',
       assetCount: item.assetCount ?? undefined,
       completedCount: item.completedCount ?? undefined,
+      reportTime: item.reportTime ?? null,
+      archiveTime: item.archiveTime ?? null,
     }));
   }
   throw new Error(data.msg || data.message || '获取任务列表失败');

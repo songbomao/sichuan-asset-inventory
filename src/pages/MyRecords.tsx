@@ -1,14 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { HeaderActions } from '../components/ExitControls';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
 import Skeleton from '@mui/material/Skeleton';
 import Alert from '@mui/material/Alert';
 import Chip from '@mui/material/Chip';
-import IconButton from '@mui/material/IconButton';
 import InboxIcon from '@mui/icons-material/Inbox';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
@@ -16,7 +12,6 @@ import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import CircularProgress from '@mui/material/CircularProgress';
 import SearchIcon from '@mui/icons-material/Search';
-import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import ScheduleIcon from '@mui/icons-material/Schedule';
@@ -40,9 +35,6 @@ const FILTERS = [
  * 独立页：筛选（状态/关键字）+ 列表（含盘点数量）+ 分页 + 复用详情抽屉
  */
 export default function MyRecords({ embedded = false }: { embedded?: boolean }) {
-  const navigate = useNavigate();
-  const { isAdmin } = useAuth();
-
   const [records, setRecords] = useState<RecordItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -146,28 +138,7 @@ export default function MyRecords({ embedded = false }: { embedded?: boolean }) 
   };
 
   return (
-    <div className={embedded ? 'space-y-4' : 'min-h-screen bg-gray-50'}>
-      {/* 独立页头部（embedded 模式隐藏，由父页面提供外壳） */}
-      {!embedded && (
-      <div className="sticky top-0 z-10 bg-gradient-to-r from-primary to-[#4a148c] text-white px-4 py-3 flex items-center gap-3 shadow-lg">
-        <IconButton
-          size="small"
-          onClick={() => navigate(-1)}
-          sx={{ color: '#fff', p: 0.5 }}
-          aria-label="返回"
-        >
-          <ArrowBackIosNewIcon fontSize="small" />
-        </IconButton>
-        <div className="flex-1">
-          <h1 className="text-lg font-bold leading-tight">我的盘点记录</h1>
-          <p className="text-xs text-white/80 mt-0.5">
-            {records.length > 0 ? `已显示 ${records.length} / 共 ${total} 条` : '按条件筛选你的盘点记录'}
-          </p>
-        </div>
-        <HeaderActions isAdmin={isAdmin} />
-      </div>
-      )}
-
+    <div className={embedded ? 'space-y-4' : 'min-h-screen bg-gray-50 pt-12'}>
       <div className={embedded ? 'space-y-4' : 'p-4 space-y-4'}>
         {/* 状态筛选 */}
         <div className="flex gap-2 overflow-x-auto pb-1">

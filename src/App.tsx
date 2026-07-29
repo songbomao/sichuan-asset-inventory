@@ -1,7 +1,8 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout';
 import RequireAdmin from './components/RequireAdmin';
+import { ConsoleButton } from './components/ExitControls';
 import Login from './pages/Login';
 import TaskList from './pages/TaskList';
 import Inventory from './pages/Inventory';
@@ -41,9 +42,18 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+/** 全局返回控制台按钮：登录后所有页面固定右上角可见，登录页隐藏 */
+function GlobalConsoleButton() {
+  const location = useLocation();
+  if (location.pathname === '/login') return null;
+  return <ConsoleButton />;
+}
+
 export default function App() {
   return (
-    <Routes>
+    <>
+      <GlobalConsoleButton />
+      <Routes>
       {/* 公开路由 */}
       <Route
         path="/login"
@@ -185,5 +195,6 @@ export default function App() {
       {/* 默认重定向（按角色落地首页） */}
       <Route path="*" element={<RoleHome />} />
     </Routes>
+    </>
   );
 }

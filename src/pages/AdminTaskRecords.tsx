@@ -1,14 +1,11 @@
 import { useEffect, useState, useCallback } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { HeaderActions } from '../components/ExitControls';
+import { useParams } from 'react-router-dom';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
 import Skeleton from '@mui/material/Skeleton';
 import Alert from '@mui/material/Alert';
 import Chip from '@mui/material/Chip';
-import IconButton from '@mui/material/IconButton';
 import InboxIcon from '@mui/icons-material/Inbox';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
@@ -16,7 +13,6 @@ import Stack from '@mui/material/Stack';
 import LinearProgress from '@mui/material/LinearProgress';
 import TextField from '@mui/material/TextField';
 import CircularProgress from '@mui/material/CircularProgress';
-import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import ScheduleIcon from '@mui/icons-material/Schedule';
@@ -48,8 +44,6 @@ const FILTERS = [
  */
 export default function AdminTaskRecords() {
   const { taskId = '' } = useParams();
-  const navigate = useNavigate();
-  const { isAdmin } = useAuth();
 
   const [summary, setSummary] = useState<TaskRecordSummary | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(true);
@@ -170,26 +164,7 @@ export default function AdminTaskRecords() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* 独立页头部 */}
-      <div className="sticky top-0 z-10 bg-gradient-to-r from-primary to-[#4a148c] text-white px-4 py-3 flex items-center gap-3 shadow-lg">
-        <IconButton
-          size="small"
-          onClick={() => navigate(-1)}
-          sx={{ color: '#fff', p: 0.5 }}
-          aria-label="返回"
-        >
-          <ArrowBackIosNewIcon fontSize="small" />
-        </IconButton>
-        <div className="flex-1">
-          <h1 className="text-lg font-bold leading-tight">任务盘点记录</h1>
-          <p className="text-xs text-white/80 mt-0.5">
-            {summary?.taskName ? summary.taskName : `任务 ${taskId}`}
-          </p>
-        </div>
-        <HeaderActions isAdmin={isAdmin} />
-      </div>
-
+    <div className="min-h-screen bg-gray-50 pt-12">
       <div className="p-4 space-y-4">
         {/* 汇总视图 */}
         {summaryLoading ? (

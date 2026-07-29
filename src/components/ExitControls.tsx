@@ -94,6 +94,41 @@ export function ReturnHomeButton({ isAdmin }: { isAdmin: boolean }) {
 }
 
 /**
+ * 返回控制台按钮（家图标）：固定定位右上角，所有页面可见。
+ * 点击后使用 replace 落地角色首页（工作台），避免继续在深层返回栈上累积，
+ * 用户一次点击即可回到主界面。返回控制台为非破坏性操作（仍在应用内），无需确认。
+ */
+export function ConsoleButton() {
+  const navigate = useNavigate();
+  const { isAdmin } = useAuth();
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        top: 8,
+        right: 8,
+        zIndex: 50,
+      }}
+    >
+      <div
+        className="rounded-full shadow-md bg-white/90"
+        style={{ color: '#7b1fa2', padding: 2 }}
+      >
+        <IconButton
+          color="inherit"
+          size="small"
+          onClick={() => navigate(isAdmin ? '/admin/tasks' : '/tasks', { replace: true })}
+          title="返回控制台"
+          aria-label="返回控制台"
+        >
+          <HomeIcon fontSize="small" />
+        </IconButton>
+      </div>
+    </div>
+  );
+}
+
+/**
  * 页头右侧操作区组合：默认同时提供「返回工作台」与「退出应用」。
  * 工作台首页只需退出应用，可传 showHome={false}。
  */

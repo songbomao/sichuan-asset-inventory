@@ -7,15 +7,12 @@ import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import Skeleton from '@mui/material/Skeleton';
 import Alert from '@mui/material/Alert';
-import IconButton from '@mui/material/IconButton';
-import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import RateReviewIcon from '@mui/icons-material/RateReview';
 import DescriptionIcon from '@mui/icons-material/Description';
 import { getTaskDetail, getProgress } from '../api/tasks';
 import { useAuth } from '../contexts/AuthContext';
-import { HeaderActions } from '../components/ExitControls';
 import HorizontalTimeline, { type MilestoneNode } from '../components/HorizontalTimeline';
 
 /**
@@ -24,7 +21,7 @@ import HorizontalTimeline, { type MilestoneNode } from '../components/Horizontal
 export default function TaskDetailPage() {
   const { taskId } = useParams<{ taskId: string }>();
   const navigate = useNavigate();
-  const { user, isAdmin } = useAuth();
+  const { user } = useAuth();
 
   const [taskName, setTaskName] = useState('');
   const [detail, setDetail] = useState<{
@@ -74,14 +71,7 @@ export default function TaskDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <header className="sticky top-0 z-10 bg-gradient-to-r from-primary to-[#4a148c] text-white px-4 py-3 flex items-center gap-3 shadow-lg">
-          <IconButton color="inherit" size="small" onClick={() => navigate(-1)}>
-            <ArrowBackIosNewIcon fontSize="small" />
-          </IconButton>
-          <h2 className="text-sm font-semibold">加载中...</h2>
-          <HeaderActions isAdmin={isAdmin} />
-        </header>
+      <div className="min-h-screen bg-gray-50 pt-12">
         <div className="p-4 space-y-4">
           {[1, 2, 3].map((i) => <Card key={i}><CardContent><Skeleton variant="text" /></CardContent></Card>)}
         </div>
@@ -138,18 +128,7 @@ export default function TaskDetailPage() {
   const menus = [inventoryMenu, progressMenu, ...adminMenus];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <header className="sticky top-0 z-10 bg-gradient-to-r from-primary to-[#4a148c] text-white px-4 py-3 flex items-center gap-3 shadow-lg">
-        <IconButton color="inherit" size="small" onClick={() => navigate('/tasks')}>
-          <ArrowBackIosNewIcon fontSize="small" />
-        </IconButton>
-        <div className="flex-1 min-w-0">
-          <h2 className="text-sm font-semibold truncate">{taskName}</h2>
-          <p className="text-xs text-white/70">{assetCount} 件资产</p>
-        </div>
-        <HeaderActions isAdmin={isAdmin} />
-      </header>
-
+    <div className="min-h-screen bg-gray-50 flex flex-col pt-12">
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* 任务进度时间轴（响应式 5 节点：宽屏横向 / 窄屏纵向） */}
         <Card className="hover:shadow-md transition-shadow">

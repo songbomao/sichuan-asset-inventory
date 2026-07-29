@@ -70,11 +70,39 @@ const scopeTypeOptions = [
   { value: 'by_cost_center', label: '按成本中心' },
 ];
 
-const statusMap: Record<string, { label: string; color: 'default' | 'primary' | 'success' | 'warning' | 'error' }> = {
-  draft: { label: '草稿', color: 'default' },
-  running: { label: '运行中', color: 'primary' },
-  completed: { label: '已完成', color: 'success' },
-  cancelled: { label: '已取消', color: 'error' },
+/**
+ * 根据任务当前节点计算卡片状态展示（覆盖三个真实节点：
+ * 盘点完成归档 > 报告生成 > 盘点中 > 已取消；其余回退到原始 status）。
+ */
+function getStatusMeta(task: AdminTaskItem): { label: string; color: 'default' | 'primary' | 'success' | 'warning' | 'error' } {
+  if (task.archiveTime) return { label: '盘点完成归档', color: 'success' };
+  if (task.reportTime) return { label: '报告生成', color: 'warning' };
+  if (task.status === 'running') return { label: '盘点中', color: 'primary' };
+  if (task.status === 'cancelled') return { label: '已取消', color: 'error' };
+  return { label: task.status, color: 'default' };
+}
+
+/** 将日期格式化为 yyyy-MM-dd HH:mm:ss（无效值回退 '--'） */
+function formatDateTime(date?: string | null): string {
+  if (!date) return '--';
+  const d = new Date(date);
+  if (Number.isNaN(d.getTime())) return '--';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+/** 紫色实心按钮统一样式：保证各种状态下文字均为白色、背景为紫色 */
+const purpleContainedSx = {
+  borderRadius: '10px',
+  textTransform: 'none',
+  whiteSpace: 'nowrap',
+  bgcolor: '#7b1fa2',
+  color: '#fff',
+  '&:hover': { bgcolor: '#6a1b9a', color: '#fff' },
+  '&:active': { bgcolor: '#6a1b9a', color: '#fff' },
+  '&:focus': { color: '#fff' },
+  '&.Mui-focusVisible': { color: '#fff' },
+  '&.Mui-disabled': { bgcolor: '#7b1fa2', color: 'rgba(255,255,255,0.7)' },
 };
 
 /** 按当前年份生成 5 类任务名称预设 */
@@ -254,6 +282,12 @@ export default function AdminTasks() {
   const [personLoading, setPersonLoading] = useState(false);
   const [personSelected, setPersonSelected] = useState<Set<string>>(new Set());
 
+  /**
+   * 主弹窗「本次盘点数量」所需的部门人员列表（与选人弹窗的人员列表分离，
+   * 主弹窗关闭时部门变化也需实时计算，故在外部单独拉取并缓存）。
+   */
+  const [deptPersonList, setDeptPersonList] = useState<PreviewPersonnelItem[]>([]);
+
   /** 拉取人员预览列表（按已选部门） */
   const fetchPersonPreview = useCallback(async () => {
     const deptIds = Object.keys(selectedDeptMap).map(Number);
@@ -398,6 +432,61 @@ export default function AdminTasks() {
     void fetchPersonPreview();
   }, [personPickerOpen, selectedDeptMap, fetchPersonPreview]);
 
+  /** #3 主弹窗实时数量（by_category）：类别变化时预取资产总数，写入 assetTotal */
+  useEffect(() => {
+    if (form.method !== 'by_category' || form.categories.length === 0) return;
+    const names = form.categories;
+    let cancelled = false;
+    previewAssetsByCategories({ categoryNames: names, page: 1, pageSize: 1 })
+      .then((res) => {
+        if (!cancelled) setAssetTotal(res.total ?? 0);
+      })
+      .catch(() => {
+        if (!cancelled) setAssetTotal(0);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [form.method, form.categories]);
+
+  /** #3 主弹窗实时数量（by_dept）：已选部门变化时拉取人员列表，缓存到 deptPersonList */
+  useEffect(() => {
+    if (form.method !== 'by_dept') return;
+    const deptIds = Object.keys(selectedDeptMap).map(Number);
+    if (deptIds.length === 0) {
+      setDeptPersonList([]);
+      return;
+    }
+    let cancelled = false;
+    previewPersonnelByDepartments({ deptIds })
+      .then((res) => {
+        if (!cancelled) setDeptPersonList(res.list ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setDeptPersonList([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [form.method, selectedDeptMap]);
+
+  /** #3 计算主弹窗实时盘点数量；未选方式时返回 null（用于隐藏计数行） */
+  const computeInventoryCount = (): number | null => {
+    if (form.method === 'by_category') {
+      return form.selectedAssetCodes.length > 0 ? form.selectedAssetCodes.length : assetTotal;
+    }
+    if (form.method === 'by_dept') {
+      if (form.selectedPersonNames.length > 0) {
+        const sel = new Set(form.selectedPersonNames);
+        return deptPersonList
+          .filter((p) => sel.has(p.name))
+          .reduce((sum, p) => sum + (p.assetCount ?? 0), 0);
+      }
+      return deptPersonList.reduce((sum, p) => sum + (p.assetCount ?? 0), 0);
+    }
+    return null;
+  };
+
   const presetNames = buildPresetNames(new Date().getFullYear());
 
   const fetchTasks = useCallback(async () => {
@@ -469,6 +558,7 @@ export default function AdminTasks() {
     setFeedback(null);
     setDialogOpen(true);
     setSelectedDeptMap({});
+    setDeptPersonList([]);
     setDeptTree([]);
     setExpandedDepts(new Set());
     setOptionsLoading(true);
@@ -722,9 +812,9 @@ export default function AdminTasks() {
             startIcon={<AddIcon />}
             onClick={handleNewTaskClick}
             disabled={compareChecking}
-            sx={{ borderRadius: '10px', textTransform: 'none', whiteSpace: 'nowrap' }}
+            sx={purpleContainedSx}
           >
-            新建任务
+            新建盘点
           </Button>
         </div>
       </div>
@@ -786,7 +876,7 @@ export default function AdminTasks() {
       {!loading && !error && tasks.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16 text-gray-400">
           <p className="text-base font-medium">暂无盘点任务</p>
-          <p className="text-sm mt-1">点击右上角"新建任务"开始</p>
+          <p className="text-sm mt-1">点击右上角"新建盘点"开始</p>
         </div>
       )}
 
@@ -800,7 +890,7 @@ export default function AdminTasks() {
       {/* 任务卡片列表 */}
       {!loading &&
         tasks.map((task) => {
-          const st = statusMap[task.status] ?? { label: task.status, color: 'default' as const };
+          const st = getStatusMeta(task);
           return (
             <Card key={task.id} className="glow-border hover:shadow-glow transition-shadow">
               <CardActionArea onClick={() => navigate(`/tasks/${task.id}`)}>
@@ -811,14 +901,14 @@ export default function AdminTasks() {
                     </Typography>
                     <div className="flex items-center gap-3 shrink-0">
                       <Chip label={st.label} color={st.color} size="small" />
-                      <Tooltip title={task.status === 'completed' ? '已完成任务不可删除' : '删除任务'}>
+                      <Tooltip title={task.archiveTime || task.status === 'completed' ? '该状态任务不可删除' : '删除任务'}>
                         <span>
                           <Button
                             size="small"
                             variant="outlined"
                             color="error"
                             startIcon={<DeleteIcon fontSize="small" />}
-                            disabled={task.status === 'completed'}
+                            disabled={!!task.archiveTime || task.status === 'completed'}
                             onClick={(e) => {
                               e.stopPropagation();
                               setDeleteTarget(task);
@@ -835,12 +925,12 @@ export default function AdminTasks() {
                   <div className="flex items-center gap-4 text-sm text-gray-500 mb-3 flex-wrap">
                     <span>范围：{scopeTypeOptions.find((o) => o.value === task.scopeType)?.label ?? task.scopeType}</span>
                     {task.assetCount !== undefined && <span>资产：{task.assetCount}</span>}
-                    {task.deadline && <span>截止：{new Date(task.deadline).toLocaleDateString('zh-CN')}</span>}
+                    {task.deadline && <span>截止：{formatDateTime(task.deadline)}</span>}
                     {task.needReview && <span>复盘 {(task.reviewRatio ?? 0.3) * 100}%</span>}
                   </div>
 
                   <div className="flex items-center justify-between text-xs text-gray-400">
-                    <span>{task.createdBy || '--'}{task.createdAt ? ` · ${new Date(task.createdAt).toLocaleDateString('zh-CN')}` : ''}</span>
+                    <span>{task.createdBy || '--'}{task.createdAt ? ` · ${formatDateTime(task.createdAt)}` : ''}</span>
                     <div className="flex items-center gap-1.5">
                       <Button
                         size="small"
@@ -1031,6 +1121,17 @@ export default function AdminTasks() {
               </>
             )}
 
+            {/* #3 实时盘点数量 */}
+            {(() => {
+              const c = computeInventoryCount();
+              if (c === null) return null;
+              return (
+                <Alert severity="info" sx={{ fontSize: '0.85rem', py: 0.5 }}>
+                  本次盘点数量：{c} 项
+                </Alert>
+              );
+            })()}
+
             <DeadlinePicker
               label="截止时间"
               required
@@ -1080,7 +1181,7 @@ export default function AdminTasks() {
             variant="contained"
             onClick={handleCreate}
             disabled={submitting}
-            sx={{ borderRadius: '10px', textTransform: 'none' }}
+            sx={purpleContainedSx}
           >
             {submitting ? '创建中...' : '确认创建'}
           </Button>

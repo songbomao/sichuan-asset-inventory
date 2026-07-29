@@ -8,7 +8,6 @@ import Skeleton from '@mui/material/Skeleton';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
 import Chip from '@mui/material/Chip';
-import IconButton from '@mui/material/IconButton';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -20,15 +19,12 @@ import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
-import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
-import RefreshIcon from '@mui/icons-material/Refresh';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import { generateReport, getReportArchive, type ReportData, type ReportArchiveEntry } from '../api/report';
 import { WriteReport } from '../api/ai';
 import { getTaskList, type TaskItem } from '../api/tasks';
 import { useAuth } from '../contexts/AuthContext';
-import { HeaderActions } from '../components/ExitControls';
 
 /**
  * 盘点报告页
@@ -143,14 +139,7 @@ export default function ReportPage() {
   /** 管理员入口：选择任务后跳转任务级报告 */
   if (!taskId) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col">
-        <header className="sticky top-0 z-10 bg-gradient-to-r from-primary to-[#4a148c] text-white px-4 py-3 flex items-center gap-3 shadow-lg">
-          <IconButton color="inherit" size="small" onClick={() => navigate('/admin/tasks')}>
-            <ArrowBackIosNewIcon fontSize="small" />
-          </IconButton>
-          <h2 className="text-sm font-semibold">盘点报告</h2>
-          <HeaderActions isAdmin={isAdmin} />
-        </header>
+      <div className="min-h-screen bg-gray-50 flex flex-col pt-12">
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           <p className="text-sm text-gray-500">请选择要生成报告的盘点任务</p>
           {taskOptionsLoading && <CircularProgress size={24} />}
@@ -175,14 +164,7 @@ export default function ReportPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <header className="sticky top-0 z-10 bg-gradient-to-r from-primary to-[#4a148c] text-white px-4 py-3 flex items-center gap-3 shadow-lg">
-          <IconButton color="inherit" size="small" onClick={() => navigate(-1)}>
-            <ArrowBackIosNewIcon fontSize="small" />
-          </IconButton>
-          <h2 className="text-sm font-semibold">盘点报告</h2>
-          <HeaderActions isAdmin={isAdmin} />
-        </header>
+      <div className="min-h-screen bg-gray-50 pt-12">
         <div className="p-4 space-y-4">
           {[1, 2, 3].map((i) => <Card key={i}><CardContent><Skeleton variant="text" width="60%" /><Skeleton variant="text" width="40%" /></CardContent></Card>)}
         </div>
@@ -201,20 +183,7 @@ export default function ReportPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <header className="sticky top-0 z-10 bg-gradient-to-r from-primary to-[#4a148c] text-white px-4 py-3 flex items-center gap-3 shadow-lg">
-        <IconButton color="inherit" size="small" onClick={() => navigate(-1)}>
-          <ArrowBackIosNewIcon fontSize="small" />
-        </IconButton>
-        <div className="flex-1 min-w-0">
-          <h2 className="text-sm font-semibold truncate">盘点报告</h2>
-        </div>
-        <HeaderActions isAdmin={isAdmin} />
-        <IconButton color="inherit" size="small" onClick={() => loadReport(taskId)}>
-          <RefreshIcon fontSize="small" />
-        </IconButton>
-      </header>
-
+    <div className="min-h-screen bg-gray-50 flex flex-col pt-12">
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* 生成权限控制 + 空状态 */}
         {!hasArchive && (
