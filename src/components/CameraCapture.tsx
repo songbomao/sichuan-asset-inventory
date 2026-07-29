@@ -310,14 +310,6 @@ export default function CameraCapture({
       />
 
       {/* 拍照提示 */}
-      {needMore > 0 && (
-        <Chip
-          label={`至少还需拍 ${needMore} 张`}
-          color="warning"
-          size="small"
-          sx={{ width: '100%', fontWeight: 600 }}
-        />
-      )}
       {needMore === 0 && photoCount > 0 && (
         <Chip
           label={`已拍 ${photoCount} 张${reachedMax ? '（已达上限）' : ''}`}

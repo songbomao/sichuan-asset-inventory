@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607291704';
+export const APP_VERSION = 'v202607291725';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-29 17:04';
-export const RELEASE_NOTES = '资产详情字段精简 + AI 识别按钮常驻：①AssetDetailTabs 砍掉 30 个冗余字段（资产编码/名称/分类编码/名称/公司代码/利润中心组/主资产编码/旧卡片号/计量单位/ABC分类/利润中心/省份/资产归口/专业归口/资产性质/使用状态/许可证号/数量/减值准备/累计折旧/成新率/制造商/供应商/供应商代码/项目号/增加原因/折旧码/标的物编码/合同编码/备注/历史变更），保留 18 个核心字段重新分 3 组（基本信息：所属公司/资产类型/规格型号/创建日期/会计年度；位置信息：存放地点/使用部门/部门代码/成本中心/成本中心代码/利润中心代码/WBS元素；财务与使用：使用人/计划使用期间/剩余使用期间/转资日期/是否超龄/原值/净值）；②AI 识别资产按钮改为常驻显示（有候选资产时始终可见），未拍照时按钮禁用，拍照后自动启用。';
+export const RELEASE_TIME = '2026-07-29 17:25';
+export const RELEASE_NOTES = '水印照片区域文案优化：①移除 CameraCapture 中「至少还需拍 N 张」黄色 Chip，仅保留已拍提示；②AssetDetailTabs 字段精简为 3 组 18 字段 + AI 识别按钮常驻（未拍照时禁用）。另含 v202607291704 的资产详情字段精简；③水印照片标题右侧提示文案改为「至少 2 张，一张包含固资标签，另一张为固资正面照片」。
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607291725',
+    time: '2026-07-29 17:25',
+    notes: '水印照片文案优化：去掉「至少还需拍N张」提示，标题提示改为含固资标签/正面照的具体说明。',
+  },
   {
     version: 'v202607291704',
     time: '2026-07-29 17:04',

@@ -472,7 +472,7 @@ export default function InventoryPage() {
         <div className="bg-white rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-2">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-gray-900 text-sm">水印照片</h3>
-            <span className="text-xs text-gray-400">至少 2 张</span>
+            <span className="text-xs text-gray-400">至少 2 张，一张包含固资标签，另一张为固资正面照片</span>
           </div>
 
           {/* 照片缩略图网格 / 空占位 */}
