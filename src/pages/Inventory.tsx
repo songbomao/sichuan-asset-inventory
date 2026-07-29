@@ -4,6 +4,7 @@ import Button from '@mui/material/Button';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import CircularProgress from '@mui/material/CircularProgress';
+import Skeleton from '@mui/material/Skeleton';
 import Alert from '@mui/material/Alert';
 import Snackbar from '@mui/material/Snackbar';
 import ToggleButton from '@mui/material/ToggleButton';
@@ -12,10 +13,11 @@ import TextField from '@mui/material/TextField';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import { getTaskDetail, getProgress, type AssetInfo } from '../api/tasks';
-import { submitRecord } from '../api/inventory';
+import { submitRecord, type AssetDetail, getAssetByCode } from '../api/inventory';
 import { getCurrentLocation } from '../api/reverseGeocode';
 import { useAuth } from '../contexts/AuthContext';
 import CameraCapture from '../components/CameraCapture';
+import AssetDetailTabs from '../components/AssetDetailTabs';
 import ProgressBar from '../components/ProgressBar';
 import type { RecognizeAssetResult } from '../api/ai';
 
@@ -46,6 +48,9 @@ export default function InventoryPage() {
   const [remark, setRemark] = useState('');
   /** 盘点数量（可选，留空表示不填） */
   const [inventoryQty, setInventoryQty] = useState('');
+  const [assetDetail, setAssetDetail] = useState<AssetDetail | null>(null);
+  const [assetDetailLoading, setAssetDetailLoading] = useState(false);
+  const [assetDetailError, setAssetDetailError] = useState<string | null>(null);
   const [photos, setPhotos] = useState<string[]>([]);
 
   // 加载状态
@@ -145,6 +150,21 @@ export default function InventoryPage() {
       setRemark('');
       setPhotos([]);
       updateTime();
+      // 获取资产完整详情（含 63 个字段）
+      setAssetDetailLoading(true);
+      setAssetDetailError(null);
+      setAssetDetail(null);
+      getAssetByCode(currentAsset.assetCode)
+        .then((detail) => {
+          setAssetDetail(detail);
+          setAssetDetailError(null);
+        })
+        .catch((err) => {
+          console.warn('获取资产详情失败，回退到简化展示:', err);
+          setAssetDetailError(err instanceof Error ? err.message : '获取资产详情失败');
+          setAssetDetail(null);
+        })
+        .finally(() => setAssetDetailLoading(false));
     }
   }, [currentIndex, assets]);
 
@@ -325,51 +345,123 @@ export default function InventoryPage() {
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2 space-y-2">
-        {/* 固定资产详情（来自 sai_assets，经 GetTaskDetail 关联返回） */}
-        <div className="bg-white rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-1.5">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-gray-900 text-sm">固定资产详情</h3>
-            <span className="text-xs text-gray-400">{currentAsset.assetCode}</span>
+        {/* 固定资产详情 */}
+        {assetDetailLoading ? (
+          <div className="bg-white rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-gray-900 text-sm">固定资产详情</h3>
+              <span className="text-xs text-gray-400">{currentAsset.assetCode}</span>
+            </div>
+            <Skeleton variant="text" width="40%" />
+            <Skeleton variant="text" width="70%" />
+            <Skeleton variant="text" width="60%" />
           </div>
-          <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-            <div>
-              <dt className="text-gray-400">资产名称</dt>
-              <dd className="text-gray-800 break-words">{currentAsset.assetName}</dd>
+        ) : assetDetailError && !assetDetail ? (
+          /* 获取详情失败时 fallback 到原来的简化展示 */
+          <div className="bg-white rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-gray-900 text-sm">固定资产详情</h3>
+              <span className="text-xs text-gray-400">{currentAsset.assetCode}</span>
             </div>
-            <div>
-              <dt className="text-gray-400">类别</dt>
-              <dd className="text-gray-800">{currentAsset.category || '—'}</dd>
-            </div>
-            <div>
-              <dt className="text-gray-400">使用部门</dt>
-              <dd className="text-gray-800">{currentAsset.department || '—'}</dd>
-            </div>
-            <div>
-              <dt className="text-gray-400">责任人</dt>
-              <dd className="text-gray-800">{currentAsset.userName || '—'}</dd>
-            </div>
-            <div>
-              <dt className="text-gray-400">存放地点</dt>
-              <dd className="text-gray-800 break-words">{currentAsset.location || '—'}</dd>
-            </div>
-            <div>
-              <dt className="text-gray-400">使用状态</dt>
-              <dd className="text-gray-800">{currentAsset.status || '—'}</dd>
-            </div>
-            {currentAsset.costCenterName ? (
+            <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
               <div>
-                <dt className="text-gray-400">成本中心</dt>
-                <dd className="text-gray-800 break-words">{currentAsset.costCenterName}</dd>
+                <dt className="text-gray-400">资产名称</dt>
+                <dd className="text-gray-800 break-words">{currentAsset.assetName}</dd>
               </div>
-            ) : null}
-            {currentAsset.standard ? (
               <div>
-                <dt className="text-gray-400">规格型号</dt>
-                <dd className="text-gray-800 break-words">{currentAsset.standard}</dd>
+                <dt className="text-gray-400">类别</dt>
+                <dd className="text-gray-800">{currentAsset.category || '—'}</dd>
               </div>
-            ) : null}
-          </dl>
-        </div>
+              <div>
+                <dt className="text-gray-400">使用部门</dt>
+                <dd className="text-gray-800">{currentAsset.department || '—'}</dd>
+              </div>
+              <div>
+                <dt className="text-gray-400">责任人</dt>
+                <dd className="text-gray-800">{currentAsset.userName || '—'}</dd>
+              </div>
+              <div>
+                <dt className="text-gray-400">存放地点</dt>
+                <dd className="text-gray-800 break-words">{currentAsset.location || '—'}</dd>
+              </div>
+              <div>
+                <dt className="text-gray-400">使用状态</dt>
+                <dd className="text-gray-800">{currentAsset.status || '—'}</dd>
+              </div>
+              {currentAsset.costCenterName ? (
+                <div>
+                  <dt className="text-gray-400">成本中心</dt>
+                  <dd className="text-gray-800 break-words">{currentAsset.costCenterName}</dd>
+                </div>
+              ) : null}
+              {currentAsset.standard ? (
+                <div>
+                  <dt className="text-gray-400">规格型号</dt>
+                  <dd className="text-gray-800 break-words">{currentAsset.standard}</dd>
+                </div>
+              ) : null}
+            </dl>
+          </div>
+        ) : assetDetail ? (
+          /* 完整资产详情（AssetDetailTabs 自带 Paper 包裹） */
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-semibold text-gray-900 text-sm">固定资产详情</h3>
+              <span className="text-xs text-gray-400">{currentAsset.assetCode}</span>
+            </div>
+            <AssetDetailTabs
+              asset={assetDetail}
+              lifecycle={null}
+              lifecycleLoading={false}
+            />
+          </div>
+        ) : (
+          /* 首次加载未完成时的 fallback */
+          <div className="bg-white rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-gray-900 text-sm">固定资产详情</h3>
+              <span className="text-xs text-gray-400">{currentAsset.assetCode}</span>
+            </div>
+            <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+              <div>
+                <dt className="text-gray-400">资产名称</dt>
+                <dd className="text-gray-800 break-words">{currentAsset.assetName}</dd>
+              </div>
+              <div>
+                <dt className="text-gray-400">类别</dt>
+                <dd className="text-gray-800">{currentAsset.category || '—'}</dd>
+              </div>
+              <div>
+                <dt className="text-gray-400">使用部门</dt>
+                <dd className="text-gray-800">{currentAsset.department || '—'}</dd>
+              </div>
+              <div>
+                <dt className="text-gray-400">责任人</dt>
+                <dd className="text-gray-800">{currentAsset.userName || '—'}</dd>
+              </div>
+              <div>
+                <dt className="text-gray-400">存放地点</dt>
+                <dd className="text-gray-800 break-words">{currentAsset.location || '—'}</dd>
+              </div>
+              <div>
+                <dt className="text-gray-400">使用状态</dt>
+                <dd className="text-gray-800">{currentAsset.status || '—'}</dd>
+              </div>
+              {currentAsset.costCenterName ? (
+                <div>
+                  <dt className="text-gray-400">成本中心</dt>
+                  <dd className="text-gray-800 break-words">{currentAsset.costCenterName}</dd>
+                </div>
+              ) : null}
+              {currentAsset.standard ? (
+                <div>
+                  <dt className="text-gray-400">规格型号</dt>
+                  <dd className="text-gray-800 break-words">{currentAsset.standard}</dd>
+                </div>
+              ) : null}
+            </dl>
+          </div>
+        )}
 
         {/* 已盘点提示 */}
         {isCompleted && (
@@ -472,19 +564,42 @@ export default function InventoryPage() {
           sx={{ '& .MuiInputBase-root': { fontSize: '0.85rem' } }}
         />
 
-        {/* 盘点数量（可选） */}
-        <TextField
-          fullWidth
-          label="盘点数量（可选）"
-          size="small"
-          type="number"
-          value={inventoryQty}
-          onChange={(e) => setInventoryQty(e.target.value)}
-          placeholder="填写实际盘点数量"
-          disabled={isCompleted}
-          inputProps={{ min: 0, step: 1 }}
-          sx={{ '& .MuiInputBase-root': { fontSize: '0.85rem' } }}
-        />
+        {/* 盘点数量 */}
+        <div className="bg-white rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-1.5">
+          <h3 className="font-semibold text-gray-900 text-sm">盘点数量</h3>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+            <div>
+              <div className="text-xs text-gray-400 mb-0.5">账面数量</div>
+              <div className="text-sm font-semibold text-gray-700">
+                {assetDetail?.menge ? `${assetDetail.menge}` : '—'}
+              </div>
+            </div>
+            <div>
+              <TextField
+                fullWidth
+                size="small"
+                type="number"
+                label="实际盘点数量"
+                value={inventoryQty}
+                onChange={(e) => setInventoryQty(e.target.value)}
+                placeholder="填写实盘数量"
+                disabled={isCompleted}
+                inputProps={{ min: 0, step: 1 }}
+                sx={{ '& .MuiInputBase-root': { fontSize: '0.85rem' } }}
+              />
+            </div>
+          </div>
+          {/* 差异提示 */}
+          {assetDetail?.menge && inventoryQty.trim() !== '' && (() => {
+            const bookQty = Number(assetDetail.menge);
+            const actualQty = Number(inventoryQty);
+            const diff = actualQty - bookQty;
+            if (diff === 0) {
+              return <div className="text-xs text-green-600 font-medium">✅ 数量一致，无差异</div>;
+            }
+            return <div className="text-xs text-red-600 font-medium">⚠ 差异：{diff > 0 ? '+' : ''}{diff}（盘{actualQty > bookQty ? '盈' : '亏'}）</div>;
+          })()}
+        </div>
       </div>
 
       {/* 底部操作区 - 始终可见 */}

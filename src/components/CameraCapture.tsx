@@ -1,7 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import Button from '@mui/material/Button';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
-import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import CircularProgress from '@mui/material/CircularProgress';
 import Chip from '@mui/material/Chip';
@@ -35,8 +34,8 @@ interface CameraCaptureProps {
 
 /**
  * 水印相机组件
- * - 优先调用后置摄像头拍照
- * - 降级方案：文件上传（相册选取）
+ * - 仅支持后置摄像头拍照（已禁用相册选取）
+ * - 摄像头权限不足时提示用户，不降级为文件选择
  * - 拍照后自动叠加水印
  * - 支持多次调用，由父组件维护照片数组
  */
@@ -109,10 +108,8 @@ export default function CameraCapture({
       streamRef.current = stream;
       setCameraOpen(true);
     } catch (err) {
-      console.warn('摄像头权限被拒绝，降级为文件上传', err);
-      // 降级：直接触发文件选择
-      fileInputRef.current?.click();
-      setError('摄像头权限不足，已切换为相册选取');
+      console.warn('摄像头权限被拒绝', err);
+      setError('摄像头权限不足，仅支持拍照上传');
     } finally {
       setLoading(false);
     }
@@ -391,16 +388,6 @@ export default function CameraCapture({
               : photoCount === 0
               ? '📷 拍照'
               : `📷 再拍一张（${photoCount}/${maxPhotos}）`}
-          </Button>
-          <Button
-            variant="outlined"
-            fullWidth
-            startIcon={<PhotoLibraryIcon />}
-            onClick={() => fileInputRef.current?.click()}
-            disabled={disabled || reachedMax}
-            sx={{ py: 1.2 }}
-          >
-            相册
           </Button>
         </div>
       )}

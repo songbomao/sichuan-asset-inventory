@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607291643';
+export const APP_VERSION = 'v202607291007';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-29 16:43';
-export const RELEASE_NOTES = '返回控制台按钮健壮性增强：①已在控制台首页时由仅滚动改为「滚动+replace 重新挂载」，消除「点了像没反应」的视觉死角；②按钮显式加 type=button、position:relative、zIndex:1、pointerEvents:auto，杜绝任何未来可能的层级遮挡吞点击。跳转目标仍按「isAdmin 或 /admin 路径前缀」双判据选管理员/责任人控制台。另含 v202607291623 的两个选择器默认全选与责任人全选/取消全选按钮。';
+export const RELEASE_TIME = '2026-07-29 10:07';
+export const RELEASE_NOTES = '盘点详情页三项调整：①固定资产详情字段扩展——集成 AssetDetailTabs 组件展示 6 个标签页（基本信息/位置信息/使用信息/财务信息/维护供应商/历史变更），切换资产时调用 getAssetByCode 拉取完整 63 字段，加载中显示 Skeleton 占位，失败时回退到简化展示；②照片上传限制——移除 CameraCapture 组件中「相册」按钮与降级触发文件选择逻辑，仅保留后置摄像头拍照入口，摄像头权限不足时仅显示错误提示不再自动打开文件选择器；③盘点数量区域重构——新增账面数量与实际盘点数量对比卡片，左侧显示账面数量（来自 menu000字段），右侧为实际盘点数量输入框，填写后自动计算差异并显示绿色（一致）/红色（盘盈/盘亏）提示，消除冗余留白。';
 
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
@@ -16,6 +16,11 @@ export const VERSION_HISTORY: Array<{
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607291007',
+    time: '2026-07-29 10:07',
+    notes: '盘点详情页三项调整：①固定资产详情字段扩展——集成 AssetDetailTabs 组件展示 6 个标签页（基本信息/位置信息/使用信息/财务信息/维护供应商/历史变更），切换资产时调用 getAssetByCode 拉取完整 63 字段，加载中显示 Skeleton 占位，失败时回退到简化展示；②照片上传限制——移除 CameraCapture 组件中「相册」按钮与降级触发文件选择逻辑，仅保留后置摄像头拍照入口；③盘点数量区域重构——新增账面数量与实际盘点数量对比卡片，左侧显示账面数量，右侧为实际盘点数量输入框，填写后自动计算差异并显示盘盈/盘亏提示。',
+  },
   {
     version: 'v202607291643',
     time: '2026-07-29 16:43',
