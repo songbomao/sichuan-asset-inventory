@@ -74,14 +74,14 @@ export default function AssetDetailTabs({ asset, loading, error }: AssetDetailTa
             </div>
           ))}
         </div>
-        {/* 净值之后：所属公司、存放地点各占一行（信息较长，独占一行更易阅读） */}
+        {/* 净值之后：存放地点、所属公司各占一行（信息较长，独占一行更易阅读） */}
         <div className="text-xs py-1.5 border-t border-gray-100 mt-1">
-          <span className="text-gray-400">所属公司</span>
-          <span className="text-gray-800 font-medium float-right">{renderValue(asset.companyName)}</span>
-        </div>
-        <div className="text-xs py-1.5 border-t border-gray-100">
           <span className="text-gray-400">存放地点</span>
           <span className="text-gray-800 font-medium float-right break-words max-w-[70%] text-right">{renderValue(asset.location)}</span>
+        </div>
+        <div className="text-xs py-1.5 border-t border-gray-100">
+          <span className="text-gray-400">所属公司</span>
+          <span className="text-gray-800 font-medium float-right">{renderValue(asset.companyName)}</span>
         </div>
       </div>
     </Paper>

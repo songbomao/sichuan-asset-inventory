@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607301402';
+export const APP_VERSION = 'v202607301411';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-30 14:02';
-export const RELEASE_NOTES = '根治返回控制台跳错页：isAdmin 判据由异步 refreshAdmin RPC 改为 JWT Claim 同步解析（登录瞬间即就绪，消除网络竞态窗口）；parseToken 增强解析 IsAdmin/IsSuper Claim；AuthContext 与 GlobalAppBar 均优先参考 JWT Claim，杜绝管理员被误导向 /tasks。';
+export const RELEASE_TIME = '2026-07-30 14:11';
+export const RELEASE_NOTES = '资产详情页优化：①互换"所属公司"与"存放地点"字段位置；②合并二维码照与正面照为统一资产信息采集模块（支持任意顺序拍摄2张+照片，系统自动识别二维码与实物照并分类标记）。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
@@ -16,9 +16,9 @@ export const VERSION_HISTORY: Array<{
   notes: string;
 }> = [
   {
-    version: 'v202607301402',
-    time: '2026-07-30 14:02',
-    notes: '根治返回控制台跳错页：isAdmin 改为 JWT Claim 同步解析，消除异步竞态。',
+    version: 'v202607301411',
+    time: '2026-07-30 14:11',
+    notes: '资产详情页互换字段位置+合并照片采集为统一智能分类模块。',
   },
   {
     version: 'v202607301145',

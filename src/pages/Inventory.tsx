@@ -82,10 +82,22 @@ export default function InventoryPage() {
   const [assetDetailLoading, setAssetDetailLoading] = useState(false);
   const [assetDetailError, setAssetDetailError] = useState<string | null>(null);
   // 照片拆为二维码照（不水印，用于识别固资编号）与正面照（水印，用于外观识别）
-  const [qrPhotos, setQrPhotos] = useState<string[]>([]);
-  const [frontPhotos, setFrontPhotos] = useState<string[]>([]);
-  /** 前端 jsQR 从二维码照解码出的固资编号 */
-  const [qrDecodedCode, setQrDecodedCode] = useState('');
+  // 统一照片列表：每张照片带有类型标记（qr = 二维码，unknown = 待分类）
+  interface PhotoItem {
+    dataUrl: string;
+    type: 'qr' | 'unknown';
+    decodedCode?: string; // 二维码解码结果
+  }
+  const [allPhotos, setAllPhotos] = useState<PhotoItem[]>([]);
+  /** 前端 jsQR 从照片中解码出的第一个固资编号（用于 AI 识别） */
+  const qrDecodedCode = useMemo(() => {
+    const qr = allPhotos.find((p) => p.type === 'qr' && p.decodedCode);
+    return qr?.decodedCode ?? '';
+  }, [allPhotos]);
+  /** 二维码照片数量 */
+  const qrPhotoCount = useMemo(() => allPhotos.filter((p) => p.type === 'qr').length, [allPhotos]);
+  /** 非二维码照片数量（实物照） */
+  const frontPhotoCount = useMemo(() => allPhotos.filter((p) => p.type === 'unknown').length, [allPhotos]);
   /** AI 识别完整结果（含二维码校验与置信度），用于 UI 展示与二次确认 */
   const [aiResult, setAiResult] = useState<RecognizeAssetResult | null>(null);
 
@@ -189,9 +201,7 @@ export default function InventoryPage() {
       setAssetStatus('正常');
       setRemark('');
       setInventoryQty('');
-      setQrPhotos([]);
-      setFrontPhotos([]);
-      setQrDecodedCode('');
+      setAllPhotos([]);
       setAiResult(null);
       updateTime();
       // 获取资产完整详情
@@ -219,9 +229,7 @@ export default function InventoryPage() {
     setAssetStatus(val);
     // 切换到丢失：清照片、数量强制0
     if (val === '丢失' && prev !== '丢失') {
-      setQrPhotos([]);
-      setFrontPhotos([]);
-      setQrDecodedCode('');
+      setAllPhotos([]);
       setAiResult(null);
       setInventoryQty('0');
     }
@@ -235,28 +243,24 @@ export default function InventoryPage() {
     }
   }, [assetStatus]);
 
-  /** 处理二维码照捕获（不水印，立即解码固资编号） */
-  const handleQRPhotoCapture = useCallback(async (dataUrl: string) => {
-    setQrPhotos((prev) => [...prev, dataUrl]);
+  /** 统一照片捕获：新照片自动解码二维码并分类（qr/unknown） */
+  const handlePhotoCapture = useCallback(async (dataUrl: string) => {
+    // 先以 unknown 类型加入列表（乐观更新）
+    const newItem: PhotoItem = { dataUrl, type: 'unknown' };
+    setAllPhotos((prev) => [...prev, newItem]);
+    // 异步解码二维码
     const code = await decodeQRCode(dataUrl);
-    setQrDecodedCode(code ?? '');
+    if (code) {
+      // 解码成功 → 标记为二维码照
+      setAllPhotos((prev) =>
+        prev.map((p) => (p.dataUrl === dataUrl ? { ...p, type: 'qr', decodedCode: code } : p)),
+      );
+    }
   }, []);
 
-  /** 处理正面照捕获（水印） */
-  const handleFrontPhotoCapture = useCallback((dataUrl: string) => {
-    setFrontPhotos((prev) => [...prev, dataUrl]);
-  }, []);
-
-  /** 删除二维码照 / 正面照 */
-  const handleRemoveQR = useCallback((idx: number) => {
-    setQrPhotos((prev) => {
-      const next = prev.filter((_, i) => i !== idx);
-      if (next.length === 0) setQrDecodedCode('');
-      return next;
-    });
-  }, []);
-  const handleRemoveFront = useCallback((idx: number) => {
-    setFrontPhotos((prev) => prev.filter((_, i) => i !== idx));
+  /** 删除指定索引照片 */
+  const handleRemovePhoto = useCallback((idx: number) => {
+    setAllPhotos((prev) => prev.filter((_, i) => i !== idx));
   }, []);
 
   /** AI 识别候选：当前任务全部资产（传入后相机组件显示「AI 识别资产」按钮） */
@@ -295,10 +299,12 @@ export default function InventoryPage() {
     [assets, currentIndex],
   );
 
-  /** 独立 AI 识别按钮逻辑（双照片双校验） */
-  const lastFrontPhoto = frontPhotos.length > 0 ? frontPhotos[frontPhotos.length - 1] : null;
+  /** 独立 AI 识别按钮逻辑（统一照片智能分类） */
+  const qrPhotos = useMemo(() => allPhotos.filter((p) => p.type === 'qr'), [allPhotos]);
+  const frontPhotos = useMemo(() => allPhotos.filter((p) => p.type === 'unknown'), [allPhotos]);
+  const lastFrontPhoto = frontPhotos.length > 0 ? frontPhotos[frontPhotos.length - 1].dataUrl : null;
   const handleAIRecognize = useCallback(async () => {
-    if (!qrPhotos.length || !frontPhotos.length || !qrDecodedCode || !lastFrontPhoto || aiCandidates.length === 0) return;
+    if (qrPhotos.length === 0 || frontPhotos.length === 0 || !qrDecodedCode || !lastFrontPhoto || aiCandidates.length === 0) return;
     setAiLoading(true);
     setAiMsg(null);
     try {
@@ -306,7 +312,7 @@ export default function InventoryPage() {
         image: lastFrontPhoto,
         candidates: aiCandidates,
         qrAssetCode: qrDecodedCode,
-        qrImage: qrPhotos[0],
+        qrImage: qrPhotos[0].dataUrl,
         currentAssetCode: assets[currentIndex]?.assetCode ?? '',
       });
       handleAIRecognized(result);
@@ -356,9 +362,9 @@ export default function InventoryPage() {
 
     const lost = IS_LOST(assetStatus);
 
-    // 丢失状态：跳过拍照；其余需二维码照 + 正面照各至少 1 张
-    if (!lost && (qrPhotos.length < 1 || frontPhotos.length < 1)) {
-      setSnackbar({ open: true, message: '❌ 需拍摄固定资产二维码照 + 固资正面照各至少 1 张', severity: 'error' });
+    // 丢失状态：跳过拍照；其余需至少 2 张照片（含至少 1 张二维码照）
+    if (!lost && (allPhotos.length < 2 || qrPhotoCount < 1)) {
+      setSnackbar({ open: true, message: '❌ 需拍摄至少 2 张照片（含固定资产二维码）', severity: 'error' });
       return;
     }
 
@@ -375,7 +381,7 @@ export default function InventoryPage() {
         assetCode: asset.assetCode,
         status: assetStatus,
         remark,
-        photoUrls: [...qrPhotos, ...frontPhotos],
+        photoUrls: allPhotos.map((p) => p.dataUrl),
         longitude: gpsCoords.longitude,
         latitude: gpsCoords.latitude,
         location: gpsLocation,
@@ -396,9 +402,7 @@ export default function InventoryPage() {
       setAssetStatus('正常');
       setRemark('');
       setInventoryQty('');
-      setQrPhotos([]);
-      setFrontPhotos([]);
-      setQrDecodedCode('');
+      setAllPhotos([]);
       setAiResult(null);
       updateTime();
 
@@ -610,23 +614,34 @@ export default function InventoryPage() {
           </Alert>
         )}
 
-        {/* 水印照片卡片：丢失状态可跳过拍照 */}
+        {/* 统一资产信息采集模块：拍摄 2 张+照片，系统自动识别二维码与实物照 */}
         {!IS_LOST(assetStatus) && (
-        <>
-        {/* 二维码照卡片：固定资产标签（不水印，用于识别固资编号） */}
         <div className="bg-white rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-2">
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-gray-900 text-sm">固定资产二维码</h3>
-            <span className="text-xs text-gray-400">拍摄固资标签上的二维码</span>
+            <h3 className="font-semibold text-gray-900 text-sm">📷 资产信息采集</h3>
+            <div className="flex items-center gap-2 text-xs text-gray-400">
+              <span className={qrPhotoCount >= 1 ? 'text-green-600 font-medium' : ''}>二维码 {qrPhotoCount}</span>
+              <span className="text-gray-300">|</span>
+              <span className={allPhotos.length >= 2 ? 'text-green-600 font-medium' : ''}>实物照 {frontPhotoCount}</span>
+            </div>
           </div>
-          {qrPhotos.length > 0 ? (
+          <p className="text-xs text-gray-400">任意顺序拍摄 2 张及以上照片，系统自动识别二维码与实物</p>
+          {allPhotos.length > 0 ? (
             <div className="grid grid-cols-5 gap-1.5">
-              {qrPhotos.map((url, idx) => (
+              {allPhotos.map((photo, idx) => (
                 <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border border-gray-100">
-                  <img src={url} alt={`二维码${idx + 1}`} className="w-full h-full object-cover" />
+                  <img src={photo.dataUrl} alt={`照片${idx + 1}`} className="w-full h-full object-cover" />
+                  {/* 类型标记 */}
+                  <span
+                    className={`absolute top-0.5 left-0.5 text-[10px] px-1 py-0.5 rounded-full font-medium ${
+                      photo.type === 'qr' ? 'bg-green-500 text-white' : 'bg-blue-500 text-white'
+                    }`}
+                  >
+                    {photo.type === 'qr' ? '码' : '物'}
+                  </span>
                   {!isCompleted && (
                     <button
-                      onClick={() => handleRemoveQR(idx)}
+                      onClick={() => handleRemovePhoto(idx)}
                       className="absolute top-0.5 right-0.5 bg-red-500 text-white w-4 h-4 rounded-full flex items-center justify-center text-[10px]"
                     >
                       <DeleteIcon fontSize="inherit" />
@@ -638,16 +653,16 @@ export default function InventoryPage() {
           ) : (
             <div className="flex flex-col items-center justify-center gap-1 py-5 rounded-xl border-2 border-dashed border-gray-200 text-gray-300">
               <CameraAltIcon sx={{ fontSize: 28 }} />
-              <span className="text-xs">尚未拍摄二维码，点击下方按钮拍摄</span>
+              <span className="text-xs">点击下方按钮拍摄（至少 2 张）</span>
             </div>
           )}
           {qrDecodedCode ? (
             <Alert severity="success" sx={{ fontSize: '0.8rem', py: 0.5 }}>二维码识别：{qrDecodedCode}</Alert>
-          ) : qrPhotos.length > 0 ? (
-            <Alert severity="warning" sx={{ fontSize: '0.8rem', py: 0.5 }}>未能识别二维码，请重拍清晰标签</Alert>
+          ) : allPhotos.length > 0 && qrPhotoCount === 0 ? (
+            <Alert severity="warning" sx={{ fontSize: '0.8rem', py: 0.5 }}>未检测到二维码标签，请拍摄固定资产标签上的二维码</Alert>
           ) : null}
           <CameraCapture
-            onCapture={handleQRPhotoCapture}
+            onCapture={handlePhotoCapture}
             noWatermark
             watermark={{
               time: watermarkTime,
@@ -656,56 +671,11 @@ export default function InventoryPage() {
               assetCode: currentAsset.assetCode,
             }}
             disabled={isCompleted}
-            photoCount={qrPhotos.length}
-            minPhotos={1}
-            maxPhotos={2}
+            photoCount={allPhotos.length}
+            minPhotos={2}
+            maxPhotos={5}
           />
         </div>
-
-        {/* 正面照卡片：固资实物外观（水印） */}
-        <div className="bg-white rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-2">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-gray-900 text-sm">固资正面照</h3>
-            <span className="text-xs text-gray-400">拍摄固资实物外观</span>
-          </div>
-          {frontPhotos.length > 0 ? (
-            <div className="grid grid-cols-5 gap-1.5">
-              {frontPhotos.map((url, idx) => (
-                <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border border-gray-100">
-                  <img src={url} alt={`正面${idx + 1}`} className="w-full h-full object-cover" />
-                  {!isCompleted && (
-                    <button
-                      onClick={() => handleRemoveFront(idx)}
-                      className="absolute top-0.5 right-0.5 bg-red-500 text-white w-4 h-4 rounded-full flex items-center justify-center text-[10px]"
-                    >
-                      <DeleteIcon fontSize="inherit" />
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center gap-1 py-5 rounded-xl border-2 border-dashed border-gray-200 text-gray-300">
-              <CameraAltIcon sx={{ fontSize: 28 }} />
-              <span className="text-xs">尚未拍摄正面照，点击下方按钮拍摄</span>
-            </div>
-          )}
-          <CameraCapture
-            onCapture={handleFrontPhotoCapture}
-            watermark={{
-              time: watermarkTime,
-              location: gpsLocation,
-              operator: user?.name || user?.username || '--',
-              assetCode: currentAsset.assetCode,
-            }}
-            disabled={isCompleted}
-            photoCount={frontPhotos.length}
-            minPhotos={1}
-            maxPhotos={3}
-            hideAI
-          />
-        </div>
-        </>
         )}
 
         {/* AI 识别资产 — 独立模块，放在照片之后 */}
@@ -718,7 +688,7 @@ export default function InventoryPage() {
               color="secondary"
               startIcon={aiLoading ? <CircularProgress size={18} color="inherit" /> : <span>✨</span>}
               onClick={handleAIRecognize}
-              disabled={aiLoading || isCompleted || qrPhotos.length === 0 || frontPhotos.length === 0 || !qrDecodedCode}
+              disabled={aiLoading || isCompleted || qrPhotoCount === 0 || frontPhotoCount === 0 || !qrDecodedCode}
               sx={{ py: 1.2, borderRadius: 2 }}
             >
               {aiLoading ? 'AI 识别中...' : '✨ AI 识别资产'}
