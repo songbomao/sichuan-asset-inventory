@@ -15,22 +15,40 @@ export interface RecognizeAssetCandidate {
   spec: string;
 }
 
-/** 资产识别请求 */
+/** 资产识别请求（双照片双校验：二维码硬校验 + 正面照软识别） */
 export interface RecognizeAssetRequest {
-  /** 拍照/相册得到的水印照片 Base64（dataURL） */
+  /** 正面照（实物外观）Base64（dataURL），用于外观识别 */
   image: string;
   /** 当前盘点位置可能的资产候选列表 */
   candidates: RecognizeAssetCandidate[];
+  /** 前端 jsQR 从二维码照解码出的固资编号；解码失败传空串 */
+  qrAssetCode?: string;
+  /** 二维码照 Base64（dataURL），可选，供后端留痕/兜底 */
+  qrImage?: string;
+  /** 当前盘点资产编号（前端已知），用于与二维码编号硬校验比对 */
+  currentAssetCode?: string;
 }
 
-/** 资产识别结果 */
+/** 资产识别结果（双校验） */
 export interface RecognizeAssetResult {
   assetCode: string;
   /** 资产名称 */
   name: string;
   spec: string;
-  /** 置信度 0~1 */
+  /** 置信度 0~1（正面照外观识别） */
   confidence: number;
+  /** 二维码解码出的编号（回显） */
+  qrAssetCode?: string;
+  /** 二维码是否成功解码出编号 */
+  qrDecoded?: boolean;
+  /** 本地表是否存在该编号 */
+  qrExists?: boolean;
+  /** 硬校验：二维码编号 == 当前盘点资产编号 */
+  qrMatched?: boolean;
+  /** 置信度是否低于阈值（0.6） */
+  lowConfidence?: boolean;
+  /** 是否需要人工确认（!qrMatched || lowConfidence） */
+  needManualConfirm?: boolean;
 }
 
 /** 差异诊断请求 */

@@ -32,6 +32,8 @@ interface CameraCaptureProps {
   onAIRecognized?: (result: RecognizeAssetResult) => void;
   /** 隐藏内置 AI 识别按钮（父组件自行渲染） */
   hideAI?: boolean;
+  /** 不叠加水印（用于二维码照，避免干扰解码） */
+  noWatermark?: boolean;
 }
 
 /**
@@ -51,6 +53,7 @@ export default function CameraCapture({
   candidates,
   onAIRecognized,
   hideAI = false,
+  noWatermark = false,
 }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -166,6 +169,12 @@ export default function CameraCapture({
     (rawDataUrl: string) => {
       const img = new Image();
       img.onload = () => {
+        if (noWatermark) {
+          setPreviewSrc(rawDataUrl);
+          setLastPhoto(rawDataUrl);
+          onCapture(rawDataUrl);
+          return;
+        }
         const canvas = canvasRef.current;
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
@@ -222,7 +231,7 @@ export default function CameraCapture({
       };
       img.src = rawDataUrl;
     },
-    [watermark, onCapture],
+    [watermark, onCapture, noWatermark],
   );
 
   /** 拍照 */

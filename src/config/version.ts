@@ -5,16 +5,21 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607301050';
+export const APP_VERSION = 'v202607301145';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-30 10:50';
-export const RELEASE_NOTES = '返回控制台修复：localStorage同步兜底isAdmin+AppBar zIndex提至1200+touchEnd/onClick双绑定，移除无效pathname判据（业务页均为/tasks前缀）；资产详情字段顺序：所属公司/存放地点移至净值之后。';
+export const RELEASE_TIME = '2026-07-30 11:45';
+export const RELEASE_NOTES = 'AI 识别双照片双校验：①拍照拆为二维码照(jsQR解码固资编号,不水印)+固资正面照(水印)；②后端按 assets_code 查本地表硬校验二维码编号==当前盘点资产(qrMatched)；③正面照 LLM 识别加拒识(风景/无关物→低分)；④后端新增 lowConfidence/needManualConfirm 闸门；⑤前端不自动切资产、弹人工确认，根治置信度虚高(空调拍风景画还90%)。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607301145',
+    time: '2026-07-30 11:45',
+    notes: 'AI识别双照片双校验：二维码硬校验+正面照拒识+置信度闸门，根治置信度虚高。',
+  },
   {
     version: 'v202607301050',
     time: '2026-07-30 10:50',
