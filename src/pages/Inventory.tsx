@@ -348,10 +348,7 @@ export default function InventoryPage() {
         {/* 固定资产详情 */}
         {assetDetailLoading ? (
           <div className="bg-white rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-1.5">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-gray-900 text-sm">固定资产详情</h3>
-              <span className="text-xs text-gray-400">{currentAsset.assetCode}</span>
-            </div>
+            <h3 className="font-semibold text-gray-900 text-sm">固定资产详情</h3>
             <Skeleton variant="text" width="40%" />
             <Skeleton variant="text" width="70%" />
             <Skeleton variant="text" width="60%" />
@@ -359,10 +356,7 @@ export default function InventoryPage() {
         ) : assetDetailError && !assetDetail ? (
           /* 获取详情失败时 fallback 到原来的简化展示 */
           <div className="bg-white rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-1.5">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-gray-900 text-sm">固定资产详情</h3>
-              <span className="text-xs text-gray-400">{currentAsset.assetCode}</span>
-            </div>
+            <h3 className="font-semibold text-gray-900 text-sm">固定资产详情</h3>
             <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
               <div>
                 <dt className="text-gray-400">资产名称</dt>
@@ -383,10 +377,6 @@ export default function InventoryPage() {
               <div>
                 <dt className="text-gray-400">存放地点</dt>
                 <dd className="text-gray-800 break-words">{currentAsset.location || '—'}</dd>
-              </div>
-              <div>
-                <dt className="text-gray-400">使用状态</dt>
-                <dd className="text-gray-800">{currentAsset.status || '—'}</dd>
               </div>
               {currentAsset.costCenterName ? (
                 <div>
@@ -405,10 +395,7 @@ export default function InventoryPage() {
         ) : assetDetail ? (
           /* 完整资产详情（AssetDetailTabs 自带 Paper 包裹） */
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold text-gray-900 text-sm">固定资产详情</h3>
-              <span className="text-xs text-gray-400">{currentAsset.assetCode}</span>
-            </div>
+            <h3 className="font-semibold text-gray-900 text-sm mb-2">固定资产详情</h3>
             <AssetDetailTabs
               asset={assetDetail}
             />
@@ -416,10 +403,7 @@ export default function InventoryPage() {
         ) : (
           /* 首次加载未完成时的 fallback */
           <div className="bg-white rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-1.5">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-gray-900 text-sm">固定资产详情</h3>
-              <span className="text-xs text-gray-400">{currentAsset.assetCode}</span>
-            </div>
+            <h3 className="font-semibold text-gray-900 text-sm">固定资产详情</h3>
             <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
               <div>
                 <dt className="text-gray-400">资产名称</dt>
@@ -440,10 +424,6 @@ export default function InventoryPage() {
               <div>
                 <dt className="text-gray-400">存放地点</dt>
                 <dd className="text-gray-800 break-words">{currentAsset.location || '—'}</dd>
-              </div>
-              <div>
-                <dt className="text-gray-400">使用状态</dt>
-                <dd className="text-gray-800">{currentAsset.status || '—'}</dd>
               </div>
               {currentAsset.costCenterName ? (
                 <div>
