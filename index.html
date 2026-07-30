@@ -14,6 +14,29 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- 自愈机制：入口主包(JS/CSS)加载或解析失败（典型为钉钉缓存了旧 index.html，其指向的 JS 已被新部署删除→404）时，
+         强制带时间戳查询重拉首页，绕过 HTML 强缓存，避免白屏。正常加载时本脚本不触发任何动作。 -->
+    <script>
+      (function () {
+        function saiReload() {
+          var q = '__sai_reload=' + Date.now();
+          var url = location.pathname + (location.search ? '&' : '?') + q + location.hash;
+          location.replace(url);
+        }
+        window.addEventListener('error', function (e) {
+          var t = e && e.target;
+          if (t && (t.tagName === 'SCRIPT' || t.tagName === 'LINK')) {
+            saiReload();
+          }
+        }, true);
+        window.__SAI_BOOTED__ = false;
+        setTimeout(function () {
+          if (!window.__SAI_BOOTED__ && !/__sai_reload=/.test(location.search)) {
+            saiReload();
+          }
+        }, 10000);
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

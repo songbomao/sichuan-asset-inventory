@@ -2,6 +2,8 @@ import dd from 'dingtalk-jsapi';
 if (typeof window !== 'undefined' && !(window as any).dd) {
   (window as any).dd = dd;
 }
+// 标记入口脚本已执行，供 index.html 自愈兜底判断（主包成功加载即置 true，避免误判白屏）
+(window as any).__SAI_BOOTED__ = true;
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { HashRouter } from 'react-router-dom';

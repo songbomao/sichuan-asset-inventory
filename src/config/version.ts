@@ -6,16 +6,21 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607301419';
+export const APP_VERSION = 'v202607301522';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-30 14:19';
-export const RELEASE_NOTES = '紧急修复 React error #300（hooks 数量不一致）：将 useMemo 派生值（qrPhotos/frontPhotos）从组件中部移到顶部，避免 early return 导致的 hooks 不匹配崩溃。';
+export const RELEASE_TIME = '2026-07-30 15:22';
+export const RELEASE_NOTES = '入口自愈机制：index.html 内联脚本在入口主包(JS/CSS)加载/解析失败（如钉钉缓存旧首页 HTML 指向已删除旧 JS→404）时，自动带时间戳查询重拉首页绕过 HTML 强缓存，根治反复白屏；main.tsx 入口执行即置 __SAI_BOOTED__ 避免误判。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607301522',
+    time: '2026-07-30 15:22',
+    notes: '入口自愈机制：钉钉缓存旧首页指向已删除 JS→404 白屏，index.html 内联脚本自动带时间戳重拉首页绕过 HTML 强缓存。',
+  },
   {
     version: 'v202607301419',
     time: '2026-07-30 14:19',
