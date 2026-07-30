@@ -5,16 +5,21 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607300912';
+export const APP_VERSION = 'v202607300923';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-30 09:12';
-export const RELEASE_NOTES = '修复「返回控制台」跳转到登录页：①client.ts 响应拦截器 401 处理从立即 hash 跳转改为先清除 token 并由 AuthContext 自然踢到登录页(500ms 兜底)；②AuthContext 新增 auth_token_cleared 自定义事件监听，确保同一标签页内 401 清除 token 后立即同步 React state。另含 v202607291749 内容。';
+export const RELEASE_TIME = '2026-07-30 09:23';
+export const RELEASE_NOTES = '修复「返回控制台」跳登录页（第二轮）：401 清除 token 时遗漏 logout_flag → Login 页自动触发钉钉免登 → 登录后跳到 /tasks 而非停留在登录页。修复：AuthContext.logout() 与 client.ts 401 处理均加 logout_flag=1 阻止自动免登。另含 v202607300912 的 401 跳转由 AuthContext 驱动。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607300923',
+    time: '2026-07-30 09:23',
+    notes: '修复 logout_flag 遗漏：401 清除 token 后登录页自动免登→跳到 /tasks，加 flag 阻止。',
+  },
   {
     version: 'v202607300912',
     time: '2026-07-30 09:12',

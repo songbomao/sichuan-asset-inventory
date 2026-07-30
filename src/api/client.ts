@@ -170,6 +170,7 @@ client.interceptors.response.use(
       if (_401Handling) return Promise.reject(error);
       _401Handling = true;
       try {
+        localStorage.setItem('logout_flag', '1');
         localStorage.removeItem('auth_token');
         localStorage.removeItem('auth_user');
         _globalToken = ''; // 同步清除全局缓存，避免后续请求仍带失效 token
