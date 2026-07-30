@@ -88,7 +88,7 @@ export default function LoginPage() {
         <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/20 overflow-hidden">
           <img src={`${import.meta.env.BASE_URL}app-icon.png?v=202607151517`} alt="蜀资点兵" className="w-full h-full object-cover" />
         </div>
-        <h1 className="text-2xl font-bold text-white tracking-wide">蜀资点兵</h1>
+        <h1 className="text-2xl font-bold text-white tracking-wide">AI 盘点·账实秒合</h1>
         <p className="text-white/60 text-sm mt-1">钉钉免登 · 安全高效</p>
       </div>
 
@@ -156,7 +156,7 @@ export default function LoginPage() {
 
       <div className="text-center mt-6 space-y-1">
         <p className="text-xs text-white/40">
-          蜀资点兵 · 四川固定资产盘点
+          AI 盘点·账实秒合 · 四川固定资产盘点
         </p>
         <p className="text-xs text-white/30">
           版本：{APP_VERSION} | 发布：{RELEASE_TIME}

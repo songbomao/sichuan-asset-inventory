@@ -76,7 +76,7 @@ function GlobalAppBar() {
     >
       <Toolbar variant="dense" sx={{ minHeight: 48, px: 2, justifyContent: 'space-between' }}>
         <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#ffffff', fontSize: '0.95rem', letterSpacing: '0.04em' }}>
-          蜀资点兵
+          AI 盘点·账实秒合
         </Typography>
         <Button
           type="button"

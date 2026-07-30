@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607300936';
-export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-30 09:36';
-export const RELEASE_NOTES = '返回控制台回归简洁：移除 handleConsoleClick 的过度设计（双判据/首页特殊处理/scrollTo），改为老版本一行式 navigate(isAdmin?/admin/tasks:/tasks,{replace:true})。另含 v202607300923 的 logout_flag 修复。';
+export const APP_VERSION = 'v202607300943';
+export const APP_NAME = 'AI 盘点·账实秒合';
+export const RELEASE_TIME = '2026-07-30 09:43';
+export const RELEASE_NOTES = '品牌文案更新：导航栏与登录页「蜀资点兵」→「AI 盘点·账实秒合」，突出盘点核心场景+AI智能赋能。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
@@ -16,7 +16,7 @@ export const VERSION_HISTORY: Array<{
   notes: string;
 }> = [
   {
-    version: 'v202607300936',
+    version: 'v202607300943',
     time: '2026-07-30 09:36',
     notes: '返回控制台回归简洁一行式 navigate，移除过度设计。',
   },
