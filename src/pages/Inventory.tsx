@@ -1,17 +1,32 @@
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo, Fragment } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import CircularProgress from '@mui/material/CircularProgress';
+import Typography from '@mui/material/Typography';
 import Skeleton from '@mui/material/Skeleton';
 import Alert from '@mui/material/Alert';
 import Snackbar from '@mui/material/Snackbar';
+import Accordion from '@mui/material/Accordion';
+import AccordionSummary from '@mui/material/AccordionSummary';
+import AccordionDetails from '@mui/material/AccordionDetails';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import TextField from '@mui/material/TextField';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
+import EditIcon from '@mui/icons-material/Edit';
 import { getTaskDetail, getProgress, type AssetInfo } from '../api/tasks';
 import { submitRecord, type AssetDetail, getAssetByCode } from '../api/inventory';
 import { getCurrentLocation } from '../api/reverseGeocode';
@@ -22,6 +37,7 @@ import ProgressBar from '../components/ProgressBar';
 import type { RecognizeAssetResult } from '../api/ai';
 import { RecognizeAsset } from '../api/ai';
 import jsQR from 'jsqr';
+import dd from 'dingtalk-jsapi';
 
 /** 从照片 Base64 解码二维码（固定资产编号）
  *  对图像做灰度化 + 对比度拉伸预处理，提高 jsQR 对 JPEG 压缩后微小二维码的识别率。
@@ -176,6 +192,14 @@ export default function InventoryPage() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiMsg, setAiMsg] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
+  // 资产信息折叠
+  const [assetInfoExpanded, setAssetInfoExpanded] = useState(false);
+
+  // 手动标记二维码弹窗
+  const [manualQrDialogOpen, setManualQrDialogOpen] = useState(false);
+  const [manualQrTargetIdx, setManualQrTargetIdx] = useState<number>(-1);
+  const [manualQrCode, setManualQrCode] = useState('');
+
   // 触控滑动跟踪
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
@@ -312,6 +336,56 @@ export default function InventoryPage() {
   /** 删除指定索引照片 */
   const handleRemovePhoto = useCallback((idx: number) => {
     setAllPhotos((prev) => prev.filter((_, i) => i !== idx));
+  }, []);
+
+  /** 钉钉原生扫码：调用 dd.scan 识别二维码后自动标记 */
+  const handleDingtalkScan = useCallback(async () => {
+    try {
+      dd.scan({
+        type: 'qr',
+        success: (res: { code: string }) => {
+          if (res?.code) {
+            // 将解码结果作为一条虚拟二维码照片加入
+            setAllPhotos((prev) => [
+              ...prev,
+              { dataUrl: '', type: 'qr', decodedCode: res.code },
+            ]);
+            setSnackbar({ open: true, message: `✅ 扫码成功：${res.code}`, severity: 'success' });
+          }
+        },
+        fail: (err: unknown) => {
+          console.warn('钉钉扫码失败', err);
+          setSnackbar({ open: true, message: '扫码失败或取消', severity: 'error' });
+        },
+      });
+    } catch {
+      setSnackbar({ open: true, message: '钉钉扫码不可用（非钉钉环境）', severity: 'error' });
+    }
+  }, []);
+
+  /** 手动标记某张照片为二维码 */
+  const handleManualQrOpen = useCallback((idx: number) => {
+    setManualQrTargetIdx(idx);
+    setManualQrCode(allPhotos[idx]?.decodedCode ?? '');
+    setManualQrDialogOpen(true);
+  }, [allPhotos]);
+
+  const handleManualQrConfirm = useCallback(() => {
+    if (manualQrTargetIdx < 0 || manualQrTargetIdx >= allPhotos.length) return;
+    setAllPhotos((prev) =>
+      prev.map((p, i) =>
+        i === manualQrTargetIdx
+          ? { ...p, type: 'qr', decodedCode: manualQrCode.trim() || undefined }
+          : p,
+      ),
+    );
+    setManualQrDialogOpen(false);
+    setManualQrTargetIdx(-1);
+  }, [manualQrTargetIdx, manualQrCode, allPhotos]);
+
+  const handleManualQrClose = useCallback(() => {
+    setManualQrDialogOpen(false);
+    setManualQrTargetIdx(-1);
   }, []);
 
   /** AI 识别候选：当前任务全部资产（传入后相机组件显示「AI 识别资产」按钮） */
@@ -514,180 +588,136 @@ export default function InventoryPage() {
   const currentAsset = assets[currentIndex];
   const isCompleted = currentAsset ? completedCodes.includes(currentAsset.assetCode) : false;
 
+  // 操作步骤定义
+  const STEP_PHOTO = 0;
+  const STEP_RESULT = 1;
+  const STEP_SUBMIT = 2;
+  // 当前步骤：照片未拍完 → 步骤0；照片拍完 → 步骤1
+  const currentStep = !IS_LOST(assetStatus) && (allPhotos.length < 2 || qrPhotoCount < 1) ? STEP_PHOTO : STEP_RESULT;
+
   return (
     <div
       className="h-dvh bg-gray-50 flex flex-col overflow-hidden pt-12"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* 进度条：根据实际盘点完成比例动态更新 */}
-      <div className="px-3 py-1.5 bg-white border-b border-gray-100 shrink-0">
-        <ProgressBar
-          current={progress.completed}
-          total={progress.total}
-        />
+      {/* 进度条 + 4步操作引导 */}
+      <div className="px-3 py-2 bg-white border-b border-gray-100 shrink-0 space-y-1.5">
+        <ProgressBar current={progress.completed} total={progress.total} />
+        {/* 微型步骤条 */}
+        <div className="flex items-center justify-center gap-2 text-xs">
+          {[
+            { label: '拍照采集', icon: <CameraAltIcon sx={{ fontSize: 14 }} />, active: currentStep === STEP_PHOTO, done: qrPhotoCount >= 1 && allPhotos.length >= 2 },
+            { label: '填写结果', icon: <AssignmentIcon sx={{ fontSize: 14 }} />, active: currentStep === STEP_RESULT && (qrPhotoCount >= 1 && allPhotos.length >= 2), done: false },
+            { label: '提交', icon: <CheckCircleOutlineIcon sx={{ fontSize: 14 }} />, active: false, done: false },
+          ].map((s, i) => (
+            <Fragment key={s.label}>
+              {i > 0 && <span className="w-6 border-t border-gray-300" />}
+              <div className={`flex items-center gap-1 ${s.done ? 'text-green-600' : s.active ? 'text-indigo-700 font-semibold' : 'text-gray-400'}`}>
+                {s.done ? <CheckCircleOutlineIcon sx={{ fontSize: 14 }} /> : s.icon}
+                <span>{s.label}</span>
+              </div>
+            </Fragment>
+          ))}
+        </div>
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2 space-y-2">
-        {/* 固定资产详情 */}
-        {assetDetailLoading ? (
-          <div className="bg-white rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-1.5">
-            <h3 className="font-semibold text-gray-900 text-sm">固定资产详情</h3>
-            <Skeleton variant="text" width="40%" />
-            <Skeleton variant="text" width="70%" />
-            <Skeleton variant="text" width="60%" />
-          </div>
-        ) : assetDetailError && !assetDetail ? (
-          /* 获取详情失败时 fallback 到原来的简化展示 */
-          <div className="bg-white rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-1.5">
-            <h3 className="font-semibold text-gray-900 text-sm">固定资产详情</h3>
-            <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-              <div>
-                <dt className="text-gray-400">资产名称</dt>
-                <dd className="text-gray-800 break-words">{currentAsset.assetName}</dd>
+        {/* ── 卡A：资产信息（可折叠，默认收拢）── */}
+        <Accordion
+          expanded={assetInfoExpanded}
+          onChange={() => setAssetInfoExpanded((v) => !v)}
+          disableGutters
+          elevation={0}
+          sx={{
+            borderRadius: '12px',
+            border: '1px solid rgb(243,244,246)',
+            '&:before': { display: 'none' },
+          }}
+        >
+          <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ minHeight: 40, '& .MuiAccordionSummary-content': { my: 0.5 } }}>
+            <Typography variant="body2" fontWeight={600} className="text-gray-900">
+              📋 {currentAsset.assetName || '固定资产详情'}
+              <span className="ml-2 text-xs font-normal text-gray-400">{currentAsset.assetCode}</span>
+            </Typography>
+          </AccordionSummary>
+          <AccordionDetails sx={{ pt: 0 }}>
+            {assetDetailLoading ? (
+              <div className="space-y-1.5">
+                <Skeleton variant="text" width="40%" />
+                <Skeleton variant="text" width="70%" />
+                <Skeleton variant="text" width="60%" />
               </div>
-              <div>
-                <dt className="text-gray-400">类别</dt>
-                <dd className="text-gray-800">{currentAsset.category || '—'}</dd>
-              </div>
-              <div>
-                <dt className="text-gray-400">使用部门</dt>
-                <dd className="text-gray-800">{currentAsset.department || '—'}</dd>
-              </div>
-              <div>
-                <dt className="text-gray-400">责任人</dt>
-                <dd className="text-gray-800">{currentAsset.userName || '—'}</dd>
-              </div>
-              <div>
-                <dt className="text-gray-400">存放地点</dt>
-                <dd className="text-gray-800 break-words">{currentAsset.location || '—'}</dd>
-              </div>
-              {currentAsset.costCenterName ? (
-                <div>
-                  <dt className="text-gray-400">成本中心</dt>
-                  <dd className="text-gray-800 break-words">{currentAsset.costCenterName}</dd>
-                </div>
-              ) : null}
-              {currentAsset.standard ? (
-                <div>
-                  <dt className="text-gray-400">规格型号</dt>
-                  <dd className="text-gray-800 break-words">{currentAsset.standard}</dd>
-                </div>
-              ) : null}
-            </dl>
-          </div>
-        ) : assetDetail ? (
-          /* 完整资产详情（AssetDetailTabs 自带 Paper 包裹） */
-          <div>
-            <h3 className="font-semibold text-gray-900 text-sm mb-2">固定资产详情</h3>
-            <AssetDetailTabs asset={assetDetail} />
-          </div>
-        ) : (
-          /* 首次加载未完成时的 fallback */
-          <div className="bg-white rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-1.5">
-            <h3 className="font-semibold text-gray-900 text-sm">固定资产详情</h3>
-            <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-              <div>
-                <dt className="text-gray-400">资产名称</dt>
-                <dd className="text-gray-800 break-words">{currentAsset.assetName}</dd>
-              </div>
-              <div>
-                <dt className="text-gray-400">类别</dt>
-                <dd className="text-gray-800">{currentAsset.category || '—'}</dd>
-              </div>
-              <div>
-                <dt className="text-gray-400">使用部门</dt>
-                <dd className="text-gray-800">{currentAsset.department || '—'}</dd>
-              </div>
-              <div>
-                <dt className="text-gray-400">责任人</dt>
-                <dd className="text-gray-800">{currentAsset.userName || '—'}</dd>
-              </div>
-              <div>
-                <dt className="text-gray-400">存放地点</dt>
-                <dd className="text-gray-800 break-words">{currentAsset.location || '—'}</dd>
-              </div>
-              {currentAsset.costCenterName ? (
-                <div>
-                  <dt className="text-gray-400">成本中心</dt>
-                  <dd className="text-gray-800 break-words">{currentAsset.costCenterName}</dd>
-                </div>
-              ) : null}
-              {currentAsset.standard ? (
-                <div>
-                  <dt className="text-gray-400">规格型号</dt>
-                  <dd className="text-gray-800 break-words">{currentAsset.standard}</dd>
-                </div>
-              ) : null}
-            </dl>
-          </div>
-        )}
+            ) : assetDetailError && !assetDetail ? (
+              <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                <div><dt className="text-gray-400">资产名称</dt><dd className="text-gray-800 break-words">{currentAsset.assetName}</dd></div>
+                <div><dt className="text-gray-400">类别</dt><dd className="text-gray-800">{currentAsset.category || '—'}</dd></div>
+                <div><dt className="text-gray-400">使用部门</dt><dd className="text-gray-800">{currentAsset.department || '—'}</dd></div>
+                <div><dt className="text-gray-400">责任人</dt><dd className="text-gray-800">{currentAsset.userName || '—'}</dd></div>
+                <div><dt className="text-gray-400">存放地点</dt><dd className="text-gray-800 break-words">{currentAsset.location || '—'}</dd></div>
+                {currentAsset.costCenterName ? <div><dt className="text-gray-400">成本中心</dt><dd className="text-gray-800 break-words">{currentAsset.costCenterName}</dd></div> : null}
+                {currentAsset.standard ? <div><dt className="text-gray-400">规格型号</dt><dd className="text-gray-800 break-words">{currentAsset.standard}</dd></div> : null}
+              </dl>
+            ) : assetDetail ? (
+              <AssetDetailTabs asset={assetDetail} />
+            ) : (
+              <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                <div><dt className="text-gray-400">资产名称</dt><dd className="text-gray-800 break-words">{currentAsset.assetName}</dd></div>
+                <div><dt className="text-gray-400">类别</dt><dd className="text-gray-800">{currentAsset.category || '—'}</dd></div>
+                <div><dt className="text-gray-400">使用部门</dt><dd className="text-gray-800">{currentAsset.department || '—'}</dd></div>
+                <div><dt className="text-gray-400">责任人</dt><dd className="text-gray-800">{currentAsset.userName || '—'}</dd></div>
+                <div><dt className="text-gray-400">存放地点</dt><dd className="text-gray-800 break-words">{currentAsset.location || '—'}</dd></div>
+                {currentAsset.costCenterName ? <div><dt className="text-gray-400">成本中心</dt><dd className="text-gray-800 break-words">{currentAsset.costCenterName}</dd></div> : null}
+                {currentAsset.standard ? <div><dt className="text-gray-400">规格型号</dt><dd className="text-gray-800 break-words">{currentAsset.standard}</dd></div> : null}
+              </dl>
+            )}
+          </AccordionDetails>
+        </Accordion>
 
-        {/* 盘点状态选择 */}
-        <div>
-          <p className="text-xs font-medium text-gray-700 mb-1.5">盘点状态</p>
-          <ToggleButtonGroup
-            value={assetStatus}
-            exclusive
-            onChange={handleStatusChange}
-            size="small"
-            fullWidth
-            disabled={isCompleted}
-            sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.75 }}
-          >
-            {STATUS_OPTIONS.map((opt) => (
-              <ToggleButton
-                key={opt.value}
-                value={opt.value}
-                sx={{
-                  borderRadius: '6px !important',
-                  border: '1px solid rgba(0,0,0,0.12) !important',
-                  fontSize: '0.75rem',
-                  py: 0.75,
-                  '&.Mui-selected': {
-                    bgcolor: 'rgba(26, 35, 126, 0.08)',
-                    borderColor: '#1a237e !important',
-                  },
-                }}
-              >
-                {opt.label}
-              </ToggleButton>
-            ))}
-          </ToggleButtonGroup>
-        </div>
-
-        {/* 已盘点提示 */}
         {isCompleted && (
-          <Alert severity="success" sx={{ fontSize: '0.8rem', py: 0.5 }}>
-            该资产已盘点完成
-          </Alert>
+          <Alert severity="success" sx={{ fontSize: '0.8rem', py: 0.5 }}>该资产已盘点完成</Alert>
         )}
 
-        {/* 统一资产信息采集模块：拍摄 2 张+照片，系统自动识别二维码与实物照 */}
+        {/* ── 卡B：照片采集（视觉最重）── */}
         {!IS_LOST(assetStatus) && (
-        <div className="bg-white rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-2">
+        <div className={`rounded-xl p-2.5 shadow-sm border space-y-2 transition-all ${currentStep === STEP_PHOTO ? 'bg-white border-indigo-200 ring-1 ring-indigo-100' : 'bg-white border-gray-100'}`}>
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-gray-900 text-sm">📷 资产信息采集</h3>
+            <div className="flex items-center gap-1.5">
+              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white ${currentStep === STEP_PHOTO ? 'bg-indigo-600' : 'bg-gray-300'}`}>1</span>
+              <h3 className="font-semibold text-gray-900 text-sm">拍摄照片</h3>
+            </div>
             <div className="flex items-center gap-2 text-xs text-gray-400">
               <span className={qrPhotoCount >= 1 ? 'text-green-600 font-medium' : ''}>二维码 {qrPhotoCount}</span>
               <span className="text-gray-300">|</span>
               <span className={allPhotos.length >= 2 ? 'text-green-600 font-medium' : ''}>实物照 {frontPhotoCount}</span>
             </div>
           </div>
-          <p className="text-xs text-gray-400">任意顺序拍摄 2 张及以上照片，系统自动识别二维码与实物</p>
+          <p className="text-xs text-gray-400">拍摄 2 张及以上照片（含固定资产标签二维码），系统自动识别；也可手动标记或钉钉扫码</p>
           {allPhotos.length > 0 ? (
             <div className="grid grid-cols-5 gap-1.5">
               {allPhotos.map((photo, idx) => (
                 <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border border-gray-100">
-                  <img src={photo.dataUrl} alt={`照片${idx + 1}`} className="w-full h-full object-cover" />
-                  {/* 类型标记 */}
-                  <span
-                    className={`absolute top-0.5 left-0.5 text-[10px] px-1 py-0.5 rounded-full font-medium ${
-                      photo.type === 'qr' ? 'bg-green-500 text-white' : 'bg-blue-500 text-white'
-                    }`}
-                  >
+                  {photo.dataUrl ? (
+                    <img src={photo.dataUrl} alt={`照片${idx + 1}`} className="w-full h-full object-cover" />
+                  ) : (
+                    /* 钉钉扫码生成的虚拟照片（无图片） */
+                    <div className="w-full h-full flex items-center justify-center bg-green-50">
+                      <QrCodeScannerIcon sx={{ fontSize: 20, color: '#16a34a' }} />
+                    </div>
+                  )}
+                  <span className={`absolute top-0.5 left-0.5 text-[10px] px-1 py-0.5 rounded-full font-medium ${photo.type === 'qr' ? 'bg-green-500 text-white' : 'bg-blue-500 text-white'}`}>
                     {photo.type === 'qr' ? '码' : '物'}
                   </span>
+                  {/* 手动标记二维码 按钮 */}
+                  {!isCompleted && photo.type === 'unknown' && photo.dataUrl && (
+                    <button
+                      onClick={() => handleManualQrOpen(idx)}
+                      className="absolute top-0.5 left-8 text-[10px] bg-orange-500 text-white w-4 h-4 rounded-full flex items-center justify-center"
+                      title="标记为二维码"
+                    >
+                      <EditIcon sx={{ fontSize: 10 }} />
+                    </button>
+                  )}
                   {!isCompleted && (
                     <button
                       onClick={() => handleRemovePhoto(idx)}
@@ -705,11 +735,15 @@ export default function InventoryPage() {
               <span className="text-xs">点击下方按钮拍摄（至少 2 张）</span>
             </div>
           )}
+          {/* 二维码状态提示 */}
           {qrDecodedCode ? (
             <Alert severity="success" sx={{ fontSize: '0.8rem', py: 0.5 }}>二维码识别：{qrDecodedCode}</Alert>
           ) : allPhotos.length > 0 && qrPhotoCount === 0 ? (
-            <Alert severity="warning" sx={{ fontSize: '0.8rem', py: 0.5 }}>未检测到二维码标签，请拍摄固定资产标签上的二维码</Alert>
+            <Alert severity="warning" sx={{ fontSize: '0.8rem', py: 0.5 }} icon={<QrCodeScannerIcon fontSize="inherit" />}>
+              未检测到二维码标签，请拍摄固定资产标签上的二维码，或使用右侧「钉钉扫码」/「手动标记」
+            </Alert>
           ) : null}
+          {/* 拍照按钮 + 钉钉扫码 + AI 识别 */}
           <CameraCapture
             onCapture={handlePhotoCapture}
             noWatermark
@@ -724,101 +758,145 @@ export default function InventoryPage() {
             minPhotos={2}
             maxPhotos={5}
           />
+          <div className="flex gap-2">
+            <Button
+              variant="outlined"
+              fullWidth
+              size="small"
+              startIcon={<QrCodeScannerIcon />}
+              onClick={handleDingtalkScan}
+              disabled={isCompleted}
+              sx={{ fontSize: '0.78rem', py: 0.5 }}
+            >
+              钉钉扫码
+            </Button>
+            <Button
+              variant="outlined"
+              fullWidth
+              size="small"
+              color="secondary"
+              startIcon={aiLoading ? <CircularProgress size={14} color="inherit" /> : <span>✨</span>}
+              onClick={handleAIRecognize}
+              disabled={aiLoading || isCompleted || qrPhotoCount === 0 || frontPhotoCount === 0 || !qrDecodedCode}
+              sx={{ fontSize: '0.78rem', py: 0.5 }}
+            >
+              {aiLoading ? '识别中...' : 'AI 识别'}
+            </Button>
+          </div>
+          {aiMsg && (
+            <Alert severity={aiMsg.type === 'success' ? 'success' : aiMsg.type === 'error' ? 'error' : 'info'} sx={{ fontSize: '0.8rem' }}>
+              {aiMsg.text}
+            </Alert>
+          )}
+          {aiResult && (
+            <div className="text-xs space-y-1 border-t border-gray-100 pt-2">
+              <div className="flex justify-between">
+                <span className="text-gray-400">二维码校验</span>
+                <span className={aiResult.qrMatched ? 'text-green-600 font-medium' : 'text-red-500 font-medium'}>
+                  {!aiResult.qrDecoded ? '未识别' : aiResult.qrMatched ? '✅ 一致' : '❌ 不符'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">外观识别</span>
+                <span className="text-gray-800">{aiResult.name || '—'}（{Math.round((aiResult.confidence ?? 0) * 100)}%）</span>
+              </div>
+              {aiResult.needManualConfirm && (
+                <Alert severity="warning" sx={{ fontSize: '0.75rem', py: 0.5 }}>
+                  需人工确认：二维码不符或置信度偏低，未自动切换资产
+                </Alert>
+              )}
+            </div>
+          )}
         </div>
         )}
 
-        {/* AI 识别资产 — 独立模块，放在照片之后 */}
-        {!IS_LOST(assetStatus) && aiCandidates.length > 0 && (
-          <div className="bg-white rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-2">
-            <h3 className="font-semibold text-gray-900 text-sm">AI 识别资产</h3>
-            <Button
-              variant="contained"
+        {/* ── 卡C：盘点结果（状态 + 数量 + 备注）── */}
+        <div className="bg-white rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-2">
+          <div className="flex items-center gap-1.5">
+            <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white bg-indigo-600">2</span>
+            <h3 className="font-semibold text-gray-900 text-sm">盘点结果</h3>
+          </div>
+          {/* 状态选择 */}
+          <div>
+            <p className="text-xs font-medium text-gray-700 mb-1.5">盘点状态</p>
+            <ToggleButtonGroup
+              value={assetStatus}
+              exclusive
+              onChange={handleStatusChange}
+              size="small"
               fullWidth
-              color="secondary"
-              startIcon={aiLoading ? <CircularProgress size={18} color="inherit" /> : <span>✨</span>}
-              onClick={handleAIRecognize}
-              disabled={aiLoading || isCompleted || qrPhotoCount === 0 || frontPhotoCount === 0 || !qrDecodedCode}
-              sx={{ py: 1.2, borderRadius: 2 }}
+              disabled={isCompleted}
+              sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.75 }}
             >
-              {aiLoading ? 'AI 识别中...' : '✨ AI 识别资产'}
-            </Button>
-            {aiMsg && (
-              <Alert severity={aiMsg.type === 'success' ? 'success' : aiMsg.type === 'error' ? 'error' : 'info'} sx={{ fontSize: '0.8rem' }}>
-                {aiMsg.text}
-              </Alert>
-            )}
-            {aiResult && (
-              <div className="text-xs space-y-1 border-t border-gray-100 pt-2">
-                <div className="flex justify-between">
-                  <span className="text-gray-400">二维码校验</span>
-                  <span className={aiResult.qrMatched ? 'text-green-600 font-medium' : 'text-red-500 font-medium'}>
-                    {!aiResult.qrDecoded ? '未识别' : aiResult.qrMatched ? '✅ 一致' : '❌ 不符'}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">外观识别</span>
-                  <span className="text-gray-800">{aiResult.name || '—'}（{Math.round((aiResult.confidence ?? 0) * 100)}%）</span>
-                </div>
-                {aiResult.needManualConfirm && (
-                  <Alert severity="warning" sx={{ fontSize: '0.75rem', py: 0.5 }}>
-                    需人工确认：二维码不符或置信度偏低，未自动切换资产
-                  </Alert>
-                )}
-              </div>
-            )}
+              {STATUS_OPTIONS.map((opt) => (
+                <ToggleButton
+                  key={opt.value}
+                  value={opt.value}
+                  sx={{
+                    borderRadius: '6px !important',
+                    border: '1px solid rgba(0,0,0,0.12) !important',
+                    fontSize: '0.75rem',
+                    py: 0.75,
+                    '&.Mui-selected': {
+                      bgcolor: 'rgba(26, 35, 126, 0.08)',
+                      borderColor: '#1a237e !important',
+                    },
+                  }}
+                >
+                  {opt.label}
+                </ToggleButton>
+              ))}
+            </ToggleButtonGroup>
           </div>
-        )}
-
-        {/* 备注输入 */}
-        <TextField
-          fullWidth
-          label={NEED_REMARK_STATUSES.has(assetStatus) ? '备注（必填）' : '备注（可选）'}
-          size="small"
-          value={remark}
-          onChange={(e) => setRemark(e.target.value)}
-          placeholder={NEED_REMARK_STATUSES.has(assetStatus) ? '该状态必须填写备注说明...' : '填写盘点备注（选填）...'}
-          disabled={isCompleted}
-          required={NEED_REMARK_STATUSES.has(assetStatus)}
-          error={NEED_REMARK_STATUSES.has(assetStatus) && remark.trim() === ''}
-          helperText={NEED_REMARK_STATUSES.has(assetStatus) && remark.trim() === '' ? '必须填写备注说明' : undefined}
-          sx={{ '& .MuiInputBase-root': { fontSize: '0.85rem' } }}
-        />
-
-        {/* 盘点数量 */}
-        <div className="bg-white rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-1.5">
-          <h3 className="font-semibold text-gray-900 text-sm">盘点数量</h3>
-          <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-            <div>
-              <div className="text-xs text-gray-400 mb-0.5">账面数量</div>
-              <div className="text-sm font-semibold text-gray-700">
-                {assetDetail?.menge ? `${assetDetail.menge}` : '—'}
+          {/* 盘点数量 */}
+          <div>
+            <p className="text-xs font-medium text-gray-700 mb-1.5">盘点数量</p>
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+              <div>
+                <div className="text-xs text-gray-400 mb-0.5">账面数量</div>
+                <div className="text-sm font-semibold text-gray-700">
+                  {assetDetail?.menge ? `${assetDetail.menge}` : '—'}
+                </div>
+              </div>
+              <div>
+                <TextField
+                  fullWidth
+                  size="small"
+                  type="number"
+                  label={IS_LOST(assetStatus) ? '盘点数量（丢失=0）' : '实际盘点数量'}
+                  value={inventoryQty}
+                  onChange={(e) => setInventoryQty(e.target.value)}
+                  placeholder={IS_LOST(assetStatus) ? '丢失，数量强制为0' : '填写实盘数量'}
+                  disabled={isCompleted || IS_LOST(assetStatus)}
+                  inputProps={{ min: 0, step: 1 }}
+                  sx={{ '& .MuiInputBase-root': { fontSize: '0.85rem' } }}
+                />
               </div>
             </div>
-            <div>
-              <TextField
-                fullWidth
-                size="small"
-                type="number"
-                label={IS_LOST(assetStatus) ? '盘点数量（丢失=0）' : '实际盘点数量'}
-                value={inventoryQty}
-                onChange={(e) => setInventoryQty(e.target.value)}
-                placeholder={IS_LOST(assetStatus) ? '丢失，数量强制为0' : '填写实盘数量'}
-                disabled={isCompleted || IS_LOST(assetStatus)}
-                inputProps={{ min: 0, step: 1 }}
-                sx={{ '& .MuiInputBase-root': { fontSize: '0.85rem' } }}
-              />
-            </div>
+            {assetDetail?.menge && inventoryQty.trim() !== '' && (() => {
+              const bookQty = Number(assetDetail.menge);
+              const actualQty = Number(inventoryQty);
+              const diff = actualQty - bookQty;
+              if (diff === 0) {
+                return <div className="text-xs text-green-600 font-medium mt-1">✅ 数量一致，无差异</div>;
+              }
+              return <div className="text-xs text-red-600 font-medium mt-1">⚠ 差异：{diff > 0 ? '+' : ''}{diff}（盘{actualQty > bookQty ? '盈' : '亏'}）</div>;
+            })()}
           </div>
-          {/* 差异提示 */}
-          {assetDetail?.menge && inventoryQty.trim() !== '' && (() => {
-            const bookQty = Number(assetDetail.menge);
-            const actualQty = Number(inventoryQty);
-            const diff = actualQty - bookQty;
-            if (diff === 0) {
-              return <div className="text-xs text-green-600 font-medium">✅ 数量一致，无差异</div>;
-            }
-            return <div className="text-xs text-red-600 font-medium">⚠ 差异：{diff > 0 ? '+' : ''}{diff}（盘{actualQty > bookQty ? '盈' : '亏'}）</div>;
-          })()}
+          {/* 备注 */}
+          <TextField
+            fullWidth
+            size="small"
+            label={NEED_REMARK_STATUSES.has(assetStatus) ? '备注（必填）' : '备注（可选）'}
+            value={remark}
+            onChange={(e) => setRemark(e.target.value)}
+            placeholder={NEED_REMARK_STATUSES.has(assetStatus) ? '该状态必须填写备注说明...' : '填写盘点备注（选填）...'}
+            disabled={isCompleted}
+            required={NEED_REMARK_STATUSES.has(assetStatus)}
+            error={NEED_REMARK_STATUSES.has(assetStatus) && remark.trim() === ''}
+            helperText={NEED_REMARK_STATUSES.has(assetStatus) && remark.trim() === '' ? '必须填写备注说明' : undefined}
+            sx={{ '& .MuiInputBase-root': { fontSize: '0.85rem' } }}
+          />
         </div>
       </div>
 
@@ -852,23 +930,57 @@ export default function InventoryPage() {
         </div>
 
         {/* 提交按钮 */}
-        <Button
-          variant="contained"
-          fullWidth
-          size="medium"
-          onClick={handleSubmit}
-          disabled={submitting || isCompleted}
-          sx={{ py: 1.2, fontWeight: 700, fontSize: '0.95rem' }}
-        >
-          {submitting ? (
-            <CircularProgress size={22} color="inherit" />
-          ) : isCompleted ? (
-            '已完成盘点'
-          ) : (
-            '提交盘点记录'
-          )}
-        </Button>
+        {currentStep === STEP_PHOTO && !IS_LOST(assetStatus) ? (
+          <Button
+            variant="contained"
+            fullWidth
+            size="medium"
+            disabled
+            sx={{ py: 1.2, fontWeight: 700, fontSize: '0.95rem', bgcolor: 'grey.400', '&.Mui-disabled': { bgcolor: 'grey.300', color: 'grey.500' } }}
+          >
+            请先拍摄照片
+          </Button>
+        ) : (
+          <Button
+            variant="contained"
+            fullWidth
+            size="medium"
+            onClick={handleSubmit}
+            disabled={submitting || isCompleted}
+            sx={{ py: 1.2, fontWeight: 700, fontSize: '0.95rem' }}
+          >
+            {submitting ? (
+              <CircularProgress size={22} color="inherit" />
+            ) : isCompleted ? (
+              '已完成盘点'
+            ) : (
+              '提交盘点记录'
+            )}
+          </Button>
+        )}
       </div>
+
+      {/* 手动标记二维码弹窗 */}
+      <Dialog open={manualQrDialogOpen} onClose={handleManualQrClose} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontSize: '1rem' }}>标记为二维码</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            fullWidth
+            label="固定资产编号"
+            value={manualQrCode}
+            onChange={(e) => setManualQrCode(e.target.value)}
+            placeholder="例如：102000000653"
+            size="small"
+            helperText="从标签上或资产卡片上查看固定资产编号"
+            sx={{ mt: 1 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleManualQrClose} size="small">取消</Button>
+          <Button onClick={handleManualQrConfirm} variant="contained" size="small">确认标记</Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Snackbar 提示 */}
       <Snackbar
