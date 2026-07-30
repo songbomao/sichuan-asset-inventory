@@ -1,4 +1,5 @@
 ﻿/**
+ * 🚨🚨 HOTFIX v202607301419 - React Hooks 顺序修复，页面崩溃紧急修复 🚨🚨
  * 应用版本信息
  * 每次发布前更新：
  *   version: vYYYYMMDDhhmm 格式

@@ -58,6 +58,7 @@ const STATUS_OPTIONS = [
 const NEED_REMARK_STATUSES = new Set(['丢失', '损坏', '其他']);
 /** 丢失状态 */
 const IS_LOST = (status: string) => status === '丢失';
+/** 🚨 HOTFIX v202607301419 - React Hooks 顺序修复，防止页面崩溃 */
 
 /**
  * 盘点操作页面
