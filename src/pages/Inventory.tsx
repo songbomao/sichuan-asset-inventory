@@ -24,10 +24,14 @@ import type { RecognizeAssetResult } from '../api/ai';
 /** 盘点状态选项 */
 const STATUS_OPTIONS = [
   { value: '正常', label: '✅ 正常' },
-  { value: '待维修', label: '🔧 待维修' },
-  { value: '报废', label: '🗑 报废' },
   { value: '丢失', label: '❌ 丢失' },
+  { value: '损坏', label: '⚠ 损坏' },
+  { value: '其他', label: '📋 其他' },
 ];
+/** 需要强制备注的状态 */
+const NEED_REMARK_STATUSES = new Set(['丢失', '损坏', '其他']);
+/** 丢失状态 */
+const IS_LOST = (status: string) => status === '丢失';
 
 /**
  * 盘点操作页面
@@ -148,9 +152,10 @@ export default function InventoryPage() {
     if (currentAsset) {
       setAssetStatus('正常');
       setRemark('');
+      setInventoryQty('');
       setPhotos([]);
       updateTime();
-      // 获取资产完整详情（含 63 个字段）
+      // 获取资产完整详情
       setAssetDetailLoading(true);
       setAssetDetailError(null);
       setAssetDetail(null);
@@ -167,6 +172,26 @@ export default function InventoryPage() {
         .finally(() => setAssetDetailLoading(false));
     }
   }, [currentIndex, assets]);
+
+  /** 状态切换：丢失→强制数量0+清照片；损坏/其他→清备注提醒；正常→清备注 */
+  const handleStatusChange = useCallback((_e: unknown, val: string | null) => {
+    if (!val) return;
+    const prev = assetStatus;
+    setAssetStatus(val);
+    // 切换到丢失：清照片、数量强制0
+    if (val === '丢失' && prev !== '丢失') {
+      setPhotos([]);
+      setInventoryQty('0');
+    }
+    // 切出丢失：恢复数量为空
+    if (prev === '丢失' && val !== '丢失') {
+      setInventoryQty('');
+    }
+    // 切换到非正常：清备注（提醒用户填写）
+    if (val !== '正常' && prev === '正常') {
+      setRemark('');
+    }
+  }, [assetStatus]);
 
   /** 处理照片捕获 */
   const handlePhotoCapture = useCallback((dataUrl: string) => {
@@ -235,8 +260,17 @@ export default function InventoryPage() {
     const asset = assets[currentIndex];
     if (!asset) return;
 
-    if (photos.length < 2) {
+    const lost = IS_LOST(assetStatus);
+
+    // 丢失状态：跳过拍照
+    if (!lost && photos.length < 2) {
       setSnackbar({ open: true, message: '❌ 至少需要拍摄 2 张照片', severity: 'error' });
+      return;
+    }
+
+    // 非正常状态：备注必填
+    if (NEED_REMARK_STATUSES.has(assetStatus) && remark.trim() === '') {
+      setSnackbar({ open: true, message: '❌ 该状态必须填写备注说明', severity: 'error' });
       return;
     }
 
@@ -252,7 +286,7 @@ export default function InventoryPage() {
         latitude: gpsCoords.latitude,
         location: gpsLocation,
         operatorName: user?.name || user?.username || 'unknown',
-        inventoryQty: inventoryQty.trim() === '' ? undefined : Number(inventoryQty),
+        inventoryQty: lost ? 0 : (inventoryQty.trim() === '' ? undefined : Number(inventoryQty)),
       });
       setSnackbar({ open: true, message: '✅ 盘点提交成功！', severity: 'success' });
 
@@ -448,7 +482,8 @@ export default function InventoryPage() {
           </Alert>
         )}
 
-        {/* 水印照片卡片 */}
+        {/* 水印照片卡片：丢失状态可跳过拍照 */}
+        {!IS_LOST(assetStatus) && (
         <div className="bg-white rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-2">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-gray-900 text-sm">水印照片</h3>
@@ -479,7 +514,6 @@ export default function InventoryPage() {
             </div>
           )}
 
-          {/* 相机拍照 */}
           <CameraCapture
             onCapture={handlePhotoCapture}
             watermark={{
@@ -496,6 +530,7 @@ export default function InventoryPage() {
             onAIRecognized={handleAIRecognized}
           />
         </div>
+        )}
 
         {/* 盘点状态选择 */}
         <div>
@@ -503,7 +538,7 @@ export default function InventoryPage() {
           <ToggleButtonGroup
             value={assetStatus}
             exclusive
-            onChange={(_e, val) => val && setAssetStatus(val)}
+            onChange={handleStatusChange}
             size="small"
             fullWidth
             disabled={isCompleted}
@@ -533,12 +568,15 @@ export default function InventoryPage() {
         {/* 备注输入 */}
         <TextField
           fullWidth
-          label="备注"
+          label={NEED_REMARK_STATUSES.has(assetStatus) ? '备注（必填）' : '备注（可选）'}
           size="small"
           value={remark}
           onChange={(e) => setRemark(e.target.value)}
-          placeholder="填写盘点备注..."
+          placeholder={NEED_REMARK_STATUSES.has(assetStatus) ? '该状态必须填写备注说明...' : '填写盘点备注（选填）...'}
           disabled={isCompleted}
+          required={NEED_REMARK_STATUSES.has(assetStatus)}
+          error={NEED_REMARK_STATUSES.has(assetStatus) && remark.trim() === ''}
+          helperText={NEED_REMARK_STATUSES.has(assetStatus) && remark.trim() === '' ? '必须填写备注说明' : undefined}
           sx={{ '& .MuiInputBase-root': { fontSize: '0.85rem' } }}
         />
 
@@ -557,11 +595,11 @@ export default function InventoryPage() {
                 fullWidth
                 size="small"
                 type="number"
-                label="实际盘点数量"
+                label={IS_LOST(assetStatus) ? '盘点数量（丢失=0）' : '实际盘点数量'}
                 value={inventoryQty}
                 onChange={(e) => setInventoryQty(e.target.value)}
-                placeholder="填写实盘数量"
-                disabled={isCompleted}
+                placeholder={IS_LOST(assetStatus) ? '丢失，数量强制为0' : '填写实盘数量'}
+                disabled={isCompleted || IS_LOST(assetStatus)}
                 inputProps={{ min: 0, step: 1 }}
                 sx={{ '& .MuiInputBase-root': { fontSize: '0.85rem' } }}
               />

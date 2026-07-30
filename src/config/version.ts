@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607301000';
+export const APP_VERSION = 'v202607301010';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-30 10:00';
-export const RELEASE_NOTES = '资产详情精简：去掉固定资产编号/WBS元素/创建日期/会计年度/部门代码/利润中心代码6字段+未知状态Chip+分类名称代码，取消Tab分组改为单列表key/value一行展示紧凑布局。';
+export const RELEASE_TIME = '2026-07-30 10:10';
+export const RELEASE_NOTES = '盘点 4 状态业务规则：①状态改为正常/丢失/损坏/其他 4 种；②备注校验：正常可选、其余 3 种强制必填+错误提示；③数量逻辑：丢失强制为 0 不可编辑，其余按实际；④拍照与 AI：丢失状态隐藏整个拍照卡片，其余必拍 2 张；⑤提交校验按状态动态调整。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
@@ -16,7 +16,7 @@ export const VERSION_HISTORY: Array<{
   notes: string;
 }> = [
   {
-    version: 'v202607301000',
+    version: 'v202607301010',
     time: '2026-07-30 09:36',
     notes: '返回控制台回归简洁一行式 navigate，移除过度设计。',
   },
