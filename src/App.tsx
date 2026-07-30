@@ -78,30 +78,39 @@ function GlobalAppBar() {
         <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#ffffff', fontSize: '0.95rem', letterSpacing: '0.04em' }}>
           AI 盘点·账实秒合
         </Typography>
-        <Button
-          type="button"
-          size="small"
-          startIcon={<HomeIcon />}
+        <div
           onClick={() => {
             const target = isAdmin || location.pathname.startsWith('/admin') ? '/admin/tasks' : '/tasks';
             navigate(target, { replace: true });
           }}
-          sx={{
-            color: '#ffffff',
-            textTransform: 'none',
-            fontWeight: 600,
-            fontSize: '0.85rem',
-            px: 1,
-            borderRadius: 8,
-            position: 'relative',
-            zIndex: 1,
-            pointerEvents: 'auto',
-            '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.16)' },
-            '&:active': { bgcolor: 'rgba(255, 255, 255, 0.28)' },
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            const target = isAdmin || location.pathname.startsWith('/admin') ? '/admin/tasks' : '/tasks';
+            navigate(target, { replace: true });
           }}
+          style={{ touchAction: 'manipulation' }}
         >
-          返回控制台
-        </Button>
+          <Button
+            type="button"
+            size="small"
+            startIcon={<HomeIcon />}
+            sx={{
+              color: '#ffffff',
+              textTransform: 'none',
+              fontWeight: 600,
+              fontSize: '0.85rem',
+              px: 1,
+              borderRadius: 8,
+              position: 'relative',
+              zIndex: 1,
+              pointerEvents: 'none',
+              '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.16)' },
+              '&:active': { bgcolor: 'rgba(255, 255, 255, 0.28)' },
+            }}
+          >
+            返回控制台
+          </Button>
+        </div>
       </Toolbar>
     </AppBar>
   );

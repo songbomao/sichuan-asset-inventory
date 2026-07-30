@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607301040';
+export const APP_VERSION = 'v202607301038';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-30 10:40';
-export const RELEASE_NOTES = '三项调整：①资产详情布局优化-所属公司/存放地点独占一行、其余两列；②返回控制台增加路径双判据（isAdmin未就绪时用pathname补位）；③盘点页模块重排-盘点状态→水印照片→AI识别→备注→盘点数量，AI识别从CameraCapture迁出为独立模块。';
+export const RELEASE_TIME = '2026-07-30 10:38';
+export const RELEASE_NOTES = '修复资产详情不显示（上次重排误删模块，已恢复）+ 返回控制台按钮移动端点击增强（外层div绑定click/touchEnd，pointerEvents:none防止点透）。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
@@ -16,9 +16,14 @@ export const VERSION_HISTORY: Array<{
   notes: string;
 }> = [
   {
+    version: 'v202607301038',
+    time: '2026-07-30 10:38',
+    notes: '修复资产详情不显示（模块误删恢复）+ 返回控制台移动端点击增强。',
+  },
+  {
     version: 'v202607301040',
-    time: '2026-07-30 09:36',
-    notes: '返回控制台回归简洁一行式 navigate，移除过度设计。',
+    time: '2026-07-30 10:40',
+    notes: '资产详情布局优化+盘点页模块重排+返回控制台双判据。',
   },
   {
     version: 'v202607300923',

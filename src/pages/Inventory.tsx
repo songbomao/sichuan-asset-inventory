@@ -401,7 +401,101 @@ export default function InventoryPage() {
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2 space-y-2">
-        {/* 盘点状态选择 — 最高优先级 */}
+        {/* 固定资产详情 */}
+        {assetDetailLoading ? (
+          <div className="bg-white rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-1.5">
+            <h3 className="font-semibold text-gray-900 text-sm">固定资产详情</h3>
+            <Skeleton variant="text" width="40%" />
+            <Skeleton variant="text" width="70%" />
+            <Skeleton variant="text" width="60%" />
+          </div>
+        ) : assetDetailError && !assetDetail ? (
+          /* 获取详情失败时 fallback 到原来的简化展示 */
+          <div className="bg-white rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-1.5">
+            <h3 className="font-semibold text-gray-900 text-sm">固定资产详情</h3>
+            <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+              <div>
+                <dt className="text-gray-400">资产名称</dt>
+                <dd className="text-gray-800 break-words">{currentAsset.assetName}</dd>
+              </div>
+              <div>
+                <dt className="text-gray-400">类别</dt>
+                <dd className="text-gray-800">{currentAsset.category || '—'}</dd>
+              </div>
+              <div>
+                <dt className="text-gray-400">使用部门</dt>
+                <dd className="text-gray-800">{currentAsset.department || '—'}</dd>
+              </div>
+              <div>
+                <dt className="text-gray-400">责任人</dt>
+                <dd className="text-gray-800">{currentAsset.userName || '—'}</dd>
+              </div>
+              <div>
+                <dt className="text-gray-400">存放地点</dt>
+                <dd className="text-gray-800 break-words">{currentAsset.location || '—'}</dd>
+              </div>
+              {currentAsset.costCenterName ? (
+                <div>
+                  <dt className="text-gray-400">成本中心</dt>
+                  <dd className="text-gray-800 break-words">{currentAsset.costCenterName}</dd>
+                </div>
+              ) : null}
+              {currentAsset.standard ? (
+                <div>
+                  <dt className="text-gray-400">规格型号</dt>
+                  <dd className="text-gray-800 break-words">{currentAsset.standard}</dd>
+                </div>
+              ) : null}
+            </dl>
+          </div>
+        ) : assetDetail ? (
+          /* 完整资产详情（AssetDetailTabs 自带 Paper 包裹） */
+          <div>
+            <h3 className="font-semibold text-gray-900 text-sm mb-2">固定资产详情</h3>
+            <AssetDetailTabs asset={assetDetail} />
+          </div>
+        ) : (
+          /* 首次加载未完成时的 fallback */
+          <div className="bg-white rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-1.5">
+            <h3 className="font-semibold text-gray-900 text-sm">固定资产详情</h3>
+            <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+              <div>
+                <dt className="text-gray-400">资产名称</dt>
+                <dd className="text-gray-800 break-words">{currentAsset.assetName}</dd>
+              </div>
+              <div>
+                <dt className="text-gray-400">类别</dt>
+                <dd className="text-gray-800">{currentAsset.category || '—'}</dd>
+              </div>
+              <div>
+                <dt className="text-gray-400">使用部门</dt>
+                <dd className="text-gray-800">{currentAsset.department || '—'}</dd>
+              </div>
+              <div>
+                <dt className="text-gray-400">责任人</dt>
+                <dd className="text-gray-800">{currentAsset.userName || '—'}</dd>
+              </div>
+              <div>
+                <dt className="text-gray-400">存放地点</dt>
+                <dd className="text-gray-800 break-words">{currentAsset.location || '—'}</dd>
+              </div>
+              {currentAsset.costCenterName ? (
+                <div>
+                  <dt className="text-gray-400">成本中心</dt>
+                  <dd className="text-gray-800 break-words">{currentAsset.costCenterName}</dd>
+                </div>
+              ) : null}
+              {currentAsset.standard ? (
+                <div>
+                  <dt className="text-gray-400">规格型号</dt>
+                  <dd className="text-gray-800 break-words">{currentAsset.standard}</dd>
+                </div>
+              ) : null}
+            </dl>
+          </div>
+        )}
+
+        {/* 盘点状态选择 */}
         <div>
           <p className="text-xs font-medium text-gray-700 mb-1.5">盘点状态</p>
           <ToggleButtonGroup
