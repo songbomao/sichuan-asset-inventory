@@ -23,7 +23,11 @@ import type { RecognizeAssetResult } from '../api/ai';
 import { RecognizeAsset } from '../api/ai';
 import jsQR from 'jsqr';
 
-/** 从照片 Base64 解码二维码（固定资产编号） */
+/** 从照片 Base64 解码二维码（固定资产编号）
+ *  对图像做灰度化 + 对比度拉伸预处理，提高 jsQR 对 JPEG 压缩后微小二维码的识别率。
+ *  拍摄端 CameraCapture 在 noWatermark 模式下传 raw JPEG q=70，微小二维码（如标签 2cm×2cm
+ *  在 1280px 宽照片上仅占 ~66px）极易被压缩模糊，需解码侧补偿。
+ */
 function decodeQRCode(dataUrl: string): Promise<string | null> {
   return new Promise((resolve) => {
     const img = new Image();
@@ -35,9 +39,43 @@ function decodeQRCode(dataUrl: string): Promise<string | null> {
         const ctx = canvas.getContext('2d');
         if (!ctx) return resolve(null);
         ctx.drawImage(img, 0, 0);
-        const { data, width, height } = ctx.getImageData(0, 0, img.width, img.height);
-        const code = jsQR(data, width, height);
-        resolve(code?.data ?? null);
+        const raw = ctx.getImageData(0, 0, img.width, img.height);
+        const px = raw.data;
+        // --- 灰度化 + 对比度拉伸 ---
+        // 1) 计算灰度并同时记录 min/max
+        let minGray = 255, maxGray = 0;
+        const gray = new Uint8Array(raw.width * raw.height);
+        for (let i = 0, j = 0; i < px.length; i += 4, j++) {
+          // 加权灰度：R*0.299 + G*0.587 + B*0.114
+          const g = px[i] * 0.299 + px[i + 1] * 0.587 + px[i + 2] * 0.114;
+          gray[j] = g;
+          if (g < minGray) minGray = g;
+          if (g > maxGray) maxGray = g;
+        }
+        // 2) 对比度拉伸（min-max normalization → 0..255，放弃两端各 2% 的极端值以抗噪声）
+        const lo = Math.max(minGray, Math.round(minGray + (maxGray - minGray) * 0.02));
+        const hi = Math.min(maxGray, Math.round(maxGray - (maxGray - minGray) * 0.02));
+        const range = hi > lo ? 255 / (hi - lo) : 1;
+        for (let i = 0, j = 0; i < px.length; i += 4, j++) {
+          const v = Math.round(Math.max(0, Math.min(255, (gray[j] - lo) * range)));
+          px[i] = v;     // R
+          px[i + 1] = v; // G
+          px[i + 2] = v; // B
+          // Alpha 不变
+        }
+        ctx.putImageData(raw, 0, 0);
+        // 3) jsQR 解码
+        const code = jsQR(raw.data, raw.width, raw.height);
+        // 若失败，再尝试原始图（兜底，部分高质量原图不需要预处理）
+        if (code) {
+          resolve(code.data);
+        } else {
+          // fallback: 用原始像素再试一次
+          ctx.drawImage(img, 0, 0);
+          const raw2 = ctx.getImageData(0, 0, img.width, img.height);
+          const code2 = jsQR(raw2.data, raw2.width, raw2.height);
+          resolve(code2?.data ?? null);
+        }
       } catch {
         resolve(null);
       }

@@ -274,7 +274,7 @@ export default function CameraCapture({
       }
     }
 
-    const rawDataUrl = finalCanvas.toDataURL('image/jpeg', 0.7);
+    const rawDataUrl = finalCanvas.toDataURL('image/jpeg', noWatermark ? 0.92 : 0.7);
     stopCamera();
     setCameraOpen(false);
 

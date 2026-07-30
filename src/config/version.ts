@@ -6,16 +6,21 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607301556';
+export const APP_VERSION = 'v202607301608';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-30 15:56';
-export const RELEASE_NOTES = '彻底修复 React error #300（hooks 顺序不一致导致白屏/钉钉刷不出来）：真因是 GlobalAppBar 在 useCallback(goConsole) 之前 early return（登录页 return null 跳过后续 hook），以及 AdminTasks 权限守卫 if(!user?.isAdmin) return 位于弹窗/表单状态 hooks 之前同样跳 hook；两处 early return 均移至全部 hooks 调用之后，并用 TypeScript AST 全仓扫描确认无其它同类违规。';
+export const RELEASE_TIME = '2026-07-30 16:08';
+export const RELEASE_NOTES = '二维码解码增强：decodeQRCode 灰度化+对比度拉伸预处理，noWatermark模式JPEG质量70%→92%，根治微小二维码（66px）在压缩后无法被jsQR识别的问题。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607301608',
+    time: '2026-07-30 16:08',
+    notes: '二维码解码增强：decodeQRCode 灰度化+对比度拉伸预处理，noWatermark模式JPEG质量70%→92%，根治微小二维码（66px）在压缩后无法被jsQR识别的问题。',
+  },
   {
     version: 'v202607301556',
     time: '2026-07-30 15:56',
