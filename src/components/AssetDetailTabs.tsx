@@ -37,9 +37,6 @@ const ALL_FIELDS: Array<{ label: string; key: keyof AssetDetail; render?: (value
   { label: '净值', key: 'netValue', render: formatMoney },
 ];
 
-/** 需要独占一行的字段（key） */
-const FULL_WIDTH_KEYS = new Set(['companyName', 'location']);
-
 export default function AssetDetailTabs({ asset, loading, error }: AssetDetailTabsProps) {
   if (loading) {
     return (
@@ -66,16 +63,7 @@ export default function AssetDetailTabs({ asset, loading, error }: AssetDetailTa
   return (
     <Paper className="rounded-xl shadow-sm border border-gray-100 overflow-hidden">
       <div className="px-3 py-2.5 space-y-1">
-        {/* 独占一行字段 */}
-        <div className="text-xs py-1.5 border-b border-gray-50">
-          <span className="text-gray-400">所属公司</span>
-          <span className="text-gray-800 font-medium float-right">{renderValue(asset.companyName)}</span>
-        </div>
-        <div className="text-xs py-1.5 border-b border-gray-50">
-          <span className="text-gray-400">存放地点</span>
-          <span className="text-gray-800 font-medium float-right break-words max-w-[70%] text-right">{renderValue(asset.location)}</span>
-        </div>
-        {/* 其余字段：两列网格 */}
+        {/* 字段两列网格（资产名称/类型/规格/部门/成本中心/使用人/期间/转资日期/超龄/原值/净值） */}
         <div className="grid grid-cols-2 gap-x-3 gap-y-0">
           {ALL_FIELDS.map((f) => (
             <div key={f.key} className="flex items-baseline justify-between gap-1 text-xs py-1.5 border-b border-gray-50 last:border-b-0">
@@ -85,6 +73,15 @@ export default function AssetDetailTabs({ asset, loading, error }: AssetDetailTa
               </span>
             </div>
           ))}
+        </div>
+        {/* 净值之后：所属公司、存放地点各占一行（信息较长，独占一行更易阅读） */}
+        <div className="text-xs py-1.5 border-t border-gray-100 mt-1">
+          <span className="text-gray-400">所属公司</span>
+          <span className="text-gray-800 font-medium float-right">{renderValue(asset.companyName)}</span>
+        </div>
+        <div className="text-xs py-1.5 border-t border-gray-100">
+          <span className="text-gray-400">存放地点</span>
+          <span className="text-gray-800 font-medium float-right break-words max-w-[70%] text-right">{renderValue(asset.location)}</span>
         </div>
       </div>
     </Paper>

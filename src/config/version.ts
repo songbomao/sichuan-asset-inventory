@@ -5,16 +5,21 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607301038';
+export const APP_VERSION = 'v202607301050';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-30 10:38';
-export const RELEASE_NOTES = '修复资产详情不显示（上次重排误删模块，已恢复）+ 返回控制台按钮移动端点击增强（外层div绑定click/touchEnd，pointerEvents:none防止点透）。';
+export const RELEASE_TIME = '2026-07-30 10:50';
+export const RELEASE_NOTES = '返回控制台修复：localStorage同步兜底isAdmin+AppBar zIndex提至1200+touchEnd/onClick双绑定，移除无效pathname判据（业务页均为/tasks前缀）；资产详情字段顺序：所属公司/存放地点移至净值之后。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607301050',
+    time: '2026-07-30 10:50',
+    notes: '返回控制台修复（localStorage兜底isAdmin+zIndex1200+双绑定）+ 资产详情字段顺序调整。',
+  },
   {
     version: 'v202607301038',
     time: '2026-07-30 10:38',

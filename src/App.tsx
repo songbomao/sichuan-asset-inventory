@@ -1,5 +1,7 @@
+import { useCallback } from 'react';
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
+import { getStoredUser } from './api/auth';
 import Layout from './components/Layout';
 import RequireAdmin from './components/RequireAdmin';
 import AppBar from '@mui/material/AppBar';
@@ -52,15 +54,24 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 function GlobalAppBar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   if (location.pathname === '/login') return null;
+
+  // 角色判据：优先用 React state（后端刷新后的值），并用 localStorage 同步兜底防止初始未就绪误判
+  const storedAdmin = !!getStoredUser()?.isAdmin;
+  const admin = isAdmin || storedAdmin || !!user?.isAdmin;
+  const target = admin ? '/admin/tasks' : '/tasks';
+
+  const goConsole = useCallback(() => {
+    navigate(target, { replace: true });
+  }, [navigate, target]);
 
   return (
     <AppBar
       position="fixed"
       elevation={0}
       sx={{
-        zIndex: 50,
+        zIndex: 1200,
         top: 0,
         left: '50%',
         transform: 'translateX(-50%)',
@@ -79,16 +90,12 @@ function GlobalAppBar() {
           AI 盘点·账实秒合
         </Typography>
         <div
-          onClick={() => {
-            const target = isAdmin || location.pathname.startsWith('/admin') ? '/admin/tasks' : '/tasks';
-            navigate(target, { replace: true });
-          }}
+          onClick={goConsole}
           onTouchEnd={(e) => {
             e.preventDefault();
-            const target = isAdmin || location.pathname.startsWith('/admin') ? '/admin/tasks' : '/tasks';
-            navigate(target, { replace: true });
+            goConsole();
           }}
-          style={{ touchAction: 'manipulation' }}
+          style={{ touchAction: 'manipulation', cursor: 'pointer' }}
         >
           <Button
             type="button"
