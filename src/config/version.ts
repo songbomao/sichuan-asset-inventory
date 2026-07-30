@@ -6,16 +6,21 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607301733';
+export const APP_VERSION = 'v202607301755';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-30 17:33';
-export const RELEASE_NOTES = '盘点页视觉重构+二维码兜底：①顶部4步引导条（拍照→填写→提交）、资产信息可折叠、照片/AI/扫码合并为单卡、结果填为单卡、底部提交未拍完禁用；②新增钉钉原生扫码（dd.scan）+手动标记二维码弹窗+照片缩略图标记按钮，三重兜底解决二维码无法识别问题。';
+export const RELEASE_TIME = '2026-07-30 17:55';
+export const RELEASE_NOTES = '二维码识别修复+UI调整：①decodeQRCode 改为多尺度+中心裁剪+灰度增强策略，大幅提升随手拍二维码识别率；②资产信息折叠卡默认展开；③顶部步骤条移至资产信息卡和拍照采集卡之间。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607301755',
+    time: '2026-07-30 17:55',
+    notes: '二维码识别修复+UI调整：①decodeQRCode 多尺度+中心裁剪+灰度增强，提升随手拍识别率；②资产信息默认展开；③步骤条移到资产信息卡和拍照采集卡之间。',
+  },
   {
     version: 'v202607301733',
     time: '2026-07-30 17:33',

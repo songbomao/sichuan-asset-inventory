@@ -40,58 +40,102 @@ import jsQR from 'jsqr';
 import dd from 'dingtalk-jsapi';
 
 /** 从照片 Base64 解码二维码（固定资产编号）
- *  对图像做灰度化 + 对比度拉伸预处理，提高 jsQR 对 JPEG 压缩后微小二维码的识别率。
- *  拍摄端 CameraCapture 在 noWatermark 模式下传 raw JPEG q=70，微小二维码（如标签 2cm×2cm
- *  在 1280px 宽照片上仅占 ~66px）极易被压缩模糊，需解码侧补偿。
+ *  jsQR 对全尺寸大图+低对比度/轻微模糊的二维码鲁棒性较差，这里用多尺度 + 中心裁剪 + 灰度增强
+ *  组合策略，尽可能把用户随手拍的标签二维码识别出来。
  */
 function decodeQRCode(dataUrl: string): Promise<string | null> {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
       try {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return resolve(null);
-        ctx.drawImage(img, 0, 0);
-        const raw = ctx.getImageData(0, 0, img.width, img.height);
-        const px = raw.data;
-        // --- 灰度化 + 对比度拉伸 ---
-        // 1) 计算灰度并同时记录 min/max
-        let minGray = 255, maxGray = 0;
-        const gray = new Uint8Array(raw.width * raw.height);
-        for (let i = 0, j = 0; i < px.length; i += 4, j++) {
-          // 加权灰度：R*0.299 + G*0.587 + B*0.114
-          const g = px[i] * 0.299 + px[i + 1] * 0.587 + px[i + 2] * 0.114;
-          gray[j] = g;
-          if (g < minGray) minGray = g;
-          if (g > maxGray) maxGray = g;
+        const maxLongSide = 1200;                 // jsQR 表现最佳的单边上限
+        const scale = Math.min(1, maxLongSide / Math.max(img.width, img.height));
+        const baseW = Math.round(img.width * scale);
+        const baseH = Math.round(img.height * scale);
+
+        // 解码器：对给定 canvas 像素尝试 jsQR
+        const tryDecode = (canvas: HTMLCanvasElement, width: number, height: number): string | null => {
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return null;
+          const raw = ctx.getImageData(0, 0, width, height);
+          const code = jsQR(raw.data, raw.width, raw.height);
+          return code?.data ?? null;
+        };
+
+        // 对一副已经 drawImage 好的 canvas 做灰度化+对比度拉伸，再解码
+        const tryEnhance = (canvas: HTMLCanvasElement, width: number, height: number): string | null => {
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return null;
+          const raw = ctx.getImageData(0, 0, width, height);
+          const px = raw.data;
+          let minGray = 255, maxGray = 0;
+          const gray = new Uint8Array(raw.width * raw.height);
+          for (let i = 0, j = 0; i < px.length; i += 4, j++) {
+            const g = px[i] * 0.299 + px[i + 1] * 0.587 + px[i + 2] * 0.114;
+            gray[j] = g;
+            if (g < minGray) minGray = g;
+            if (g > maxGray) maxGray = g;
+          }
+          const lo = Math.max(minGray, Math.round(minGray + (maxGray - minGray) * 0.02));
+          const hi = Math.min(maxGray, Math.round(maxGray - (maxGray - minGray) * 0.02));
+          const range = hi > lo ? 255 / (hi - lo) : 1;
+          for (let i = 0, j = 0; i < px.length; i += 4, j++) {
+            const v = Math.round(Math.max(0, Math.min(255, (gray[j] - lo) * range)));
+            px[i] = v;
+            px[i + 1] = v;
+            px[i + 2] = v;
+          }
+          ctx.putImageData(raw, 0, 0);
+          return jsQR(raw.data, raw.width, raw.height)?.data ?? null;
+        };
+
+        const decodeAtScale = (s: number, crop?: { x: number; y: number; w: number; h: number }): string | null => {
+          const canvas = document.createElement('canvas');
+          const w = crop ? Math.round(crop.w * s) : Math.round(baseW * s);
+          const h = crop ? Math.round(crop.h * s) : Math.round(baseH * s);
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return null;
+          ctx.drawImage(
+            img,
+            crop ? Math.round(crop.x * scale) : 0,
+            crop ? Math.round(crop.y * scale) : 0,
+            crop ? Math.round(crop.w * scale) : baseW,
+            crop ? Math.round(crop.h * scale) : baseH,
+            0, 0, w, h
+          );
+          return tryDecode(canvas, w, h) || tryEnhance(canvas, w, h);
+        };
+
+        let result: string | null = null;
+
+        // 1) 全图默认尺寸 + 增强
+        result = decodeAtScale(1);
+        if (result) return resolve(result);
+
+        // 2) 手机拍的二维码通常在中/下部 60% 区域，中心裁剪可减少干扰
+        result = decodeAtScale(1, { x: 0, y: Math.round(img.height * 0.35), w: img.width, h: Math.round(img.height * 0.65) });
+        if (result) return resolve(result);
+
+        // 3) 多尺度（缩小）—— 对高分辨率照片反而更容易命中 jsQR  sweet spot
+        for (const s of [0.8, 0.65, 0.5, 0.35]) {
+          result = decodeAtScale(s);
+          if (result) return resolve(result);
+          result = decodeAtScale(s, { x: 0, y: Math.round(img.height * 0.35), w: img.width, h: Math.round(img.height * 0.65) });
+          if (result) return resolve(result);
         }
-        // 2) 对比度拉伸（min-max normalization → 0..255，放弃两端各 2% 的极端值以抗噪声）
-        const lo = Math.max(minGray, Math.round(minGray + (maxGray - minGray) * 0.02));
-        const hi = Math.min(maxGray, Math.round(maxGray - (maxGray - minGray) * 0.02));
-        const range = hi > lo ? 255 / (hi - lo) : 1;
-        for (let i = 0, j = 0; i < px.length; i += 4, j++) {
-          const v = Math.round(Math.max(0, Math.min(255, (gray[j] - lo) * range)));
-          px[i] = v;     // R
-          px[i + 1] = v; // G
-          px[i + 2] = v; // B
-          // Alpha 不变
+
+        // 4) 兜底：原图尺寸不做预处理再试一次（部分高质量原图不需要增强）
+        const rawCanvas = document.createElement('canvas');
+        rawCanvas.width = baseW;
+        rawCanvas.height = baseH;
+        const rawCtx = rawCanvas.getContext('2d');
+        if (rawCtx) {
+          rawCtx.drawImage(img, 0, 0, baseW, baseH);
+          result = tryDecode(rawCanvas, baseW, baseH);
         }
-        ctx.putImageData(raw, 0, 0);
-        // 3) jsQR 解码
-        const code = jsQR(raw.data, raw.width, raw.height);
-        // 若失败，再尝试原始图（兜底，部分高质量原图不需要预处理）
-        if (code) {
-          resolve(code.data);
-        } else {
-          // fallback: 用原始像素再试一次
-          ctx.drawImage(img, 0, 0);
-          const raw2 = ctx.getImageData(0, 0, img.width, img.height);
-          const code2 = jsQR(raw2.data, raw2.width, raw2.height);
-          resolve(code2?.data ?? null);
-        }
+        resolve(result);
       } catch {
         resolve(null);
       }
@@ -192,8 +236,8 @@ export default function InventoryPage() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiMsg, setAiMsg] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
-  // 资产信息折叠
-  const [assetInfoExpanded, setAssetInfoExpanded] = useState(false);
+  // 资产信息折叠：默认展开，让用户一眼看到资产详情
+  const [assetInfoExpanded, setAssetInfoExpanded] = useState(true);
 
   // 手动标记二维码弹窗
   const [manualQrDialogOpen, setManualQrDialogOpen] = useState(false);
@@ -601,29 +645,13 @@ export default function InventoryPage() {
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* 进度条 + 4步操作引导 */}
-      <div className="px-3 py-2 bg-white border-b border-gray-100 shrink-0 space-y-1.5">
+      {/* 进度条 */}
+      <div className="px-3 py-2 bg-white border-b border-gray-100 shrink-0">
         <ProgressBar current={progress.completed} total={progress.total} />
-        {/* 微型步骤条 */}
-        <div className="flex items-center justify-center gap-2 text-xs">
-          {[
-            { label: '拍照采集', icon: <CameraAltIcon sx={{ fontSize: 14 }} />, active: currentStep === STEP_PHOTO, done: qrPhotoCount >= 1 && allPhotos.length >= 2 },
-            { label: '填写结果', icon: <AssignmentIcon sx={{ fontSize: 14 }} />, active: currentStep === STEP_RESULT && (qrPhotoCount >= 1 && allPhotos.length >= 2), done: false },
-            { label: '提交', icon: <CheckCircleOutlineIcon sx={{ fontSize: 14 }} />, active: false, done: false },
-          ].map((s, i) => (
-            <Fragment key={s.label}>
-              {i > 0 && <span className="w-6 border-t border-gray-300" />}
-              <div className={`flex items-center gap-1 ${s.done ? 'text-green-600' : s.active ? 'text-indigo-700 font-semibold' : 'text-gray-400'}`}>
-                {s.done ? <CheckCircleOutlineIcon sx={{ fontSize: 14 }} /> : s.icon}
-                <span>{s.label}</span>
-              </div>
-            </Fragment>
-          ))}
-        </div>
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2 space-y-2">
-        {/* ── 卡A：资产信息（可折叠，默认收拢）── */}
+        {/* ── 卡A：资产信息（可折叠，默认展开）── */}
         <Accordion
           expanded={assetInfoExpanded}
           onChange={() => setAssetInfoExpanded((v) => !v)}
@@ -673,6 +701,23 @@ export default function InventoryPage() {
             )}
           </AccordionDetails>
         </Accordion>
+
+        {/* 微型步骤条：放在基础信息卡和拍照采集卡之间，提示操作流程 */}
+        <div className="flex items-center justify-center gap-2 text-xs bg-white rounded-xl p-2 border border-gray-100">
+          {[
+            { label: '拍照采集', icon: <CameraAltIcon sx={{ fontSize: 14 }} />, active: currentStep === STEP_PHOTO, done: qrPhotoCount >= 1 && allPhotos.length >= 2 },
+            { label: '填写结果', icon: <AssignmentIcon sx={{ fontSize: 14 }} />, active: currentStep === STEP_RESULT && (qrPhotoCount >= 1 && allPhotos.length >= 2), done: false },
+            { label: '提交', icon: <CheckCircleOutlineIcon sx={{ fontSize: 14 }} />, active: false, done: false },
+          ].map((s, i) => (
+            <Fragment key={s.label}>
+              {i > 0 && <span className="w-6 border-t border-gray-300" />}
+              <div className={`flex items-center gap-1 ${s.done ? 'text-green-600' : s.active ? 'text-indigo-700 font-semibold' : 'text-gray-400'}`}>
+                {s.done ? <CheckCircleOutlineIcon sx={{ fontSize: 14 }} /> : s.icon}
+                <span>{s.label}</span>
+              </div>
+            </Fragment>
+          ))}
+        </div>
 
         {isCompleted && (
           <Alert severity="success" sx={{ fontSize: '0.8rem', py: 0.5 }}>该资产已盘点完成</Alert>
