@@ -54,24 +54,6 @@ function GlobalAppBar() {
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
   if (location.pathname === '/login') return null;
-  // 点击「返回控制台」：
-  // - 不在控制台首页时，跳转回角色首页（replace 避免堆积历史）；
-  // - 已在首页时，回到顶部（路径相同 React Router 不会重复跳转，回到顶部即有可见反馈）。
-  // 目标页判定同时参考 isAdmin 与当前路径前缀：在任意 /admin/* 页（如全局进度页）一律回管理员控制台，
-  // 避免 isAdmin 异步就绪前点击错判为责任人首页导致跳转失效。
-  const handleConsoleClick = () => {
-    // 目标页：管理员或在 /admin/* 域下一律回管理员控制台；
-    // 其余（责任人）回责任人控制台。双判据避免 isAdmin 异步就绪前错判为责任人首页。
-    const target =
-      isAdmin || location.pathname.startsWith('/admin') ? '/admin/tasks' : '/tasks';
-    if (location.pathname === target) {
-      // 已在控制台：回到顶部并强制重新挂载，确保点击有可见反馈（否则视觉上像没反应）
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      navigate(target, { replace: true });
-    } else {
-      navigate(target, { replace: true });
-    }
-  };
 
   return (
     <AppBar
@@ -100,7 +82,7 @@ function GlobalAppBar() {
           type="button"
           size="small"
           startIcon={<HomeIcon />}
-          onClick={handleConsoleClick}
+          onClick={() => navigate(isAdmin ? '/admin/tasks' : '/tasks', { replace: true })}
           sx={{
             color: '#ffffff',
             textTransform: 'none',

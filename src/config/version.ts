@@ -5,16 +5,21 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607300923';
+export const APP_VERSION = 'v202607300936';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-30 09:23';
-export const RELEASE_NOTES = '修复「返回控制台」跳登录页（第二轮）：401 清除 token 时遗漏 logout_flag → Login 页自动触发钉钉免登 → 登录后跳到 /tasks 而非停留在登录页。修复：AuthContext.logout() 与 client.ts 401 处理均加 logout_flag=1 阻止自动免登。另含 v202607300912 的 401 跳转由 AuthContext 驱动。';
+export const RELEASE_TIME = '2026-07-30 09:36';
+export const RELEASE_NOTES = '返回控制台回归简洁：移除 handleConsoleClick 的过度设计（双判据/首页特殊处理/scrollTo），改为老版本一行式 navigate(isAdmin?/admin/tasks:/tasks,{replace:true})。另含 v202607300923 的 logout_flag 修复。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607300936',
+    time: '2026-07-30 09:36',
+    notes: '返回控制台回归简洁一行式 navigate，移除过度设计。',
+  },
   {
     version: 'v202607300923',
     time: '2026-07-30 09:23',
