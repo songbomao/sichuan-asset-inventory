@@ -59,6 +59,7 @@ const NEED_REMARK_STATUSES = new Set(['丢失', '损坏', '其他']);
 /** 丢失状态 */
 const IS_LOST = (status: string) => status === '丢失';
 /** 🚨 HOTFIX v202607301419 - React Hooks 顺序修复，防止页面崩溃 */
+const HOTFIX_MARKER = '🚨v202607301419-HooksOrderFix-DoNotRemove';
 
 /**
  * 盘点操作页面
@@ -180,6 +181,9 @@ export default function InventoryPage() {
         (a) => !(detail.completedCodes || []).includes(a.assetCode),
       );
       setCurrentIndex(firstUncompleted >= 0 ? firstUncompleted : 0);
+
+      // 🚨 HOTFIX v202607301419 - log marker to ensure this code is included in build
+      if (import.meta.env.DEV) console.log('[HOTFIX]', HOTFIX_MARKER);
 
       // 加载进度
       const prog = await getProgress(taskId);
