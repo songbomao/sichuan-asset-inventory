@@ -5,16 +5,21 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607301145';
+export const APP_VERSION = 'v202607301342';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-30 11:45';
-export const RELEASE_NOTES = 'AI 识别双照片双校验：①拍照拆为二维码照(jsQR解码固资编号,不水印)+固资正面照(水印)；②后端按 assets_code 查本地表硬校验二维码编号==当前盘点资产(qrMatched)；③正面照 LLM 识别加拒识(风景/无关物→低分)；④后端新增 lowConfidence/needManualConfirm 闸门；⑤前端不自动切资产、弹人工确认，根治置信度虚高(空调拍风景画还90%)。';
+export const RELEASE_TIME = '2026-07-30 13:42';
+export const RELEASE_NOTES = '返回控制台按钮回归标准 MUI Button onClick（去除 onTouchEnd+preventDefault+pointerEvents:none 脆弱双绑定，修正钉钉 WebView 吞点击）；target 推导加当前路由 /admin 兜底；refreshAdmin 写回 isAdmin 到 localStorage 使全局栏与 RequireAdmin 口径一致。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607301342',
+    time: '2026-07-30 13:42',
+    notes: '返回控制台按钮回归标准点击（去脆弱双绑定+路由兜底+isAdmin写回localStorage）。',
+  },
   {
     version: 'v202607301145',
     time: '2026-07-30 11:45',

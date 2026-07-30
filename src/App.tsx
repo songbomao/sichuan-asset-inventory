@@ -57,9 +57,11 @@ function GlobalAppBar() {
   const { isAdmin, user } = useAuth();
   if (location.pathname === '/login') return null;
 
-  // 角色判据：优先用 React state（后端刷新后的值），并用 localStorage 同步兜底防止初始未就绪误判
+  // 角色判据：React state 优先，localStorage 兜底；并叠加当前路由信号，
+  // 避免 isAdmin 异步未就绪时把管理员误导向责任人首页（导致 RequireAdmin 又弹回 /tasks）。
   const storedAdmin = !!getStoredUser()?.isAdmin;
-  const admin = isAdmin || storedAdmin || !!user?.isAdmin;
+  const admin =
+    isAdmin || storedAdmin || !!user?.isAdmin || location.pathname.startsWith('/admin');
   const target = admin ? '/admin/tasks' : '/tasks';
 
   const goConsole = useCallback(() => {
@@ -89,35 +91,24 @@ function GlobalAppBar() {
         <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#ffffff', fontSize: '0.95rem', letterSpacing: '0.04em' }}>
           AI 盘点·账实秒合
         </Typography>
-        <div
+        <Button
+          type="button"
+          size="small"
+          startIcon={<HomeIcon />}
           onClick={goConsole}
-          onTouchEnd={(e) => {
-            e.preventDefault();
-            goConsole();
+          sx={{
+            color: '#ffffff',
+            textTransform: 'none',
+            fontWeight: 600,
+            fontSize: '0.85rem',
+            px: 1,
+            borderRadius: 8,
+            '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.16)' },
+            '&:active': { bgcolor: 'rgba(255, 255, 255, 0.28)' },
           }}
-          style={{ touchAction: 'manipulation', cursor: 'pointer' }}
         >
-          <Button
-            type="button"
-            size="small"
-            startIcon={<HomeIcon />}
-            sx={{
-              color: '#ffffff',
-              textTransform: 'none',
-              fontWeight: 600,
-              fontSize: '0.85rem',
-              px: 1,
-              borderRadius: 8,
-              position: 'relative',
-              zIndex: 1,
-              pointerEvents: 'none',
-              '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.16)' },
-              '&:active': { bgcolor: 'rgba(255, 255, 255, 0.28)' },
-            }}
-          >
-            返回控制台
-          </Button>
-        </div>
+          返回控制台
+        </Button>
       </Toolbar>
     </AppBar>
   );

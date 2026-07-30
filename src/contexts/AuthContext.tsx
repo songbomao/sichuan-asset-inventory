@@ -56,9 +56,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!token) return;
     try {
       const info = await getAdminInfo();
-      setUser((u) =>
-        u ? { ...u, isAdmin: info.isAdmin, isSuper: info.isSuper } : u,
-      );
+      setUser((u) => {
+        if (!u) return u;
+        const updated = { ...u, isAdmin: info.isAdmin, isSuper: info.isSuper };
+        // 同步写回 localStorage，确保全局返回控制台按钮的 storedAdmin 兜底
+        // 与 RequireAdmin 的 React user 口径一致，避免管理员被误弹回责任人首页。
+        localStorage.setItem('auth_user', JSON.stringify(updated));
+        return updated;
+      });
     } catch {
       // 网络/接口异常时保留本地值
     }
