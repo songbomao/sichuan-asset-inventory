@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607301411';
+export const APP_VERSION = 'v202607301419';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-30 14:11';
-export const RELEASE_NOTES = '资产详情页优化：①互换"所属公司"与"存放地点"字段位置；②合并二维码照与正面照为统一资产信息采集模块（支持任意顺序拍摄2张+照片，系统自动识别二维码与实物照并分类标记）。';
+export const RELEASE_TIME = '2026-07-30 14:19';
+export const RELEASE_NOTES = '紧急修复 React error #300（hooks 数量不一致）：将 useMemo 派生值（qrPhotos/frontPhotos）从组件中部移到顶部，避免 early return 导致的 hooks 不匹配崩溃。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
@@ -16,9 +16,9 @@ export const VERSION_HISTORY: Array<{
   notes: string;
 }> = [
   {
-    version: 'v202607301411',
-    time: '2026-07-30 14:11',
-    notes: '资产详情页互换字段位置+合并照片采集为统一智能分类模块。',
+    version: 'v202607301419',
+    time: '2026-07-30 14:19',
+    notes: '紧急修复 React error #300：hooks 顺序错误导致页面崩溃。',
   },
   {
     version: 'v202607301145',

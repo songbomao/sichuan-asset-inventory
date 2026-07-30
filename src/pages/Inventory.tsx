@@ -94,10 +94,14 @@ export default function InventoryPage() {
     const qr = allPhotos.find((p) => p.type === 'qr' && p.decodedCode);
     return qr?.decodedCode ?? '';
   }, [allPhotos]);
+  /** 二维码照片列表 */
+  const qrPhotos = useMemo(() => allPhotos.filter((p) => p.type === 'qr'), [allPhotos]);
+  /** 非二维码照片列表（实物照） */
+  const frontPhotos = useMemo(() => allPhotos.filter((p) => p.type === 'unknown'), [allPhotos]);
   /** 二维码照片数量 */
-  const qrPhotoCount = useMemo(() => allPhotos.filter((p) => p.type === 'qr').length, [allPhotos]);
+  const qrPhotoCount = qrPhotos.length;
   /** 非二维码照片数量（实物照） */
-  const frontPhotoCount = useMemo(() => allPhotos.filter((p) => p.type === 'unknown').length, [allPhotos]);
+  const frontPhotoCount = frontPhotos.length;
   /** AI 识别完整结果（含二维码校验与置信度），用于 UI 展示与二次确认 */
   const [aiResult, setAiResult] = useState<RecognizeAssetResult | null>(null);
 
@@ -300,8 +304,6 @@ export default function InventoryPage() {
   );
 
   /** 独立 AI 识别按钮逻辑（统一照片智能分类） */
-  const qrPhotos = useMemo(() => allPhotos.filter((p) => p.type === 'qr'), [allPhotos]);
-  const frontPhotos = useMemo(() => allPhotos.filter((p) => p.type === 'unknown'), [allPhotos]);
   const lastFrontPhoto = frontPhotos.length > 0 ? frontPhotos[frontPhotos.length - 1].dataUrl : null;
   const handleAIRecognize = useCallback(async () => {
     if (qrPhotos.length === 0 || frontPhotos.length === 0 || !qrDecodedCode || !lastFrontPhoto || aiCandidates.length === 0) return;
