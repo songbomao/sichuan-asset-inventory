@@ -59,6 +59,8 @@ export function parseToken(token: string): Partial<DingtalkUserInfo> | null {
       name: payload.name || payload.given_name || payload.unique_name || '',
       role: payload.role || payload.user_role || '',
       department: payload.department || payload.dept || '',
+      isAdmin: payload.IsAdmin === 'true' ? true : payload.IsAdmin === 'false' ? false : undefined,
+      isSuper: payload.IsSuper === 'true' ? true : payload.IsSuper === 'false' ? false : undefined,
     };
   } catch {
     return null;

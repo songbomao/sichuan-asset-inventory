@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { DingtalkUserInfo } from '../api/auth';
-import { getStoredUser } from '../api/auth';
+import { getStoredUser, parseToken } from '../api/auth';
 import { getAdminInfo } from '../api/admin';
 
 /** 认证上下文值 */
@@ -98,7 +98,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [token, logout]);
 
   // 角色由后端权限标记权威判定，不再维护可切换的视图状态
-  const isAdmin = !!user?.isAdmin;
+  // 优先级：JWT claim（同步可靠，无网络竞态）> React user state > localStorage 兜底
+  const isAdmin = (() => {
+    if (token) {
+      const jwtInfo = parseToken(token);
+      if (jwtInfo?.isAdmin === true) return true;
+      if (jwtInfo?.isAdmin === false) return false;
+      // JWT 不含 IsAdmin claim（兼容旧 token），回退到其他来源
+    }
+    if (user?.isAdmin !== undefined) return user.isAdmin;
+    return getStoredUser()?.isAdmin ?? false;
+  })();
 
   const value = useMemo(
     () => ({

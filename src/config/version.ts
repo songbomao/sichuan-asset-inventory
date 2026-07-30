@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607301342';
+export const APP_VERSION = 'v202607301402';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-30 13:42';
-export const RELEASE_NOTES = '返回控制台按钮回归标准 MUI Button onClick（去除 onTouchEnd+preventDefault+pointerEvents:none 脆弱双绑定，修正钉钉 WebView 吞点击）；target 推导加当前路由 /admin 兜底；refreshAdmin 写回 isAdmin 到 localStorage 使全局栏与 RequireAdmin 口径一致。';
+export const RELEASE_TIME = '2026-07-30 14:02';
+export const RELEASE_NOTES = '根治返回控制台跳错页：isAdmin 判据由异步 refreshAdmin RPC 改为 JWT Claim 同步解析（登录瞬间即就绪，消除网络竞态窗口）；parseToken 增强解析 IsAdmin/IsSuper Claim；AuthContext 与 GlobalAppBar 均优先参考 JWT Claim，杜绝管理员被误导向 /tasks。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
@@ -16,9 +16,9 @@ export const VERSION_HISTORY: Array<{
   notes: string;
 }> = [
   {
-    version: 'v202607301342',
-    time: '2026-07-30 13:42',
-    notes: '返回控制台按钮回归标准点击（去脆弱双绑定+路由兜底+isAdmin写回localStorage）。',
+    version: 'v202607301402',
+    time: '2026-07-30 14:02',
+    notes: '根治返回控制台跳错页：isAdmin 改为 JWT Claim 同步解析，消除异步竞态。',
   },
   {
     version: 'v202607301145',

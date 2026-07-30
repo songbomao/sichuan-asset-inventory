@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
-import { getStoredUser } from './api/auth';
+import { getStoredUser, parseToken } from './api/auth';
 import Layout from './components/Layout';
 import RequireAdmin from './components/RequireAdmin';
 import AppBar from '@mui/material/AppBar';
@@ -57,11 +57,20 @@ function GlobalAppBar() {
   const { isAdmin, user } = useAuth();
   if (location.pathname === '/login') return null;
 
-  // 角色判据：React state 优先，localStorage 兜底；并叠加当前路由信号，
-  // 避免 isAdmin 异步未就绪时把管理员误导向责任人首页（导致 RequireAdmin 又弹回 /tasks）。
+  // 角色判据（多级可靠兜底，无网络竞态）：
+  //   ① JWT claim 同步 => 100% 可靠，登录瞬间即就绪
+  //   ② React state => refreshAdmin 异步回填后可用
+  //   ③ localStorage 兜底 => 避免刷新瞬间误判
+  //   ④ 当前路由前缀 => 最后防线，管理员进了 /admin 路径就绝不能导向 /tasks
+  const token = localStorage.getItem('auth_token');
+  const jwtInfo = token ? parseToken(token) : null;
+  const jwtAdmin = jwtInfo?.isAdmin === true;
+  const jwtResponsible = jwtInfo?.isAdmin === false;
   const storedAdmin = !!getStoredUser()?.isAdmin;
   const admin =
-    isAdmin || storedAdmin || !!user?.isAdmin || location.pathname.startsWith('/admin');
+    jwtAdmin
+    || (!jwtResponsible && (isAdmin || storedAdmin || !!user?.isAdmin))
+    || location.pathname.startsWith('/admin');
   const target = admin ? '/admin/tasks' : '/tasks';
 
   const goConsole = useCallback(() => {
