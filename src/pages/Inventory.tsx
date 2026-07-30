@@ -46,7 +46,7 @@ import dd from 'dingtalk-jsapi';
 function decodeQRCode(dataUrl: string): Promise<string | null> {
   return new Promise((resolve) => {
     const img = new Image();
-    img.onload = () => {
+    img.onload = async () => {
       try {
         const maxLongSide = 1200;                 // jsQR 表现最佳的单边上限
         const scale = Math.min(1, maxLongSide / Math.max(img.width, img.height));
@@ -135,6 +135,24 @@ function decodeQRCode(dataUrl: string): Promise<string | null> {
           rawCtx.drawImage(img, 0, 0, baseW, baseH);
           result = tryDecode(rawCanvas, baseW, baseH);
         }
+
+        // 5) 本地 jsQR 全部失败 → 调后端 ZXing.Net 兜底
+        if (!result) {
+          try {
+            const resp = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/Account/UniGetToken?action=DecodeQr`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ image: dataUrl }),
+            });
+            const json = await resp.json();
+            if (json.success && json.code) {
+              return resolve(json.code);
+            }
+          } catch {
+            // 后端不可达，静默失败
+          }
+        }
+
         resolve(result);
       } catch {
         resolve(null);

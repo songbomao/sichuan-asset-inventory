@@ -6,16 +6,21 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607301755';
+export const APP_VERSION = 'v202607301349';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-30 17:55';
-export const RELEASE_NOTES = '二维码识别修复+UI调整：①decodeQRCode 改为多尺度+中心裁剪+灰度增强策略，大幅提升随手拍二维码识别率；②资产信息折叠卡默认展开；③顶部步骤条移至资产信息卡和拍照采集卡之间。';
+export const RELEASE_TIME = '2026-07-30 13:49';
+export const RELEASE_NOTES = '后端ZXing.Net二维码解码兜底：前端jsQR多尺度解码失败后，自动调用后端DecodeQr接口（免登录白名单），后端ZXing.Net多尺度（原始→1.5x→2x→0.5x）解码，双重兜底提升扫码成功率。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607301349',
+    time: '2026-07-30 13:49',
+    notes: '后端ZXing.Net二维码解码兜底：前端jsQR多尺度解码失败后，自动调用后端DecodeQr接口（免登录白名单），后端ZXing.Net多尺度（原始→1.5x→2x→0.5x）解码，双重兜底提升扫码成功率。',
+  },
   {
     version: 'v202607301755',
     time: '2026-07-30 17:55',
