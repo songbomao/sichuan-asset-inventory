@@ -1,7 +1,11 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import IconButton from '@mui/material/IconButton';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import CloseIcon from '@mui/icons-material/Close';
+import FlipCameraAndroidIcon from '@mui/icons-material/FlipCameraAndroid';
 import CircularProgress from '@mui/material/CircularProgress';
 import Chip from '@mui/material/Chip';
 import Alert from '@mui/material/Alert';
@@ -38,6 +42,7 @@ interface CameraCaptureProps {
 
 /**
  * 水印相机组件
+ * - 点击拍照 → 弹出全屏取景 Dialog，居中自适应屏幕
  * - 仅支持后置摄像头拍照（已禁用相册选取）
  * - 摄像头权限不足时提示用户，不降级为文件选择
  * - 拍照后自动叠加水印
@@ -57,7 +62,6 @@ export default function CameraCapture({
 }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
   const [cameraOpen, setCameraOpen] = useState(false);
@@ -65,6 +69,8 @@ export default function CameraCapture({
   const [previewSrc, setPreviewSrc] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** 当前摄像头 facingMode（支持切换前后摄） */
+  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
 
   // AI 识别相关
   const [lastPhoto, setLastPhoto] = useState<string | null>(null);
@@ -103,23 +109,35 @@ export default function CameraCapture({
   }, []);
 
   /** 打开摄像头 */
-  const openCamera = useCallback(async () => {
+  const openCamera = useCallback(async (mode: 'environment' | 'user' = 'environment') => {
     setError(null);
     setLoading(true);
+    // 先关掉旧的
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
+        video: { facingMode: mode, width: { ideal: 1920 }, height: { ideal: 1080 } },
         audio: false,
       });
       streamRef.current = stream;
       setCameraOpen(true);
     } catch (err) {
       console.warn('摄像头权限被拒绝', err);
-      setError('摄像头权限不足，仅支持拍照上传');
+      setError('摄像头权限不足，请在系统设置中允许相机权限后重试');
     } finally {
       setLoading(false);
     }
   }, []);
+
+  /** 切换前后摄像头 */
+  const handleFlipCamera = useCallback(async () => {
+    const next = facingMode === 'environment' ? 'user' : 'environment';
+    setFacingMode(next);
+    await openCamera(next);
+  }, [facingMode, openCamera]);
 
   /** 摄像头开启后，将 stream 绑定到 video 元素 */
   useEffect(() => {
@@ -133,7 +151,6 @@ export default function CameraCapture({
     video.setAttribute('webkit-playsinline', 'true');
 
     const handleLoaded = () => {
-      // 等待视频尺寸可用
       if (video.videoWidth > 0 && video.videoHeight > 0) {
         setCameraReady(true);
       }
@@ -150,7 +167,6 @@ export default function CameraCapture({
     video.addEventListener('loadedmetadata', handleLoaded);
     video.addEventListener('canplay', handleCanPlay);
 
-    // 兜底：延迟再检查一次
     const timer = setTimeout(() => {
       if (video.videoWidth > 0 && video.videoHeight > 0) {
         setCameraReady(true);
@@ -224,7 +240,7 @@ export default function CameraCapture({
         );
         ctx.restore();
 
-        const watermarked = canvas.toDataURL('image/jpeg', 0.7);
+        const watermarked = canvas.toDataURL('image/jpeg', noWatermark ? 0.92 : 0.7);
         setPreviewSrc(watermarked);
         setLastPhoto(watermarked);
         onCapture(watermarked);
@@ -278,48 +294,20 @@ export default function CameraCapture({
     stopCamera();
     setCameraOpen(false);
 
-    // 叠加水印
     addWatermark(rawDataUrl);
-  }, [stopCamera, watermark.location, addWatermark]);
+  }, [stopCamera, watermark.location, addWatermark, noWatermark]);
 
-  /** 文件选择处理（降级方案） */
-  const handleFileSelect = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = () => {
-        const dataUrl = reader.result as string;
-        addWatermark(dataUrl);
-      };
-      reader.readAsDataURL(file);
-      // 清空 input 以便可重复选择同一文件
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    },
-    [addWatermark],
-  );
-
-  /** 关闭摄像头 */
+  /** 关闭取景框 */
   const handleClose = useCallback(() => {
     stopCamera();
     setCameraOpen(false);
+    setError(null);
   }, [stopCamera]);
 
   return (
     <div className="flex flex-col items-center gap-3 w-full">
       {/* 隐藏的 Canvas */}
       <canvas ref={canvasRef} className="hidden" />
-
-      {/* 隐藏的文件选择器 */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={handleFileSelect}
-      />
 
       {/* 拍照提示 */}
       {needMore === 0 && photoCount > 0 && (
@@ -331,70 +319,133 @@ export default function CameraCapture({
         />
       )}
 
-      {/* 错误提示 */}
-      {error && (
-        <div className="w-full p-2 bg-red-50 text-red-600 text-sm rounded-lg text-center">
-          {error}
-        </div>
-      )}
+      {/* 操作按钮 */}
+      <div className="flex gap-3 w-full">
+        <Button
+          variant="contained"
+          fullWidth
+          startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <CameraAltIcon />}
+          onClick={() => openCamera('environment')}
+          disabled={disabled || loading || reachedMax}
+          sx={{ py: 1.2 }}
+        >
+          {loading
+            ? '正在打开摄像头...'
+            : photoCount === 0
+            ? '📷 拍照'
+            : `📷 再拍一张（${photoCount}/${maxPhotos}）`}
+        </Button>
+      </div>
 
-      {/* 摄像头预览 */}
-      {cameraOpen && (
-        <div className="relative w-full overflow-hidden rounded-card border-2 border-accent/30">
-          <video
-            ref={videoRef}
-            className="w-full"
-            style={{ maxHeight: '360px', background: '#000' }}
-            playsInline
-            muted
-            autoPlay
-          />
-          {!cameraReady && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black text-white/80">
-              <CircularProgress size={28} color="inherit" sx={{ mb: 1 }} />
-              <span className="text-sm">正在启动摄像头...</span>
+      {/* ========== 全屏取景 Dialog ========== */}
+      <Dialog
+        open={cameraOpen}
+        onClose={handleClose}
+        fullScreen
+        PaperProps={{
+          sx: {
+            bgcolor: '#000',
+            maxWidth: '100%',
+            maxHeight: '100%',
+            margin: 0,
+          },
+        }}
+      >
+        <div className="relative w-full h-full flex flex-col bg-black">
+          {/* 顶部操作栏 */}
+          <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-3 py-2"
+            style={{ background: 'linear-gradient(180deg, rgba(0,0,0,0.6) 0%, transparent 100%)' }}>
+            <IconButton onClick={handleClose} sx={{ color: '#fff' }}>
+              <CloseIcon />
+            </IconButton>
+            <span className="text-white text-sm font-medium">
+              {noWatermark ? '拍摄二维码' : '拍摄资产照片'}
+            </span>
+            <IconButton onClick={handleFlipCamera} sx={{ color: '#fff' }}>
+              <FlipCameraAndroidIcon />
+            </IconButton>
+          </div>
+
+          {/* 取景画面 */}
+          <div className="flex-1 flex items-center justify-center overflow-hidden">
+            {/* 加载中 */}
+            {!cameraReady && !error && (
+              <div className="flex flex-col items-center gap-3 text-white/80">
+                <CircularProgress size={36} color="inherit" />
+                <span className="text-sm">正在启动摄像头...</span>
+              </div>
+            )}
+            {/* 权限错误 */}
+            {error && (
+              <div className="flex flex-col items-center gap-4 px-8 text-center">
+                <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center">
+                  <CameraAltIcon sx={{ color: '#fff', fontSize: 32 }} />
+                </div>
+                <p className="text-white/80 text-sm leading-relaxed">{error}</p>
+                <div className="flex gap-3">
+                  <Button
+                    variant="outlined"
+                    onClick={handleClose}
+                    sx={{ color: '#fff', borderColor: 'rgba(255,255,255,0.3)', borderRadius: '24px', px: 3 }}
+                  >
+                    关闭
+                  </Button>
+                  <Button
+                    variant="contained"
+                    onClick={() => openCamera(facingMode)}
+                    sx={{ borderRadius: '24px', px: 3 }}
+                  >
+                    重试
+                  </Button>
+                </div>
+              </div>
+            )}
+            {/* 视频流 */}
+            <video
+              ref={videoRef}
+              className="w-full h-full"
+              style={{ objectFit: 'cover' }}
+              playsInline
+              muted
+              autoPlay
+            />
+          </div>
+
+          {/* 底部拍照按钮 */}
+          {cameraReady && !error && (
+            <div className="absolute bottom-0 left-0 right-0 z-10 flex justify-center pb-8 pt-4"
+              style={{ background: 'linear-gradient(0deg, rgba(0,0,0,0.6) 0%, transparent 100%)' }}>
+              <div className="flex items-center gap-6">
+                <Button
+                  variant="outlined"
+                  onClick={handleClose}
+                  sx={{
+                    color: '#fff',
+                    borderColor: 'rgba(255,255,255,0.4)',
+                    borderRadius: '24px',
+                    px: 3,
+                    '&:hover': { borderColor: '#fff' },
+                  }}
+                >
+                  取消
+                </Button>
+                <div
+                  onClick={takePhoto}
+                  className="relative cursor-pointer"
+                  style={{ touchAction: 'manipulation' }}
+                >
+                  {/* 外圈 */}
+                  <div className="w-20 h-20 rounded-full border-4 border-white/80 flex items-center justify-center">
+                    {/* 内圈 */}
+                    <div className="w-16 h-16 rounded-full bg-white" />
+                  </div>
+                </div>
+                <div style={{ width: 80 }} />
+              </div>
             </div>
           )}
-          <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-4">
-            <Button
-              variant="contained"
-              onClick={takePhoto}
-              startIcon={<CameraAltIcon />}
-              disabled={!cameraReady}
-              sx={{ borderRadius: '24px', px: 3 }}
-            >
-              拍照
-            </Button>
-            <Button
-              variant="outlined"
-              onClick={handleClose}
-              sx={{ borderRadius: '24px', px: 3, color: '#fff', borderColor: '#fff' }}
-            >
-              取消
-            </Button>
-          </div>
         </div>
-      )}
-
-      {/* 操作按钮 */}
-      {!cameraOpen && (
-        <div className="flex gap-3 w-full">
-          <Button
-            variant="contained"
-            fullWidth
-            startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <CameraAltIcon />}
-            onClick={openCamera}
-            disabled={disabled || loading || reachedMax}
-            sx={{ py: 1.2 }}
-          >
-            {loading
-              ? '正在打开摄像头...'
-              : photoCount === 0
-              ? '📷 拍照'
-              : `📷 再拍一张（${photoCount}/${maxPhotos}）`}
-          </Button>
-        </div>
-      )}
+      </Dialog>
 
       {/* AI 资产识别（提供候选后常驻显示，未拍照时禁用；可通过 hideAI 交由父组件自行渲染） */}
       {!hideAI && !cameraOpen && candidates && candidates.length > 0 && (

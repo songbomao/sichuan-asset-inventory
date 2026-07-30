@@ -6,16 +6,21 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607301349';
+export const APP_VERSION = 'v202607301834';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-30 13:49';
-export const RELEASE_NOTES = '后端ZXing.Net二维码解码兜底：前端jsQR多尺度解码失败后，自动调用后端DecodeQr接口（免登录白名单），后端ZXing.Net多尺度（原始→1.5x→2x→0.5x）解码，双重兜底提升扫码成功率。';
+export const RELEASE_TIME = '2026-07-30 18:34';
+export const RELEASE_NOTES = '拍照体验优化：取景框改为全屏弹出Dialog——点击拍照后取景框覆盖整屏居中显示，无需滚动；支持前后摄像头切换；权限错误在Dialog内友好提示并支持重试。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607301834',
+    time: '2026-07-30 18:34',
+    notes: '拍照体验优化：取景框改为全屏弹出Dialog——点击拍照后取景框覆盖整屏居中显示，无需滚动；支持前后摄像头切换；权限错误在Dialog内友好提示并支持重试。',
+  },
   {
     version: 'v202607301349',
     time: '2026-07-30 13:49',
