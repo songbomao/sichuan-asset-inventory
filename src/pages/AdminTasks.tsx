@@ -176,15 +176,6 @@ export default function AdminTasks() {
   const [deleteTarget, setDeleteTarget] = useState<AdminTaskItem | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  // 仅管理员可进入任务管理
-  if (!user?.isAdmin) {
-    return (
-      <div className="p-4">
-        <Alert severity="warning">无权限：仅管理员可进入任务管理。</Alert>
-      </div>
-    );
-  }
-
   /* ---- 新建任务 Dialog ---- */
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<DialogForm>({ ...defaultForm });
@@ -800,6 +791,15 @@ export default function AdminTasks() {
       setDeleting(false);
     }
   };
+
+  // 仅管理员可进入任务管理（所有 hooks 调用完毕后再做权限渲染分支，避免 hooks 数量不一致）
+  if (!user?.isAdmin) {
+    return (
+      <div className="p-4">
+        <Alert severity="warning">无权限：仅管理员可进入任务管理。</Alert>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 space-y-4">

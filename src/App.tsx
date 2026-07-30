@@ -55,7 +55,6 @@ function GlobalAppBar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAdmin, user } = useAuth();
-  if (location.pathname === '/login') return null;
 
   // 角色判据（多级可靠兜底，无网络竞态）：
   //   ① JWT claim 同步 => 100% 可靠，登录瞬间即就绪
@@ -76,6 +75,8 @@ function GlobalAppBar() {
   const goConsole = useCallback(() => {
     navigate(target, { replace: true });
   }, [navigate, target]);
+
+  if (location.pathname === '/login') return null;
 
   return (
     <AppBar
