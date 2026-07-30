@@ -161,16 +161,34 @@ client.interceptors.request.use(
 );
 
 /** 响应拦截器：统一错误处理 + Token 过期跳转 */
+let _401Handling = false; // 防重入锁
 client.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('auth_user');
-      _globalToken = ''; // 同步清除全局缓存，避免后续请求仍带失效 token
-      // HashRouter：用 hash 切换登录页，避免整页刷新触发重定向死循环白屏
-      if (window.location.hash !== '#/login') {
-        window.location.hash = '#/login';
+      // 防止同一 401 触发多次清除/跳转（401 响应可能同时触发多个请求的拦截器）
+      if (_401Handling) return Promise.reject(error);
+      _401Handling = true;
+      try {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('auth_user');
+        _globalToken = ''; // 同步清除全局缓存，避免后续请求仍带失效 token
+        // 仅清除 token 和 user，不主动修改 window.location.hash。
+        // 由 AuthContext 的 storage 事件监听器感知 token 被清 → logout() → ProtectedRoute 踢到 /login；
+        // 避免直接 hash 跳转与 React Router 导航冲突导致"返回控制台"跳到登录页。
+        // 同时 dispatch 自定义事件通知 AuthContext 立即处理（同一标签页内 storage 事件不触发）。
+        window.dispatchEvent(new Event('auth_token_cleared'));
+        // 最后兜底：如果 AuthContext 没反应，500ms 后再跳
+        setTimeout(() => {
+          if (window.location.hash !== '#/login') {
+            window.location.hash = '#/login';
+          }
+          _401Handling = false;
+        }, 500);
+        return Promise.reject(error);
+      } catch {
+        _401Handling = false;
+        return Promise.reject(error);
       }
     }
     // 透传后端返回的业务错误详情（含 500 时的异常原因），覆盖 axios 默认文案

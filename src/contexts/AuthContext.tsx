@@ -78,8 +78,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout();
       }
     };
+    // 同一标签页内 axios 拦截器清除 token 时，storage 事件不会触发，
+    // 因此需要额外监听自定义事件来立即感知 401。
+    const customHandler = () => {
+      if (token) logout();
+    };
     window.addEventListener('storage', handler);
-    return () => window.removeEventListener('storage', handler);
+    window.addEventListener('auth_token_cleared', customHandler);
+    return () => {
+      window.removeEventListener('storage', handler);
+      window.removeEventListener('auth_token_cleared', customHandler);
+    };
   }, [token, logout]);
 
   // 角色由后端权限标记权威判定，不再维护可切换的视图状态

@@ -5,16 +5,21 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607291749';
+export const APP_VERSION = 'v202607300912';
 export const APP_NAME = '蜀资点兵';
-export const RELEASE_TIME = '2026-07-29 17:49';
-export const RELEASE_NOTES = '修复 GitHub Actions 构建失败：闭合 version.ts 中未终止的字符串字面量。并含 v202607291725 改动：①移除 CameraCapture 中「至少还需拍 N 张」黄色 Chip；②AssetDetailTabs 字段精简为 3 组 18 字段 + AI 识别按钮常驻（未拍照时禁用）；③水印照片标题右侧提示文案改为「至少 2 张，一张包含固资标签，另一张为固资正面照片」。';
+export const RELEASE_TIME = '2026-07-30 09:12';
+export const RELEASE_NOTES = '修复「返回控制台」跳转到登录页：①client.ts 响应拦截器 401 处理从立即 hash 跳转改为先清除 token 并由 AuthContext 自然踢到登录页(500ms 兜底)；②AuthContext 新增 auth_token_cleared 自定义事件监听，确保同一标签页内 401 清除 token 后立即同步 React state。另含 v202607291749 内容。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607300912',
+    time: '2026-07-30 09:12',
+    notes: '修复「返回控制台」跳转到登录页：401 拦截器改为由 AuthContext 驱动跳转，避免 hash 直接跳转与 React Router 导航冲突。',
+  },
   {
     version: 'v202607291749',
     time: '2026-07-29 17:49',
