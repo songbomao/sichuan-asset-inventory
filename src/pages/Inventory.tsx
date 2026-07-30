@@ -20,6 +20,7 @@ import CameraCapture from '../components/CameraCapture';
 import AssetDetailTabs from '../components/AssetDetailTabs';
 import ProgressBar from '../components/ProgressBar';
 import type { RecognizeAssetResult } from '../api/ai';
+import { RecognizeAsset } from '../api/ai';
 
 /** 盘点状态选项 */
 const STATUS_OPTIONS = [
@@ -76,6 +77,10 @@ export default function InventoryPage() {
 
   // 水印时间
   const [watermarkTime, setWatermarkTime] = useState('');
+
+  // AI 识别独立状态
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiMsg, setAiMsg] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
   // 触控滑动跟踪
   const touchStartX = useRef(0);
@@ -212,6 +217,7 @@ export default function InventoryPage() {
   /** AI 识别命中后：若识别到的资产与当前展示资产不同，自动切换到该资产 */
   const handleAIRecognized = useCallback(
     (result: RecognizeAssetResult) => {
+      setAiMsg({ type: 'success', text: `识别命中：${result.assetCode}（置信度 ${result.confidence}%）` });
       const idx = assets.findIndex((a) => a.assetCode === result.assetCode);
       if (idx >= 0 && idx !== currentIndex) {
         setCurrentIndex(idx);
@@ -219,6 +225,22 @@ export default function InventoryPage() {
     },
     [assets, currentIndex],
   );
+
+  /** 独立 AI 识别按钮逻辑 */
+  const lastPhoto = photos.length > 0 ? photos[photos.length - 1] : null;
+  const handleAIRecognize = useCallback(async () => {
+    if (!lastPhoto || aiCandidates.length === 0) return;
+    setAiLoading(true);
+    setAiMsg(null);
+    try {
+      const result = await RecognizeAsset({ image: lastPhoto, candidates: aiCandidates });
+      handleAIRecognized(result);
+    } catch {
+      setAiMsg({ type: 'error', text: 'AI 服务暂不可用' });
+    } finally {
+      setAiLoading(false);
+    }
+  }, [lastPhoto, aiCandidates, handleAIRecognized]);
 
   /** 删除某张照片 */
   const handleRemovePhoto = useCallback((idx: number) => {
@@ -379,106 +401,43 @@ export default function InventoryPage() {
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2 space-y-2">
-        {/* 固定资产详情 */}
-        {assetDetailLoading ? (
-          <div className="bg-white rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-1.5">
-            <h3 className="font-semibold text-gray-900 text-sm">固定资产详情</h3>
-            <Skeleton variant="text" width="40%" />
-            <Skeleton variant="text" width="70%" />
-            <Skeleton variant="text" width="60%" />
-          </div>
-        ) : assetDetailError && !assetDetail ? (
-          /* 获取详情失败时 fallback 到原来的简化展示 */
-          <div className="bg-white rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-1.5">
-            <h3 className="font-semibold text-gray-900 text-sm">固定资产详情</h3>
-            <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-              <div>
-                <dt className="text-gray-400">资产名称</dt>
-                <dd className="text-gray-800 break-words">{currentAsset.assetName}</dd>
-              </div>
-              <div>
-                <dt className="text-gray-400">类别</dt>
-                <dd className="text-gray-800">{currentAsset.category || '—'}</dd>
-              </div>
-              <div>
-                <dt className="text-gray-400">使用部门</dt>
-                <dd className="text-gray-800">{currentAsset.department || '—'}</dd>
-              </div>
-              <div>
-                <dt className="text-gray-400">责任人</dt>
-                <dd className="text-gray-800">{currentAsset.userName || '—'}</dd>
-              </div>
-              <div>
-                <dt className="text-gray-400">存放地点</dt>
-                <dd className="text-gray-800 break-words">{currentAsset.location || '—'}</dd>
-              </div>
-              {currentAsset.costCenterName ? (
-                <div>
-                  <dt className="text-gray-400">成本中心</dt>
-                  <dd className="text-gray-800 break-words">{currentAsset.costCenterName}</dd>
-                </div>
-              ) : null}
-              {currentAsset.standard ? (
-                <div>
-                  <dt className="text-gray-400">规格型号</dt>
-                  <dd className="text-gray-800 break-words">{currentAsset.standard}</dd>
-                </div>
-              ) : null}
-            </dl>
-          </div>
-        ) : assetDetail ? (
-          /* 完整资产详情（AssetDetailTabs 自带 Paper 包裹） */
-          <div>
-            <h3 className="font-semibold text-gray-900 text-sm mb-2">固定资产详情</h3>
-            <AssetDetailTabs
-              asset={assetDetail}
-            />
-          </div>
-        ) : (
-          /* 首次加载未完成时的 fallback */
-          <div className="bg-white rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-1.5">
-            <h3 className="font-semibold text-gray-900 text-sm">固定资产详情</h3>
-            <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-              <div>
-                <dt className="text-gray-400">资产名称</dt>
-                <dd className="text-gray-800 break-words">{currentAsset.assetName}</dd>
-              </div>
-              <div>
-                <dt className="text-gray-400">类别</dt>
-                <dd className="text-gray-800">{currentAsset.category || '—'}</dd>
-              </div>
-              <div>
-                <dt className="text-gray-400">使用部门</dt>
-                <dd className="text-gray-800">{currentAsset.department || '—'}</dd>
-              </div>
-              <div>
-                <dt className="text-gray-400">责任人</dt>
-                <dd className="text-gray-800">{currentAsset.userName || '—'}</dd>
-              </div>
-              <div>
-                <dt className="text-gray-400">存放地点</dt>
-                <dd className="text-gray-800 break-words">{currentAsset.location || '—'}</dd>
-              </div>
-              {currentAsset.costCenterName ? (
-                <div>
-                  <dt className="text-gray-400">成本中心</dt>
-                  <dd className="text-gray-800 break-words">{currentAsset.costCenterName}</dd>
-                </div>
-              ) : null}
-              {currentAsset.standard ? (
-                <div>
-                  <dt className="text-gray-400">规格型号</dt>
-                  <dd className="text-gray-800 break-words">{currentAsset.standard}</dd>
-                </div>
-              ) : null}
-            </dl>
-          </div>
-        )}
+        {/* 盘点状态选择 — 最高优先级 */}
+        <div>
+          <p className="text-xs font-medium text-gray-700 mb-1.5">盘点状态</p>
+          <ToggleButtonGroup
+            value={assetStatus}
+            exclusive
+            onChange={handleStatusChange}
+            size="small"
+            fullWidth
+            disabled={isCompleted}
+            sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.75 }}
+          >
+            {STATUS_OPTIONS.map((opt) => (
+              <ToggleButton
+                key={opt.value}
+                value={opt.value}
+                sx={{
+                  borderRadius: '6px !important',
+                  border: '1px solid rgba(0,0,0,0.12) !important',
+                  fontSize: '0.75rem',
+                  py: 0.75,
+                  '&.Mui-selected': {
+                    bgcolor: 'rgba(26, 35, 126, 0.08)',
+                    borderColor: '#1a237e !important',
+                  },
+                }}
+              >
+                {opt.label}
+              </ToggleButton>
+            ))}
+          </ToggleButtonGroup>
+        </div>
 
         {/* 已盘点提示 */}
         {isCompleted && (
           <Alert severity="success" sx={{ fontSize: '0.8rem', py: 0.5 }}>
-            该资产已盘点完成 ✅
+            该资产已盘点完成
           </Alert>
         )}
 
@@ -528,42 +487,33 @@ export default function InventoryPage() {
             maxPhotos={4}
             candidates={aiCandidates}
             onAIRecognized={handleAIRecognized}
+            hideAI
           />
         </div>
         )}
 
-        {/* 盘点状态选择 */}
-        <div>
-          <p className="text-xs font-medium text-gray-700 mb-1.5">盘点状态</p>
-          <ToggleButtonGroup
-            value={assetStatus}
-            exclusive
-            onChange={handleStatusChange}
-            size="small"
-            fullWidth
-            disabled={isCompleted}
-            sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.75 }}
-          >
-            {STATUS_OPTIONS.map((opt) => (
-              <ToggleButton
-                key={opt.value}
-                value={opt.value}
-                sx={{
-                  borderRadius: '6px !important',
-                  border: '1px solid rgba(0,0,0,0.12) !important',
-                  fontSize: '0.75rem',
-                  py: 0.75,
-                  '&.Mui-selected': {
-                    bgcolor: 'rgba(26, 35, 126, 0.08)',
-                    borderColor: '#1a237e !important',
-                  },
-                }}
-              >
-                {opt.label}
-              </ToggleButton>
-            ))}
-          </ToggleButtonGroup>
-        </div>
+        {/* AI 识别资产 — 独立模块，放在水印照片之后 */}
+        {!IS_LOST(assetStatus) && aiCandidates.length > 0 && (
+          <div className="bg-white rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-2">
+            <h3 className="font-semibold text-gray-900 text-sm">AI 识别资产</h3>
+            <Button
+              variant="contained"
+              fullWidth
+              color="secondary"
+              startIcon={aiLoading ? <CircularProgress size={18} color="inherit" /> : <span>✨</span>}
+              onClick={handleAIRecognize}
+              disabled={aiLoading || isCompleted || !lastPhoto}
+              sx={{ py: 1.2, borderRadius: 2 }}
+            >
+              {aiLoading ? 'AI 识别中...' : '✨ AI 识别资产'}
+            </Button>
+            {aiMsg && (
+              <Alert severity={aiMsg.type === 'success' ? 'success' : aiMsg.type === 'error' ? 'error' : 'info'} sx={{ fontSize: '0.8rem' }}>
+                {aiMsg.text}
+              </Alert>
+            )}
+          </div>
+        )}
 
         {/* 备注输入 */}
         <TextField

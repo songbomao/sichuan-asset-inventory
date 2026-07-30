@@ -82,7 +82,10 @@ function GlobalAppBar() {
           type="button"
           size="small"
           startIcon={<HomeIcon />}
-          onClick={() => navigate(isAdmin ? '/admin/tasks' : '/tasks', { replace: true })}
+          onClick={() => {
+            const target = isAdmin || location.pathname.startsWith('/admin') ? '/admin/tasks' : '/tasks';
+            navigate(target, { replace: true });
+          }}
           sx={{
             color: '#ffffff',
             textTransform: 'none',

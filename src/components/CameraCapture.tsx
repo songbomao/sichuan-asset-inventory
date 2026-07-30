@@ -30,6 +30,8 @@ interface CameraCaptureProps {
   candidates?: RecognizeAssetCandidate[];
   /** AI 识别完成回调 */
   onAIRecognized?: (result: RecognizeAssetResult) => void;
+  /** 隐藏内置 AI 识别按钮（父组件自行渲染） */
+  hideAI?: boolean;
 }
 
 /**
@@ -48,6 +50,7 @@ export default function CameraCapture({
   maxPhotos = 4,
   candidates,
   onAIRecognized,
+  hideAI = false,
 }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -384,8 +387,8 @@ export default function CameraCapture({
         </div>
       )}
 
-      {/* AI 资产识别（提供候选后常驻显示，未拍照时禁用） */}
-      {!cameraOpen && candidates && candidates.length > 0 && (
+      {/* AI 资产识别（提供候选后常驻显示，未拍照时禁用；可通过 hideAI 交由父组件自行渲染） */}
+      {!hideAI && !cameraOpen && candidates && candidates.length > 0 && (
         <div className="w-full space-y-2">
           <Button
             variant="contained"

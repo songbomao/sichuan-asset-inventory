@@ -22,11 +22,9 @@ const renderValue = (value: string | undefined) => {
 };
 
 const ALL_FIELDS: Array<{ label: string; key: keyof AssetDetail; render?: (value: string | undefined) => React.ReactNode }> = [
-  { label: '所属公司', key: 'companyName' },
   { label: '资产名称', key: 'assetName' },
   { label: '资产类型', key: 'assetTypeName' },
   { label: '规格型号', key: 'standard' },
-  { label: '存放地点', key: 'location' },
   { label: '使用部门', key: 'deptName' },
   { label: '成本中心', key: 'costCenterName' },
   { label: '成本中心代码', key: 'costCenterCode' },
@@ -38,6 +36,9 @@ const ALL_FIELDS: Array<{ label: string; key: keyof AssetDetail; render?: (value
   { label: '原值', key: 'originalValue', render: formatMoney },
   { label: '净值', key: 'netValue', render: formatMoney },
 ];
+
+/** 需要独占一行的字段（key） */
+const FULL_WIDTH_KEYS = new Set(['companyName', 'location']);
 
 export default function AssetDetailTabs({ asset, loading, error }: AssetDetailTabsProps) {
   if (loading) {
@@ -65,14 +66,26 @@ export default function AssetDetailTabs({ asset, loading, error }: AssetDetailTa
   return (
     <Paper className="rounded-xl shadow-sm border border-gray-100 overflow-hidden">
       <div className="px-3 py-2.5 space-y-1">
-        {ALL_FIELDS.map((f) => (
-          <div key={f.key} className="flex items-baseline justify-between gap-2 text-xs border-b border-gray-50 last:border-b-0 py-1.5">
-            <span className="text-gray-400 shrink-0">{f.label}</span>
-            <span className="text-right break-words min-w-0">
-              {f.render ? f.render(asset[f.key] as string | undefined) : renderValue(asset[f.key] as string | undefined)}
-            </span>
-          </div>
-        ))}
+        {/* 独占一行字段 */}
+        <div className="text-xs py-1.5 border-b border-gray-50">
+          <span className="text-gray-400">所属公司</span>
+          <span className="text-gray-800 font-medium float-right">{renderValue(asset.companyName)}</span>
+        </div>
+        <div className="text-xs py-1.5 border-b border-gray-50">
+          <span className="text-gray-400">存放地点</span>
+          <span className="text-gray-800 font-medium float-right break-words max-w-[70%] text-right">{renderValue(asset.location)}</span>
+        </div>
+        {/* 其余字段：两列网格 */}
+        <div className="grid grid-cols-2 gap-x-3 gap-y-0">
+          {ALL_FIELDS.map((f) => (
+            <div key={f.key} className="flex items-baseline justify-between gap-1 text-xs py-1.5 border-b border-gray-50 last:border-b-0">
+              <span className="text-gray-400 shrink-0">{f.label}</span>
+              <span className="text-right break-words min-w-0">
+                {f.render ? f.render(asset[f.key] as string | undefined) : renderValue(asset[f.key] as string | undefined)}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
     </Paper>
   );

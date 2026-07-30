@@ -5,10 +5,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607301010';
+export const APP_VERSION = 'v202607301040';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-30 10:10';
-export const RELEASE_NOTES = '盘点 4 状态业务规则：①状态改为正常/丢失/损坏/其他 4 种；②备注校验：正常可选、其余 3 种强制必填+错误提示；③数量逻辑：丢失强制为 0 不可编辑，其余按实际；④拍照与 AI：丢失状态隐藏整个拍照卡片，其余必拍 2 张；⑤提交校验按状态动态调整。';
+export const RELEASE_TIME = '2026-07-30 10:40';
+export const RELEASE_NOTES = '三项调整：①资产详情布局优化-所属公司/存放地点独占一行、其余两列；②返回控制台增加路径双判据（isAdmin未就绪时用pathname补位）；③盘点页模块重排-盘点状态→水印照片→AI识别→备注→盘点数量，AI识别从CameraCapture迁出为独立模块。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
@@ -16,7 +16,7 @@ export const VERSION_HISTORY: Array<{
   notes: string;
 }> = [
   {
-    version: 'v202607301010',
+    version: 'v202607301040',
     time: '2026-07-30 09:36',
     notes: '返回控制台回归简洁一行式 navigate，移除过度设计。',
   },
