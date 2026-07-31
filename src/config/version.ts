@@ -6,16 +6,21 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607312219';
+export const APP_VERSION = 'v202607312236';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-31 22:19';
-export const RELEASE_NOTES = '盘点页三处交互调整：①资产信息卡片默认折叠（节省首屏空间，可手动展开）；②AI 资产识别降级为非独立环节——拍完反面照后由 useEffect 自动触发，结果内联展示于拍照采集卡末尾，移除独立卡E与步骤条 AI 项，步骤收缩为4项（资产状态→扫码识别→拍照采集→提交信息），提交按钮不再有独立 AI 拦截文案；③拍摄入口按钮恢复白色相机图标（CameraAltIcon 白色）。';
+export const RELEASE_TIME = '2026-07-31 22:36';
+export const RELEASE_NOTES = '任务列表页：已过期盘点任务禁止点击进入盘点详情，点击时提示「该盘点任务已过期，无法进入盘点」；过期卡片视觉降级（透明度降低、背景置灰）。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607312236',
+    time: '2026-07-31 22:36',
+    notes: '任务列表页：已过期盘点任务禁止点击进入盘点详情，点击时提示「该盘点任务已过期，无法进入盘点」；过期卡片视觉降级（透明度降低、背景置灰）。',
+  },
   {
     version: 'v202607312219',
     time: '2026-07-31 22:19',

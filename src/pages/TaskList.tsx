@@ -7,6 +7,7 @@ import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
 import Skeleton from '@mui/material/Skeleton';
 import Alert from '@mui/material/Alert';
+import Snackbar from '@mui/material/Snackbar';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import InboxIcon from '@mui/icons-material/Inbox';
@@ -32,6 +33,7 @@ export default function TaskListPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string }>({ open: false, message: '' });
 
   const fetchTasks = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -99,6 +101,26 @@ export default function TaskListPage() {
     } catch {
       return false;
     }
+  };
+
+  /** 判断是否已过期 */
+  const isExpired = (deadline: string): boolean => {
+    try {
+      const date = new Date(deadline);
+      const now = new Date();
+      return date.getTime() < now.getTime();
+    } catch {
+      return false;
+    }
+  };
+
+  /** 点击任务卡片：已过期则提示禁止进入，否则进入详情 */
+  const handleTaskClick = (task: TaskItem) => {
+    if (isExpired(task.deadline)) {
+      setSnackbar({ open: true, message: '该盘点任务已过期，无法进入盘点' });
+      return;
+    }
+    navigate(`/tasks/${task.taskId}`);
   };
 
   /** 派生卡片状态：当前责任人名下资产全部盘点完成 → 已完成；否则沿用任务级状态
@@ -174,8 +196,8 @@ export default function TaskListPage() {
       {/* 任务卡片列表 */}
       {!loading &&
         visibleTasks.map((task) => (
-          <Card key={task.taskId} className="glow-border hover:shadow-glow transition-shadow">
-            <CardActionArea onClick={() => navigate(`/tasks/${task.taskId}`)}>
+          <Card key={task.taskId} className={`glow-border hover:shadow-glow transition-shadow ${isExpired(task.deadline) ? 'opacity-70 bg-gray-50' : ''}`}>
+            <CardActionArea onClick={() => handleTaskClick(task)}>
               <CardContent>
                 <div className="flex items-start justify-between mb-2">
                   <Typography
@@ -210,6 +232,18 @@ export default function TaskListPage() {
 
       {/* 底部间距 */}
       <div className="h-4" />
+
+      {/* 过期任务点击提示 */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity="warning" sx={{ width: '100%', fontSize: '0.85rem' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
       </>
       )}
 
