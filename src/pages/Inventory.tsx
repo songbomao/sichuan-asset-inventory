@@ -29,9 +29,11 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { getTaskDetail, getProgress, type AssetInfo } from '../api/tasks';
-import { submitRecord, type AssetDetail, getAssetByCode } from '../api/inventory';
+import { submitRecord, type AssetDetail, getAssetByCode, verifyQrSignature } from '../api/inventory';
 import { getCurrentLocation } from '../api/reverseGeocode';
 import { useAuth } from '../contexts/AuthContext';
 import CameraCapture, { type PhotoValidationResult, type PhotoMeta } from '../components/CameraCapture';
@@ -255,6 +257,10 @@ export default function InventoryPage() {
   const [scanMismatchOpen, setScanMismatchOpen] = useState(false);
   /** 扫码结果信息（用于不匹配弹窗展示） */
   const [scanResultInfo, setScanResultInfo] = useState<{ code: string; name?: string } | null>(null);
+  /** 扫码防伪验签状态：valid=签名有效 | legacy=旧标签 | forged=伪造 */
+  const [scanSigStatus, setScanSigStatus] = useState<'valid' | 'legacy' | 'forged' | null>(null);
+  /** 扫码解析出的防伪签名原文 */
+  const [scanSig, setScanSig] = useState<string>('');
 
   /** AI 识别完整结果（3 张拍完后必做，未完成阻止提交） */
   const [aiResult, setAiResult] = useState<RecognizeAssetResult | null>(null);
@@ -495,20 +501,56 @@ export default function InventoryPage() {
     setScanLoading(true);
     setScanError(null);
     setScanResultInfo(null);
+    setScanSigStatus(null);
+    setScanSig('');
     try {
       dd.ready(() => {
         dd.biz.util.scan({
           type: 'qrCode',
-          onSuccess: (res: { text: string; scanType: string }) => {
+          onSuccess: async (res: { text: string; scanType: string }) => {
             const code = (res?.text ?? '').trim();
             if (!code) {
               setScanError('未识别到二维码内容，请重试');
               setScanLoading(false);
               return;
             }
+            // 解析「资产编号|防伪签名」
+            const parts = code.split('|');
+            const scannedAssetCode = (parts[0] ?? '').trim();
+            const scannedSig = (parts[1] ?? '').trim();
+            if (!scannedAssetCode) {
+              setScanError('二维码内容缺少资产编号，请重试');
+              setScanLoading(false);
+              return;
+            }
+
+            // ── 防伪验签：valid=有效 | legacy=旧标签 | forged=伪造 ──
+            let sigStatus: 'valid' | 'legacy' | 'forged' = 'valid';
+            try {
+              const v = await verifyQrSignature({ assetCode: scannedAssetCode, sig: scannedSig });
+              sigStatus = v.status;
+            } catch {
+              // 验签接口异常时降级为 legacy（旧标签），允许继续并给出轻提示
+              sigStatus = 'legacy';
+              setScanError('防伪校验服务暂不可用，已按旧标签放行，请人工核对');
+            }
+            setScanSigStatus(sigStatus);
+            setScanSig(scannedSig);
+
+            if (sigStatus === 'forged') {
+              // 伪造 / 签名不匹配：阻止继续，弹警告
+              setScanVerified(false);
+              setTagPhoto(null);
+              setScanResultInfo({ code: scannedAssetCode });
+              setScanMismatchOpen(true);
+              setScanLoading(false);
+              return;
+            }
+
+            // valid / legacy：继续核对当前任务资产
             const current = assets[currentIndex];
             // 精确匹配当前任务资产（避免模糊匹配误跳到其他资产）
-            const matched = assets.find((a) => a.assetCode.trim() === code);
+            const matched = assets.find((a) => a.assetCode.trim() === scannedAssetCode);
             if (matched) {
               const isExactMatch = matched.assetCode === current?.assetCode;
               if (isExactMatch) {
@@ -525,12 +567,12 @@ export default function InventoryPage() {
                 setCurrentStepMode('front'); // 自动进入正面照拍摄
               } else {
                 // 匹配到任务内其他资产但非当前资产 → 提示不匹配，停留当前资产
-                setScanResultInfo({ code });
+                setScanResultInfo({ code: scannedAssetCode });
                 setScanMismatchOpen(true);
               }
             } else {
               // 扫描到不在当前任务中的资产
-              setScanResultInfo({ code });
+              setScanResultInfo({ code: scannedAssetCode });
               setScanMismatchOpen(true);
             }
             setScanLoading(false);
@@ -981,8 +1023,20 @@ export default function InventoryPage() {
           </div>
 
           {scanVerified ? (
-            <div className="text-xs text-green-700 bg-green-50 rounded-lg p-2">
-              二维码扫描已通过核对，资产信息匹配成功
+            <div className="space-y-2">
+              <div className="text-xs text-green-700 bg-green-50 rounded-lg p-2">
+                二维码扫描已通过核对，资产信息匹配成功
+              </div>
+              {scanSigStatus === 'valid' && (
+                <div className="inline-flex items-center gap-1 text-xs text-green-700 bg-green-100 border border-green-200 rounded-full px-2 py-0.5">
+                  <VerifiedUserIcon sx={{ fontSize: 14 }} /> 防伪签名有效
+                </div>
+              )}
+              {scanSigStatus === 'legacy' && (
+                <div className="inline-flex items-center gap-1 text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-full px-2 py-0.5">
+                  <WarningAmberIcon sx={{ fontSize: 14 }} /> 旧版标签（无防伪签名），已放行
+                </div>
+              )}
             </div>
           ) : (
             <>
@@ -1016,13 +1070,21 @@ export default function InventoryPage() {
             </>
           )}
 
-          {/* 不匹配弹窗 */}
+          {/* 不匹配 / 伪造弹窗 */}
           <Dialog open={scanMismatchOpen} onClose={() => setScanMismatchOpen(false)} maxWidth="xs" fullWidth>
-            <DialogTitle sx={{ fontSize: '0.95rem', fontWeight: 600 }}>扫码不匹配</DialogTitle>
+            <DialogTitle sx={{ fontSize: '0.95rem', fontWeight: 600, color: scanSigStatus === 'forged' ? '#d32f2f' : undefined }}>
+              {scanSigStatus === 'forged' ? '防伪签名校验失败' : '扫码不匹配'}
+            </DialogTitle>
             <DialogContent>
-              <p className="text-sm text-gray-700 mb-2">
-                扫描到的二维码 <span className="font-mono font-semibold text-red-600 bg-red-50 px-1 rounded">{scanResultInfo?.code}</span> 与当前资产不匹配，请确认是否为正确资产。
-              </p>
+              {scanSigStatus === 'forged' ? (
+                <p className="text-sm text-gray-700 mb-2">
+                  扫描到的二维码 <span className="font-mono font-semibold text-red-600 bg-red-50 px-1 rounded">{scanResultInfo?.code}</span> 的防伪签名<span className="font-mono"> {scanSig || '（空）'}</span> 校验不通过，疑似伪造或被篡改，已阻止继续盘点。请核验资产实物后上报。
+                </p>
+              ) : (
+                <p className="text-sm text-gray-700 mb-2">
+                  扫描到的二维码 <span className="font-mono font-semibold text-red-600 bg-red-50 px-1 rounded">{scanResultInfo?.code}</span> 与当前资产不匹配，请确认是否为正确资产。
+                </p>
+              )}
               <p className="text-xs text-gray-500">当前资产编号：{currentAsset.assetCode}（{currentAsset.assetName}）</p>
             </DialogContent>
             <DialogActions sx={{ px: 2, pb: 2 }}>

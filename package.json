@@ -19,6 +19,7 @@
     "axios": "^1.7.2",
     "dingtalk-jsapi": "^3.2.9",
     "jsqr": "^1.4.0",
+    "qrcode": "^1.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.0"
@@ -28,6 +29,7 @@
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
     "@types/node": "^20.19.43",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",

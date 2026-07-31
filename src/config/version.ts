@@ -6,16 +6,21 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607311723';
+export const APP_VERSION = 'v202607311802';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-31 17:23';
-export const RELEASE_NOTES = '资产盘点页 UI 修正：①状态按钮三列等宽；②扫码按钮白字主色样式；③删除各卡片右上角分数；④AI识别提升为独立卡片并去重复展示；⑤步骤条单行自适应。';
+export const RELEASE_TIME = '2026-07-31 18:02';
+export const RELEASE_NOTES = '固定资产标签二维码防伪与批量打印：扫码解析 assetCode|sig 整串、调 VerifyQrSignature 判断真实/旧标签/伪造(伪造阻止继续)；新增标签批量打印页 LabelsPrint(管理员，按组织/类别/成本中心或指定编号生成、qrcode 渲染二维码、浏览器打印/PDF)、AdminTasks 新增「标签打印」Tab、路由 /labels/print；安装 qrcode 依赖。配套后端 v202607311801。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607311802',
+    time: '2026-07-31 18:02',
+    notes: '固定资产标签二维码防伪与批量打印：扫码解析 assetCode|sig 整串、调 VerifyQrSignature 判断真实/旧标签/伪造(伪造阻止继续)；新增标签批量打印页 LabelsPrint(管理员，按组织/类别/成本中心或指定编号生成、qrcode 渲染二维码、浏览器打印/PDF)、AdminTasks 新增「标签打印」Tab、路由 /labels/print；安装 qrcode 依赖。配套后端 v202607311801。',
+  },
   {
     version: 'v202607311723',
     time: '2026-07-31 17:23',

@@ -154,7 +154,7 @@ export default function AdminTasks() {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<'tasks' | 'sync' | 'asset'>('tasks');
+  const [tab, setTab] = useState<'tasks' | 'sync' | 'asset' | 'labels'>('tasks');
   /** 切换 Tab 时自增，用于驱动子模块（如「资产对比同步」）自动刷新 */
   const [refreshNonce, setRefreshNonce] = useState(0);
 
@@ -807,6 +807,10 @@ export default function AdminTasks() {
       <Tabs
         value={tab}
         onChange={(_e, v) => {
+          if (v === 'labels') {
+            navigate('/labels/print');
+            return;
+          }
           setTab(v);
           setRefreshNonce((n) => n + 1);
           // 选中 Tab 时自动刷新对应模块数据（不弹窗）
@@ -822,6 +826,7 @@ export default function AdminTasks() {
         <Tab value="tasks" label="盘点任务管理" />
         <Tab value="sync" label="资产对比同步" />
         <Tab value="asset" label="固资查询" />
+        <Tab value="labels" label="标签打印" />
       </Tabs>
 
       {tab === 'tasks' && (

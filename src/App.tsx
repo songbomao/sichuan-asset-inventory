@@ -19,6 +19,7 @@ import TaskDetail from './pages/TaskDetail';
 import MyProgress from './pages/MyProgress';
 import MyRecords from './pages/MyRecords';
 import AdminTaskRecords from './pages/AdminTaskRecords';
+import LabelsPrint from './pages/LabelsPrint';
 
 /** 受保护路由：未登录跳转登录页 */
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -235,6 +236,18 @@ export default function App() {
           <ProtectedRoute>
             <RequireAdmin>
               <AdminTaskRecords />
+            </RequireAdmin>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* 批量资产标签打印（管理员）— 独立页面，需管理员权限 */}
+      <Route
+        path="/labels/print"
+        element={
+          <ProtectedRoute>
+            <RequireAdmin>
+              <LabelsPrint />
             </RequireAdmin>
           </ProtectedRoute>
         }

@@ -307,3 +307,91 @@ export async function getTaskRecordSummary(taskId: string): Promise<TaskRecordSu
   }
   throw new Error(data.msg || data.message || '获取任务汇总失败');
 }
+
+/** 二维码防伪验签状态 */
+export type QrSigStatus = 'valid' | 'legacy' | 'forged';
+
+/** 二维码防伪验签响应 */
+export interface VerifyQrSignatureResult {
+  status: QrSigStatus;       // valid=签名有效 | legacy=旧标签无签名 | forged=签名不匹配/伪造
+  assetCode: string;         // 解析出的资产编号
+  batch?: string;            // 标签批次（valid 时存在）
+}
+
+/** 二维码防伪验签响应包 */
+interface VerifyQrSignatureResponse {
+  code: number;
+  data: VerifyQrSignatureResult;
+  message: string;
+  msg?: string;
+}
+
+/**
+ * 校验扫码得到的「资产编号|防伪签名」是否有效
+ * GET /api/Account/Asset/VerifyQrSignature?assetCode={code}&sig={sig}
+ */
+export async function verifyQrSignature(params: {
+  assetCode: string;
+  sig: string;
+}): Promise<VerifyQrSignatureResult> {
+  const { data } = await client.get<VerifyQrSignatureResponse>(
+    '/api/Account/Asset/VerifyQrSignature',
+    { params },
+  );
+  if (data.code === 0 || data.code === 200) {
+    return data.data;
+  }
+  throw new Error(data.msg || data.message || '验签失败');
+}
+
+/** 单张资产标签 */
+export interface AssetLabel {
+  assetCode: string;         // 资产编号
+  assetName: string;         // 资产名称
+  standard: string;          // 规格型号
+  companyName: string;       // 公司名称
+  categoryName: string;      // 资产类别
+  costCenterName: string;    // 成本中心
+  sig: string;               // 防伪签名
+  qrContent: string;         // 二维码内容（assetCode + "|" + sig）
+}
+
+/** 批量生成资产标签响应 */
+export interface GenerateAssetLabelsResult {
+  total: number;             // 标签总数
+  batch: string;             // 生成批次号
+  labels: AssetLabel[];
+}
+
+/** 生成标签请求参数 */
+export interface GenerateAssetLabelsParams {
+  orgNames?: string[];       // 按组织筛选
+  categoryNames?: string[];  // 按类别筛选
+  costCenterNames?: string[];// 按成本中心筛选
+  assetCodes?: string[];     // 指定资产编号（文本框，逗号/换行分隔后展开）
+}
+
+/** 批量生成资产标签响应包 */
+interface GenerateAssetLabelsResponse {
+  code: number;
+  data: GenerateAssetLabelsResult;
+  message: string;
+  msg?: string;
+}
+
+/**
+ * 批量生成资产标签（含防伪签名与二维码内容）
+ * POST /api/Account/Asset/GenerateAssetLabels
+ */
+export async function generateAssetLabels(
+  params: GenerateAssetLabelsParams,
+): Promise<GenerateAssetLabelsResult> {
+  const { data } = await client.post<GenerateAssetLabelsResponse>(
+    '/api/Account/Asset/GenerateAssetLabels',
+    params,
+  );
+  if (data.code === 0 || data.code === 200) {
+    return data.data;
+  }
+  throw new Error(data.msg || data.message || '生成标签失败');
+}
