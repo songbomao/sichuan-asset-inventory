@@ -220,6 +220,7 @@ export default function ReviewPage() {
 
             <CameraCapture
               onCapture={(dataUrl) => setReviewPhoto(dataUrl)}
+              stepLabel="拍摄现场照片"
               watermark={{
                 time: new Date().toLocaleString('zh-CN'),
                 location: '复盘',

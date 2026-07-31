@@ -6,16 +6,21 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607311351';
+export const APP_VERSION = 'v202607301835';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-31 13:51';
-export const RELEASE_NOTES = '①步骤条首节点重命名「资产状态」；②移除盘点数量字段及UI——后台静默处理数量（正常=1，丢失=-1），前端不再展示账面数量/实际盘点数量/差异提示，简化界面。';
+export const RELEASE_TIME = '2026-07-30 18:35';
+export const RELEASE_NOTES = '重构拍照流程为三步骤引导拍摄——①标签照(校验标签内容)②正面照(校验实物轮廓)③反面照(校验实物轮廓)，每步拍摄后实时校验照片内容是否匹配，校验不通过引导重拍，校验通过自动进入下一步。废除原有自动二维码分类逻辑，改为人工引导三步采集。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607301835',
+    time: '2026-07-30 18:35',
+    notes: '重构拍照流程为三步骤引导拍摄——①标签照(校验标签内容)②正面照(校验实物轮廓)③反面照(校验实物轮廓)，每步拍摄后实时校验照片内容是否匹配，校验不通过引导重拍，校验通过自动进入下一步。废除原有自动二维码分类逻辑，改为人工引导三步采集。',
+  },
   {
     version: 'v202607311351',
     time: '2026-07-31 13:51',

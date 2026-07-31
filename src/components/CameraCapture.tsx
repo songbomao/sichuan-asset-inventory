@@ -3,21 +3,21 @@ import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import IconButton from '@mui/material/IconButton';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import CloseIcon from '@mui/icons-material/Close';
 import FlipCameraAndroidIcon from '@mui/icons-material/FlipCameraAndroid';
 import CircularProgress from '@mui/material/CircularProgress';
-import Chip from '@mui/material/Chip';
 import Alert from '@mui/material/Alert';
-import {
-  RecognizeAsset,
-  type RecognizeAssetCandidate,
-  type RecognizeAssetResult,
-} from '../api/ai';
+
+export interface PhotoValidationResult {
+  valid: boolean;
+  reason?: string;
+}
 
 interface CameraCaptureProps {
+  /** 照片拍摄成功回调 */
   onCapture: (dataUrl: string) => void;
   onClose?: () => void;
+  /** 水印信息 */
   watermark: {
     time: string;
     location: string;
@@ -25,82 +25,40 @@ interface CameraCaptureProps {
     assetCode: string;
   };
   disabled?: boolean;
-  /** 已拍张数，用于按钮文案提示 */
-  photoCount?: number;
-  /** 最少需要拍几张 */
-  minPhotos?: number;
-  /** 最多允许拍几张 */
-  maxPhotos?: number;
-  /** AI 识别候选资产（提供后显示「AI 识别」按钮） */
-  candidates?: RecognizeAssetCandidate[];
-  /** AI 识别完成回调 */
-  onAIRecognized?: (result: RecognizeAssetResult) => void;
-  /** 隐藏内置 AI 识别按钮（父组件自行渲染） */
-  hideAI?: boolean;
-  /** 不叠加水印（用于二维码照，避免干扰解码） */
-  noWatermark?: boolean;
+  /** 步骤标签（标题栏展示） */
+  stepLabel: string;
+  /** 拍摄引导提示（取景框内展示） */
+  stepHint?: string;
+  /** 拍后校验函数：传入 base64 照片，返回校验结果 */
+  onValidate?: (dataUrl: string) => Promise<PhotoValidationResult> | PhotoValidationResult;
 }
 
 /**
- * 水印相机组件
- * - 点击拍照 → 弹出全屏取景 Dialog，居中自适应屏幕
- * - 仅支持后置摄像头拍照（已禁用相册选取）
- * - 摄像头权限不足时提示用户，不降级为文件选择
- * - 拍照后自动叠加水印
- * - 支持多次调用，由父组件维护照片数组
+ * 三步骤引导式水印相机组件
+ * - 全屏取景 Dialog，自带水印
+ * - 仅支持后置摄像头拍照（不可选相册）
+ * - 支持步骤标题、引导提示、拍后校验
+ * - 校验不通过时在 Dialog 内提示，允许重拍
  */
 export default function CameraCapture({
   onCapture,
   onClose,
   watermark,
   disabled = false,
-  photoCount = 0,
-  minPhotos = 2,
-  maxPhotos = 4,
-  candidates,
-  onAIRecognized,
-  hideAI = false,
-  noWatermark = false,
+  stepLabel,
+  stepHint,
+  onValidate,
 }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const bindAttemptsRef = useRef(0);
 
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
-  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  /** 当前摄像头 facingMode（支持切换前后摄） */
+  const [validationError, setValidationError] = useState<string | null>(null);
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
-
-  // AI 识别相关
-  const [lastPhoto, setLastPhoto] = useState<string | null>(null);
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiMsg, setAiMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-
-  const reachedMax = photoCount >= maxPhotos;
-  const needMore = Math.max(0, minPhotos - photoCount);
-
-  /** 触发 AI 资产识别 */
-  const handleAIRecognize = useCallback(async () => {
-    if (!lastPhoto || !candidates || candidates.length === 0) return;
-    setAiLoading(true);
-    setAiMsg(null);
-    try {
-      const result = await RecognizeAsset({ image: lastPhoto, candidates });
-      setAiMsg({
-        type: 'success',
-        text: `识别为 ${result.name}（${result.assetCode}）· 置信度 ${Math.round(result.confidence * 100)}%`,
-      });
-      onAIRecognized?.(result);
-    } catch {
-      setAiMsg({ type: 'error', text: 'AI 服务暂不可用' });
-    } finally {
-      setAiLoading(false);
-    }
-  }, [lastPhoto, candidates, onAIRecognized]);
 
   /** 停止摄像头 */
   const stopCamera = useCallback(() => {
@@ -108,7 +66,6 @@ export default function CameraCapture({
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
-    bindAttemptsRef.current = 0;
     setCameraReady(false);
   }, []);
 
@@ -117,7 +74,6 @@ export default function CameraCapture({
     const video = videoRef.current;
     if (!video || !streamRef.current) return;
 
-    // 如果已经绑定且视频有尺寸，直接标记 ready
     if (video.srcObject === streamRef.current && video.videoWidth > 0 && video.videoHeight > 0) {
       setCameraReady(true);
       return;
@@ -128,23 +84,14 @@ export default function CameraCapture({
     video.muted = true;
     video.setAttribute('webkit-playsinline', 'true');
 
-    // 部分浏览器需要显式 load() 才会触发 loadedmetadata
-    try {
-      video.load();
-    } catch (e) {
-      console.warn('video.load() 失败', e);
-    }
+    try { video.load(); } catch (e) { console.warn('video.load() 失败', e); }
 
-    // 尝试播放（用户已通过点击触发，应满足自动播放策略）
     const tryPlay = () => {
       if (!videoRef.current) return;
-      videoRef.current
-        .play()
-        .then(() => console.log('[Camera] video.play() 成功'))
-        .catch((e) => console.warn('[Camera] video.play() 被阻止', e));
+      videoRef.current.play().then(() => console.log('[Camera] play 成功')).catch((e) => console.warn('[Camera] play 被阻止', e));
     };
 
-    // iOS Safari 上 loadedmetadata 可能不触发，加一个轮询兜底
+    // 轮询兜底
     const checkTimer = setInterval(() => {
       const v = videoRef.current;
       if (!v) return;
@@ -154,39 +101,29 @@ export default function CameraCapture({
       }
     }, 300);
 
-    // 5 秒后仍不 ready，给出提示但不关闭
     const timeoutTimer = setTimeout(() => {
       clearInterval(checkTimer);
       const v = videoRef.current;
       if (!v || v.videoWidth === 0 || v.videoHeight === 0) {
-        console.warn('[Camera] 视频未能就绪');
         setError('摄像头画面未能加载，可尝试切换前后摄像头或重试');
       }
     }, 5000);
 
     const handleLoaded = () => {
-      console.log('[Camera] loadedmetadata', video.videoWidth, video.videoHeight);
-      if (video.videoWidth > 0 && video.videoHeight > 0) {
+      const v = videoRef.current;
+      if (v && v.videoWidth > 0 && v.videoHeight > 0) {
         setCameraReady(true);
         clearInterval(checkTimer);
         clearTimeout(timeoutTimer);
       }
     };
-
     const handleCanPlay = () => {
-      console.log('[Camera] canplay');
       tryPlay();
-      if (video.videoWidth > 0 && video.videoHeight > 0) {
-        setCameraReady(true);
-        clearInterval(checkTimer);
-        clearTimeout(timeoutTimer);
-      }
+      handleLoaded();
     };
 
     video.addEventListener('loadedmetadata', handleLoaded);
     video.addEventListener('canplay', handleCanPlay);
-
-    // 立即尝试一次播放
     tryPlay();
 
     return () => {
@@ -200,29 +137,22 @@ export default function CameraCapture({
   /** 打开摄像头 */
   const openCamera = useCallback(async (mode: 'environment' | 'user' = 'environment') => {
     setError(null);
+    setValidationError(null);
     setLoading(true);
     setCameraReady(false);
-    // 先关掉旧的
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     }
     try {
-      // 部分浏览器对 ideal 宽度/高度支持不好，使用更宽松的约束
-      const constraints: MediaStreamConstraints = {
-        video: {
-          facingMode: mode,
-        },
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: mode },
         audio: false,
-      };
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      });
       streamRef.current = stream;
       setCameraOpen(true);
       setFacingMode(mode);
-      // Dialog 打开有动画，延迟一点再绑定 stream
-      setTimeout(() => {
-        bindStreamToVideo();
-      }, 200);
+      setTimeout(() => bindStreamToVideo(), 200);
     } catch (err) {
       console.warn('摄像头权限被拒绝', err);
       setError('摄像头权限不足，请在系统设置中允许相机权限后重试');
@@ -238,27 +168,17 @@ export default function CameraCapture({
     await openCamera(next);
   }, [facingMode, openCamera]);
 
-  /** 摄像头开启后，将 stream 绑定到 video 元素 */
   useEffect(() => {
     if (!cameraOpen) return;
-    // 组件 mount / Dialog 打开后绑定
     const cleanup = bindStreamToVideo();
-    return () => {
-      if (cleanup) cleanup();
-    };
+    return () => { if (cleanup) cleanup(); };
   }, [cameraOpen, bindStreamToVideo]);
 
-  /** 在照片上叠加水印 */
+  /** 叠加水印 */
   const addWatermark = useCallback(
     (rawDataUrl: string) => {
       const img = new Image();
       img.onload = () => {
-        if (noWatermark) {
-          setPreviewSrc(rawDataUrl);
-          setLastPhoto(rawDataUrl);
-          onCapture(rawDataUrl);
-          return;
-        }
         const canvas = canvasRef.current;
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
@@ -268,13 +188,12 @@ export default function CameraCapture({
         canvas.height = img.height;
         ctx.drawImage(img, 0, 0);
 
-        // 绘制底部水印背景
+        // 底部水印背景
         const wmHeight = Math.floor(canvas.height * 0.22);
         const yStart = canvas.height - wmHeight;
         ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
         ctx.fillRect(0, yStart, canvas.width, wmHeight);
 
-        // 绘制水印文字
         const fontSize = Math.max(14, Math.floor(canvas.width / 30));
         const lineHeight = fontSize * 1.6;
         const xPadding = fontSize * 1.2;
@@ -289,33 +208,26 @@ export default function CameraCapture({
           `👤 ${watermark.operator}`,
           `🏷 ${watermark.assetCode}`,
         ];
-
         lines.forEach((line, i) => {
           ctx.fillText(line, xPadding, yStart + wmHeight * 0.15 + i * lineHeight);
         });
 
-        // 在右上角也打一个半透明水印作为防伪
+        // 右上角防伪水印
         ctx.save();
         ctx.globalAlpha = 0.25;
         ctx.fillStyle = '#ffffff';
         const cornerFontSize = Math.max(10, Math.floor(canvas.width / 45));
         ctx.font = `${cornerFontSize}px "Noto Sans SC", sans-serif`;
         ctx.textAlign = 'right';
-        ctx.fillText(
-          `${watermark.operator} | ${watermark.time}`,
-          canvas.width - cornerFontSize,
-          cornerFontSize * 3,
-        );
+        ctx.fillText(`${watermark.operator} | ${watermark.time}`, canvas.width - cornerFontSize, cornerFontSize * 3);
         ctx.restore();
 
-        const watermarked = canvas.toDataURL('image/jpeg', noWatermark ? 0.92 : 0.7);
-        setPreviewSrc(watermarked);
-        setLastPhoto(watermarked);
+        const watermarked = canvas.toDataURL('image/jpeg', 0.7);
         onCapture(watermarked);
       };
       img.src = rawDataUrl;
     },
-    [watermark, onCapture, noWatermark],
+    [watermark, onCapture],
   );
 
   /** 拍照 */
@@ -324,16 +236,10 @@ export default function CameraCapture({
     const canvas = canvasRef.current;
     if (!video || !canvas) return;
 
-    // 如果视频还没播放，尝试播放一下
     if (video.paused) {
-      try {
-        await video.play();
-      } catch (e) {
-        console.warn('拍照前 play 失败', e);
-      }
+      try { await video.play(); } catch (e) { console.warn('拍照前 play 失败', e); }
     }
 
-    // 等一帧确保画面可用
     await new Promise((r) => requestAnimationFrame(() => r(null)));
 
     if (video.videoWidth === 0 || video.videoHeight === 0) {
@@ -341,7 +247,7 @@ export default function CameraCapture({
       return;
     }
 
-    // 如果水印地址还是经纬度，最多等待 3 秒让逆地理编码完成
+    // 等待逆地理编码（最多 3 秒）
     const isCoordLike = (loc?: string) => !!loc && /^\d+\.\d+,\s*\d+\.\d+$/.test(loc);
     let waited = 0;
     while (isCoordLike(watermark.location) && waited < 3000) {
@@ -356,7 +262,7 @@ export default function CameraCapture({
     canvas.height = video.videoHeight;
     ctx.drawImage(video, 0, 0);
 
-    // 限制最大宽度 1280px，等比缩放
+    // 限制最大宽度 1280px
     let finalCanvas: HTMLCanvasElement = canvas;
     if (canvas.width > 1280) {
       const scale = 1280 / canvas.width;
@@ -370,57 +276,57 @@ export default function CameraCapture({
       }
     }
 
-    const rawDataUrl = finalCanvas.toDataURL('image/jpeg', noWatermark ? 0.92 : 0.7);
+    const rawDataUrl = finalCanvas.toDataURL('image/jpeg', 0.7);
+
+    // 拍后校验
+    if (onValidate) {
+      try {
+        const result = await onValidate(rawDataUrl);
+        if (!result.valid) {
+          setValidationError(result.reason || '照片校验未通过，请重新拍摄');
+          return; // 校验不通过，不关闭取景框，允许重拍
+        }
+      } catch (e) {
+        console.warn('校验函数执行异常', e);
+        // 校验异常不阻断流程
+      }
+    }
+
+    // 通过 → 关摄像头，加水印
     stopCamera();
     setCameraOpen(false);
-
     addWatermark(rawDataUrl);
-  }, [stopCamera, watermark.location, addWatermark, noWatermark]);
+  }, [stopCamera, watermark.location, addWatermark, onValidate]);
 
   /** 关闭取景框 */
   const handleClose = useCallback(() => {
     stopCamera();
     setCameraOpen(false);
     setError(null);
+    setValidationError(null);
     setCameraReady(false);
     onClose?.();
   }, [stopCamera, onClose]);
 
-  // 只要有流就允许显示快门按钮，不必等 cameraReady
   const hasStream = !!streamRef.current;
 
   return (
     <div className="flex flex-col items-center gap-3 w-full">
-      {/* 隐藏的 Canvas */}
+      {/* 隐藏 Canvas */}
       <canvas ref={canvasRef} className="hidden" />
 
-      {/* 拍照提示 */}
-      {needMore === 0 && photoCount > 0 && (
-        <Chip
-          label={`已拍 ${photoCount} 张${reachedMax ? '（已达上限）' : ''}`}
-          color="success"
-          size="small"
-          sx={{ width: '100%', fontWeight: 600 }}
-        />
-      )}
-
-      {/* 操作按钮 */}
-      <div className="flex gap-3 w-full">
-        <Button
-          variant="contained"
-          fullWidth
-          startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <CameraAltIcon />}
-          onClick={() => openCamera('environment')}
-          disabled={disabled || loading || reachedMax}
-          sx={{ py: 1.2 }}
-        >
-          {loading
-            ? '正在打开摄像头...'
-            : photoCount === 0
-            ? '拍照'
-            : `再拍一张（${photoCount}/${maxPhotos}）`}
-        </Button>
-      </div>
+      {/* 拍照入口按钮 */}
+      <Button
+        variant="contained"
+        fullWidth
+        startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <CameraAltIcon />}
+        onClick={() => openCamera('environment')}
+        disabled={disabled || loading}
+        size="small"
+        sx={{ py: 0.8, fontSize: '0.8rem' }}
+      >
+        {loading ? '正在打开摄像头...' : `📷 拍摄${stepLabel}`}
+      </Button>
 
       {/* ========== 全屏取景 Dialog ========== */}
       <Dialog
@@ -428,24 +334,19 @@ export default function CameraCapture({
         onClose={handleClose}
         fullScreen
         PaperProps={{
-          sx: {
-            bgcolor: '#000',
-            maxWidth: '100%',
-            maxHeight: '100%',
-            margin: 0,
-          },
+          sx: { bgcolor: '#000', maxWidth: '100%', maxHeight: '100%', margin: 0 },
         }}
       >
         <div className="relative w-full h-full flex flex-col bg-black">
           {/* 顶部操作栏 */}
-          <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-3 py-2"
-            style={{ background: 'linear-gradient(180deg, rgba(0,0,0,0.6) 0%, transparent 100%)' }}>
+          <div
+            className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-3 py-2"
+            style={{ background: 'linear-gradient(180deg, rgba(0,0,0,0.6) 0%, transparent 100%)' }}
+          >
             <IconButton onClick={handleClose} sx={{ color: '#fff' }}>
               <CloseIcon />
             </IconButton>
-            <span className="text-white text-sm font-medium">
-              {noWatermark ? '拍摄二维码' : '拍摄资产照片'}
-            </span>
+            <span className="text-white text-sm font-medium">{stepLabel}</span>
             <IconButton onClick={handleFlipCamera} sx={{ color: '#fff' }}>
               <FlipCameraAndroidIcon />
             </IconButton>
@@ -485,6 +386,25 @@ export default function CameraCapture({
                 </div>
               </div>
             )}
+            {/* 拍摄引导提示 */}
+            {stepHint && cameraReady && !error && (
+              <div className="absolute top-14 left-0 right-0 z-10 mx-auto w-fit">
+                <div className="bg-black/50 backdrop-blur-sm text-white text-xs px-3 py-1.5 rounded-full text-center">
+                  {stepHint}
+                </div>
+              </div>
+            )}
+            {/* 校验错误提示 */}
+            {validationError && cameraReady && !error && (
+              <div className="absolute top-24 left-0 right-0 z-10 mx-4">
+                <Alert
+                  severity="warning"
+                  sx={{ fontSize: '0.78rem', py: 0.5, opacity: 0.95 }}
+                >
+                  {validationError}
+                </Alert>
+              </div>
+            )}
             {/* 视频流 */}
             <video
               ref={videoRef}
@@ -495,25 +415,19 @@ export default function CameraCapture({
               autoPlay
               onLoadedMetadata={() => {
                 const v = videoRef.current;
-                if (v && v.videoWidth > 0 && v.videoHeight > 0) {
-                  console.log('[Camera] onLoadedMetadata inline', v.videoWidth, v.videoHeight);
-                  setCameraReady(true);
-                }
+                if (v && v.videoWidth > 0 && v.videoHeight > 0) setCameraReady(true);
               }}
               onCanPlay={() => {
                 const v = videoRef.current;
                 if (v) {
-                  console.log('[Camera] onCanPlay inline');
                   v.play().catch((e) => console.warn('inline play 失败', e));
-                  if (v.videoWidth > 0 && v.videoHeight > 0) {
-                    setCameraReady(true);
-                  }
+                  if (v.videoWidth > 0 && v.videoHeight > 0) setCameraReady(true);
                 }
               }}
             />
           </div>
 
-          {/* 底部拍照栏 — 三个元素全部绝对定位，同一水平基线，避免 flex 错位 */}
+          {/* 底部拍照栏 */}
           {hasStream && (
             <div
               className="absolute left-0 right-0 z-20"
@@ -524,7 +438,7 @@ export default function CameraCapture({
                 paddingBottom: 'env(safe-area-inset-bottom)',
               }}
             >
-              {/* 取消：左下角 */}
+              {/* 取消 */}
               <button
                 type="button"
                 onClick={handleClose}
@@ -545,7 +459,7 @@ export default function CameraCapture({
                 取消
               </button>
 
-              {/* 快门：底部居中，原生相机风格大圆按钮 */}
+              {/* 快门 */}
               <div
                 onClick={cameraReady ? takePhoto : undefined}
                 role="button"
@@ -590,46 +504,10 @@ export default function CameraCapture({
                   }}
                 />
               </div>
-
-              {/* 已拍数量提示：右下角，与取消对称 */}
-              <span
-                style={{
-                  position: 'absolute',
-                  right: 24,
-                  bottom: 'calc(env(safe-area-inset-bottom) + 36px)',
-                  color: 'rgba(255,255,255,0.8)',
-                  fontSize: 13,
-                  textAlign: 'right',
-                }}
-              >
-                {photoCount > 0 ? `已拍 ${photoCount} 张` : ''}
-              </span>
             </div>
           )}
         </div>
       </Dialog>
-
-      {/* AI 资产识别（提供候选后常驻显示，未拍照时禁用；可通过 hideAI 交由父组件自行渲染） */}
-      {!hideAI && !cameraOpen && candidates && candidates.length > 0 && (
-        <div className="w-full space-y-2">
-          <Button
-            variant="contained"
-            fullWidth
-            color="secondary"
-            startIcon={aiLoading ? <CircularProgress size={18} color="inherit" /> : <AutoAwesomeIcon />}
-            onClick={handleAIRecognize}
-            disabled={aiLoading || disabled || !lastPhoto}
-            sx={{ py: 1.2, borderRadius: 2 }}
-          >
-            {aiLoading ? 'AI 识别中...' : '✨ AI 识别资产'}
-          </Button>
-          {aiMsg && (
-            <Alert severity={aiMsg.type === 'success' ? 'success' : 'info'} sx={{ fontSize: '0.8rem' }}>
-              {aiMsg.text}
-            </Alert>
-          )}
-        </div>
-      )}
     </div>
   );
 }

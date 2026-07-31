@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import CameraCapture from './CameraCapture';
 
@@ -7,15 +7,19 @@ import CameraCapture from './CameraCapture';
 const mockGetUserMedia = vi.fn();
 const mockStopTrack = vi.fn();
 
-Object.defineProperty(globalThis.navigator, 'mediaDevices', {
-  value: { getUserMedia: mockGetUserMedia },
-  writable: true,
-  configurable: true,
+beforeEach(() => {
+  Object.defineProperty(globalThis.navigator, 'mediaDevices', {
+    value: { getUserMedia: mockGetUserMedia },
+    writable: true,
+    configurable: true,
+  });
 });
 
 // Mock canvas context
-HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
-  drawImage: vi.fn(),
+const mockDrawImage = vi.fn();
+const mockToDataURL = vi.fn(() => 'data:image/jpeg;base64,mock');
+const mockCanvasContext = {
+  drawImage: mockDrawImage,
   fillRect: vi.fn(),
   fillText: vi.fn(),
   fillStyle: '',
@@ -26,27 +30,45 @@ HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
   save: vi.fn(),
   restore: vi.fn(),
   measureText: vi.fn(() => ({ width: 100 })),
-})) as any;
+};
 
-HTMLCanvasElement.prototype.toDataURL = vi.fn(() => 'data:image/jpeg;base64,mock');
+beforeEach(() => {
+  HTMLCanvasElement.prototype.getContext = vi.fn(() => mockCanvasContext) as any;
+  HTMLCanvasElement.prototype.toDataURL = mockToDataURL;
+});
+
+// Mock MediaStream
+beforeEach(() => {
+  const mockStream = {
+    getTracks: () => [{ stop: mockStopTrack }],
+  };
+  mockGetUserMedia.mockResolvedValue(mockStream);
+});
 
 // Mock Image
 const originalImage = globalThis.Image;
-(globalThis as any).Image = class MockImage {
-  onload: (() => void) | null = null;
-  src: string = '';
-  width: number = 800;
-  height: number = 600;
-  constructor() {
-    setTimeout(() => {
-      if (this.onload) this.onload();
-    }, 0);
-  }
-};
+beforeEach(() => {
+  (globalThis as any).Image = class MockImage {
+    onload: (() => void) | null = null;
+    src: string = '';
+    width: number = 800;
+    height: number = 600;
+    constructor() {
+      setTimeout(() => {
+        if (this.onload) this.onload();
+      }, 0);
+    }
+  };
+});
+
+afterEach(() => {
+  (globalThis as any).Image = originalImage;
+});
 
 describe('CameraCapture', () => {
   const defaultProps = {
     onCapture: vi.fn(),
+    stepLabel: '测试拍照',
     watermark: {
       time: '2024-12-31 10:30:00',
       location: '成都市武侯区',
@@ -57,41 +79,29 @@ describe('CameraCapture', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetUserMedia.mockResolvedValue({
+      getTracks: () => [{ stop: mockStopTrack }],
+    });
   });
 
-  it('should render camera and album buttons initially', () => {
+  it('should render capture button with stepLabel', () => {
     render(<CameraCapture {...defaultProps} />);
-    expect(screen.getByText('📷 拍照')).toBeDefined();
-    expect(screen.getByText('相册选取')).toBeDefined();
+    const button = screen.getByRole('button', { name: /拍摄/ });
+    expect(button).toBeDefined();
+    expect(button.textContent).toContain('测试拍照');
   });
 
-  it('should show "重新拍照" when previewSrc is available (simulated)', () => {
-    // Just verify the component renders buttons in non-camera mode
+  it('should render the hidden canvas element', () => {
     render(<CameraCapture {...defaultProps} />);
-    const cameraButton = screen.getByText('📷 拍照');
-    expect(cameraButton).toBeDefined();
+    const canvas = document.querySelector('canvas');
+    expect(canvas).toBeDefined();
+    expect(canvas?.className).toContain('hidden');
   });
 
-  it('should disable buttons when disabled prop is true', () => {
+  it('should disable button when disabled prop is true', () => {
     render(<CameraCapture {...defaultProps} disabled={true} />);
-    const cameraButton = screen.getByRole('button', { name: /拍照/ });
-    const albumButton = screen.getByRole('button', { name: /相册选取/ });
-    expect(cameraButton).toBeDisabled();
-    expect(albumButton).toBeDisabled();
-  });
-
-  it('should trigger file input when clicking album button', async () => {
-    const user = userEvent.setup();
-    render(<CameraCapture {...defaultProps} />);
-
-    const albumButton = screen.getByRole('button', { name: /相册选取/ });
-    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-
-    const clickSpy = vi.fn();
-    fileInput.addEventListener('click', clickSpy);
-
-    await user.click(albumButton);
-    expect(clickSpy).toHaveBeenCalled();
+    const button = screen.getByRole('button', { name: /拍摄/ });
+    expect(button).toBeDisabled();
   });
 
   it('should show loading state when opening camera', async () => {
@@ -101,41 +111,84 @@ describe('CameraCapture', () => {
     const user = userEvent.setup();
     render(<CameraCapture {...defaultProps} />);
 
-    await user.click(screen.getByRole('button', { name: /拍照/ }));
+    await user.click(screen.getByRole('button', { name: /拍摄/ }));
     expect(screen.getByText('正在打开摄像头...')).toBeDefined();
   });
 
-  it('should fallback to file upload when camera permission denied', async () => {
+  it('should open camera dialog on button click', async () => {
+    const user = userEvent.setup();
+    render(<CameraCapture {...defaultProps} />);
+
+    await user.click(screen.getByRole('button', { name: /拍摄/ }));
+
+    // Camera dialog should be open
+    await waitFor(() => {
+      expect(screen.getByText('正在启动摄像头...')).toBeDefined();
+    });
+  });
+
+  it('should show error alert when camera permission denied', async () => {
     mockGetUserMedia.mockRejectedValueOnce(new Error('Permission denied'));
 
     const user = userEvent.setup();
     render(<CameraCapture {...defaultProps} />);
 
-    // Mock fileInput click
-    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-    const clickSpy = vi.fn();
-    fileInput.addEventListener('click', clickSpy);
+    await user.click(screen.getByRole('button', { name: /拍摄/ }));
 
-    await user.click(screen.getByRole('button', { name: /拍照/ }));
-
-    // Wait for async rejection
-    await vi.waitFor(() => {
-      expect(clickSpy).toHaveBeenCalled();
-    }, { timeout: 2000 });
+    await waitFor(() => {
+      expect(screen.getByText(/摄像头权限不足/)).toBeDefined();
+    });
   });
 
-  it('should have hidden canvas element', () => {
-    render(<CameraCapture {...defaultProps} />);
-    const canvas = document.querySelector('canvas');
-    expect(canvas).toBeDefined();
-    expect(canvas?.className).toContain('hidden');
+  it('should display stepLabel in the dialog title bar', async () => {
+    const user = userEvent.setup();
+    render(<CameraCapture {...defaultProps} stepLabel="步骤一拍照" />);
+
+    await user.click(screen.getByRole('button', { name: /拍摄/ }));
+
+    await waitFor(() => {
+      // stepLabel is displayed in the dialog header
+      expect(screen.getByText('步骤一拍照')).toBeDefined();
+    });
   });
 
-  it('should have hidden file input', () => {
-    render(<CameraCapture {...defaultProps} />);
-    const fileInput = document.querySelector('input[type="file"]');
-    expect(fileInput).toBeDefined();
-    expect(fileInput?.className).toContain('hidden');
-    expect(fileInput?.getAttribute('accept')).toBe('image/*');
+  it('should display stepHint in the dialog when provided', async () => {
+    const user = userEvent.setup();
+    render(
+      <CameraCapture
+        {...defaultProps}
+        stepHint="请拍摄资产正面照片"
+      />
+    );
+
+    await user.click(screen.getByRole('button', { name: /拍摄/ }));
+
+    await waitFor(() => {
+      expect(screen.getByText('请拍摄资产正面照片')).toBeDefined();
+    });
+  });
+
+  it('should call onClose when close button is clicked in dialog', async () => {
+    const onClose = vi.fn();
+    const user = userEvent.setup();
+
+    render(<CameraCapture {...defaultProps} onClose={onClose} />);
+
+    // Open camera
+    await user.click(screen.getByRole('button', { name: /拍摄/ }));
+
+    // Find and click close button (the X icon in the dialog header)
+    await waitFor(async () => {
+      const closeButtons = screen.getAllByRole('button');
+      // The first IconButton with CloseIcon - it's the one in the header
+      const closeBtn = closeButtons.find(
+        (btn) => btn.querySelector('svg[data-testid="CloseIcon"]')
+      );
+      if (closeBtn) {
+        await user.click(closeBtn);
+      }
+    });
+
+    expect(onClose).toHaveBeenCalled();
   });
 });
