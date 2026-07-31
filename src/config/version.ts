@@ -6,16 +6,21 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607311515';
+export const APP_VERSION = 'v202607311534';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-31 15:15';
-export const RELEASE_NOTES = '四节点盘点流程：①资产状态→②钉钉扫码识别(二维码核对资产)→③拍照采集(标签/正面/反面三步引导)→④盘点信息(备注+提交)；丢失状态跳过扫码与拍照；AppBar用纯div替代MUI(修复WebView点击穿透)。';
+export const RELEASE_TIME = '2026-07-31 15:34';
+export const RELEASE_NOTES = '修复扫码识别跳转逻辑：对齐v202607311440正确逻辑——精确匹配当前资产后标记标签照已扫码(__SCANNED__)并解锁拍照步骤，不跳转、不误触其他已完成资产；移除模糊.includes匹配与setCurrentIndex嵌套副作用；修正提交误推虚拟标记、标签格裂图、删除已扫码标签回退等问题。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607311534',
+    time: '2026-07-31 15:34',
+    notes: '修复扫码识别跳转逻辑：对齐v202607311440正确逻辑——精确匹配当前资产后标记标签照已扫码(__SCANNED__)并解锁拍照步骤，不跳转、不误触其他已完成资产；移除模糊.includes匹配与setCurrentIndex嵌套副作用；修正提交误推虚拟标记、标签格裂图、删除已扫码标签回退等问题。',
+  },
   {
     version: 'v202607311515',
     time: '2026-07-31 15:15',

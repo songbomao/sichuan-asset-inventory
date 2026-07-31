@@ -421,10 +421,11 @@ export default function InventoryPage() {
     if (type === 'back') { setBackPhoto(null); return; }
     if (type === 'front') { setFrontPhoto(null); return; }
     if (type === 'tag') {
-      // 删除标签照 → 同时清空正反面，从头开始
+      // 删除标签照（含已扫码）→ 同时清空正反面，回到扫码步骤
       setTagPhoto(null);
       setFrontPhoto(null);
       setBackPhoto(null);
+      setScanVerified(false);
       setCurrentStepMode(null);
       setAiResult(null);
     }
@@ -434,51 +435,59 @@ export default function InventoryPage() {
   const handleDingtalkScan = useCallback(() => {
     setScanLoading(true);
     setScanError(null);
-    dd.biz.util.scan({
-      type: 'qr',
-      onSuccess: (data: { text: string }) => {
-        const scannedText = (data && data.text) ? data.text.trim() : '';
-        if (!scannedText) {
-          setScanError('未识别到二维码内容，请重试');
-          setScanLoading(false);
-          return;
-        }
-        // 在当前资产列表中查找匹配
-        const matched = assets.find(
-          (a) => a.assetCode === scannedText || a.assetCode.includes(scannedText) || scannedText.includes(a.assetCode),
-        );
-        if (matched) {
-          // 用 setCurrentIndex 的函数形式获取最新 index（避免闭包陈旧问题）
-          setCurrentIndex((prevIndex) => {
-            if (matched.assetCode === assets[prevIndex]?.assetCode) {
-              // 完全匹配当前资产
-              setScanVerified(true);
-              setScanError(null);
+    setScanResultInfo(null);
+    try {
+      dd.ready(() => {
+        dd.biz.util.scan({
+          type: 'qrCode',
+          onSuccess: (res: { text: string; scanType: string }) => {
+            const code = (res?.text ?? '').trim();
+            if (!code) {
+              setScanError('未识别到二维码内容，请重试');
               setScanLoading(false);
-              return prevIndex;
-            } else {
-              // 匹配到其他资产，跳转
-              setScanVerified(true);
-              setScanError(null);
-              setScanLoading(false);
-              const idx = assets.findIndex((a) => a.assetCode === matched.assetCode);
-              return idx >= 0 ? idx : prevIndex;
+              return;
             }
-          });
-        } else {
-          // 不匹配
-          setScanResultInfo({ code: scannedText });
-          setScanMismatchOpen(true);
-          setScanLoading(false);
-        }
-      },
-      onFail: (err: unknown) => {
-        const msg = err instanceof Error ? err.message : '扫码失败';
-        setScanError(msg);
+            const current = assets[currentIndex];
+            // 精确匹配当前任务资产（避免模糊匹配误跳到其他资产）
+            const matched = assets.find((a) => a.assetCode.trim() === code);
+            if (matched) {
+              const isExactMatch = matched.assetCode === current?.assetCode;
+              if (isExactMatch) {
+                // 完全匹配当前资产：标记标签照已扫码 + 解锁拍照步骤（不跳转，停留当前资产）
+                setTagPhoto('__SCANNED__');
+                setScanVerified(true);
+                setScanError(null);
+                setCurrentStepMode('front'); // 自动进入正面照拍摄
+              } else {
+                // 匹配到任务内其他资产但非当前资产 → 提示不匹配，停留当前资产
+                setScanResultInfo({ code });
+                setScanMismatchOpen(true);
+              }
+            } else {
+              // 扫描到不在当前任务中的资产
+              setScanResultInfo({ code });
+              setScanMismatchOpen(true);
+            }
+            setScanLoading(false);
+          },
+          onFail: (err: unknown) => {
+            const msg = err instanceof Error ? err.message : String(err ?? '');
+            setScanError(msg || '扫码失败，请重试');
+            setScanLoading(false);
+          },
+        });
+      });
+      dd.error((err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err ?? '');
+        setScanError(`钉钉扫码初始化失败：${msg}`);
         setScanLoading(false);
-      },
-    });
-  }, [assets]);
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err ?? '');
+      setScanError(`扫码异常：${msg}`);
+      setScanLoading(false);
+    }
+  }, [assets, currentIndex]);
 
   /** 重新拍摄某一步照片 */
   const handleRetakePhoto = useCallback((type: 'tag' | 'front' | 'back') => {
@@ -605,7 +614,7 @@ export default function InventoryPage() {
     setSubmitting(true);
     try {
       const photoUrls: string[] = [];
-      if (tagPhoto) photoUrls.push(tagPhoto);
+      if (tagPhoto && tagPhoto !== '__SCANNED__') photoUrls.push(tagPhoto);
       if (frontPhoto) photoUrls.push(frontPhoto);
       if (backPhoto) photoUrls.push(backPhoto);
 
@@ -886,7 +895,7 @@ export default function InventoryPage() {
             <DialogTitle sx={{ fontSize: '0.95rem', fontWeight: 600 }}>扫码不匹配</DialogTitle>
             <DialogContent>
               <p className="text-sm text-gray-700 mb-2">
-                扫描到的二维码 <span className="font-mono font-semibold text-red-600 bg-red-50 px-1 rounded">{scanResultInfo?.code}</span> 未在当前资产列表中找到匹配项。
+                扫描到的二维码 <span className="font-mono font-semibold text-red-600 bg-red-50 px-1 rounded">{scanResultInfo?.code}</span> 与当前资产不匹配，请确认是否为正确资产。
               </p>
               <p className="text-xs text-gray-500">当前资产编号：{currentAsset.assetCode}（{currentAsset.assetName}）</p>
             </DialogContent>
@@ -934,7 +943,7 @@ export default function InventoryPage() {
           <div className="grid grid-cols-3 gap-1.5">
             {/* 标签照 */}
             <div className="relative aspect-square rounded-lg overflow-hidden border border-gray-100">
-              {tagPhoto ? (
+              {tagPhoto && tagPhoto !== '__SCANNED__' ? (
                 <>
                   <img src={tagPhoto} alt="标签照" className="w-full h-full object-cover" />
                   <span className="absolute top-0.5 left-0.5 text-[10px] px-1 py-0.5 rounded-full bg-green-500 text-white">标签</span>
@@ -943,6 +952,16 @@ export default function InventoryPage() {
                       <button onClick={() => handleRemovePhoto('tag')} className="absolute top-0.5 right-0.5 bg-red-500 text-white w-4 h-4 rounded-full flex items-center justify-center text-[10px]"><DeleteIcon fontSize="inherit" /></button>
                       <button onClick={() => handleRetakePhoto('tag')} className="absolute bottom-0.5 right-0.5 bg-indigo-500 text-white text-[10px] px-1 py-0.5 rounded">重拍</button>
                     </>
+                  )}
+                </>
+              ) : tagPhoto === '__SCANNED__' ? (
+                <>
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-green-50">
+                    <QrCodeScannerIcon sx={{ fontSize: 28, color: '#16a34a' }} />
+                    <span className="text-[10px] text-green-600 font-medium">已扫码</span>
+                  </div>
+                  {!isCompleted && (
+                    <button onClick={() => handleRemovePhoto('tag')} className="absolute top-0.5 right-0.5 bg-red-500 text-white w-4 h-4 rounded-full flex items-center justify-center text-[10px]"><DeleteIcon fontSize="inherit" /></button>
                   )}
                 </>
               ) : photoStep === 1 && !currentStepMode ? (
