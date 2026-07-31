@@ -28,6 +28,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { getTaskDetail, getProgress, type AssetInfo } from '../api/tasks';
 import { submitRecord, type AssetDetail, getAssetByCode } from '../api/inventory';
 import { getCurrentLocation } from '../api/reverseGeocode';
@@ -201,7 +202,7 @@ function validateFacePhoto(dataUrl: string, faceLabel: string): Promise<PhotoVal
  * ② 钉钉扫码识别（dd.biz.util.scan 扫二维码核对资产）
  * ③ 拍照采集（3 张：固定资产标签照 → 正面照 → 反面照，每步拍前提示+拍后校验）
  * ④ 盘点信息（备注+提交）
- * AI 识别在 3 张拍完后可选执行，结果仅作建议不阻断流程
+ * AI 资产识别在 3 张拍完后必须执行，未完成则不能提交盘点
  */
 export default function InventoryPage() {
   const { taskId } = useParams<{ taskId: string }>();
@@ -243,7 +244,7 @@ export default function InventoryPage() {
   /** 扫码结果信息（用于不匹配弹窗展示） */
   const [scanResultInfo, setScanResultInfo] = useState<{ code: string; name?: string } | null>(null);
 
-  /** AI 识别完整结果（3 张拍完后可选执行，建议性不阻断） */
+  /** AI 识别完整结果（3 张拍完后必做，未完成阻止提交） */
   const [aiResult, setAiResult] = useState<RecognizeAssetResult | null>(null);
 
   // 加载状态
@@ -604,6 +605,12 @@ export default function InventoryPage() {
       return;
     }
 
+    // 非丢失状态：AI 资产识别为必做步骤
+    if (!lost && !aiResult) {
+      setSnackbar({ open: true, message: '❌ 请先完成 AI 资产识别', severity: 'error' });
+      return;
+    }
+
     // 非正常状态：备注必填
     if (NEED_REMARK_STATUSES.has(assetStatus) && remark.trim() === '') {
       setSnackbar({ open: true, message: '❌ 该状态必须填写备注说明', severity: 'error' });
@@ -670,14 +677,16 @@ export default function InventoryPage() {
   const STEP_STATUS = 0;   // 资产状态
   const STEP_SCAN = 1;     // 钉钉扫码
   const STEP_PHOTO = 2;    // 拍照采集
-  const STEP_SUBMIT = 3;   // 盘点信息+提交
+  const STEP_AI = 3;       // AI 资产识别（必做）
+  const STEP_SUBMIT = 4;   // 盘点信息+提交
 
   const currentStep: number = (() => {
     if (!assetStatus) return STEP_STATUS;        // 未选择状态 → 停留第1步，引导用户先选
     if (IS_LOST(assetStatus)) return STEP_SUBMIT; // 丢失 → 跳过扫码/拍照，直达提交
     if (!scanVerified) return STEP_SCAN;          // 未扫码 → 第2步
     if (!allPhotosReady) return STEP_PHOTO;       // 未完成拍照 → 第3步
-    return STEP_SUBMIT;                            // 全部完成 → 第4步提交
+    if (!aiResult) return STEP_AI;                // 照片齐全但未完成 AI 识别 → 第4步
+    return STEP_SUBMIT;                            // 全部完成 → 第5步提交
   })();
 
   // ===================== 加载态 =====================
@@ -799,6 +808,7 @@ export default function InventoryPage() {
             { label: '资产状态', icon: <RadioButtonUncheckedIcon sx={{ fontSize: 13 }} />, active: currentStep === STEP_STATUS, done: !!assetStatus },
             { label: '扫码识别', icon: <QrCodeScannerIcon sx={{ fontSize: 13 }} />, active: currentStep === STEP_SCAN, done: scanVerified },
             { label: '拍照采集', icon: <CameraAltIcon sx={{ fontSize: 13 }} />, active: currentStep === STEP_PHOTO, done: allPhotosReady },
+            { label: 'AI识别', icon: <AutoAwesomeIcon sx={{ fontSize: 13 }} />, active: currentStep === STEP_AI, done: !!aiResult },
             { label: '提交信息', icon: <AssignmentIcon sx={{ fontSize: 13 }} />, active: currentStep === STEP_SUBMIT, done: false },
           ].map((s, i) => (
             <Fragment key={s.label}>
@@ -822,7 +832,7 @@ export default function InventoryPage() {
               <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white ${currentStep === STEP_STATUS ? 'bg-indigo-600' : assetStatus ? 'bg-green-500' : 'bg-gray-300'}`}>{assetStatus ? <CheckCircleOutlineIcon sx={{ fontSize: 14 }} /> : 1}</span>
               <h3 className="font-semibold text-gray-900 text-sm">资产状态</h3>
             </div>
-            <span className="text-xs text-gray-400">{assetStatus ? '✅' : '0/1'}</span>
+            <span className="text-xs text-gray-400">{assetStatus ? '1/1' : '0/1'}</span>
           </div>
           <div>
             <ToggleButtonGroup
@@ -867,7 +877,7 @@ export default function InventoryPage() {
               <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white ${currentStep === STEP_SCAN ? 'bg-indigo-600' : scanVerified ? 'bg-green-500' : 'bg-gray-300'}`}>{scanVerified ? <CheckCircleOutlineIcon sx={{ fontSize: 14 }} /> : 2}</span>
               <h3 className="font-semibold text-gray-900 text-sm">扫码识别</h3>
             </div>
-            {!scanVerified && <span className="text-xs text-gray-400">0/1</span>}
+            <span className="text-xs text-gray-400">{scanVerified ? '1/1' : '0/1'}</span>
           </div>
 
           {scanVerified ? (
@@ -928,7 +938,7 @@ export default function InventoryPage() {
               <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white ${scanVerified ? (currentStep === STEP_PHOTO ? 'bg-indigo-600' : allPhotosReady ? 'bg-green-500' : 'bg-gray-300') : 'bg-gray-300'}`}>{allPhotosReady ? <CheckCircleOutlineIcon sx={{ fontSize: 14 }} /> : 3}</span>
               <h3 className={`font-semibold text-sm ${scanVerified ? 'text-gray-900' : 'text-gray-400'}`}>拍照采集</h3>
             </div>
-            {scanVerified && photoStep > 0 && photoStep <= 3 && <span className="text-xs text-gray-400">{photoStep}/3</span>}
+            {scanVerified && <span className="text-xs text-gray-400">{(tagPhoto?1:0)+(frontPhoto?1:0)+(backPhoto?1:0)}/3</span>}
           </div>
 
           {scanVerified ? (
@@ -1062,12 +1072,12 @@ export default function InventoryPage() {
             />
           )}
 
-          {/* ── AI 识别（3 张拍完后可选）── */}
+          {/* ── AI 识别（3 张拍完后必做）── */}
           {allPhotosReady && (
             <div className="border-t border-gray-100 pt-2 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-gray-700">AI 资产识别</span>
-                <span className="text-[10px] text-gray-400">（可选，仅作建议）</span>
+                <span className="text-[10px] text-red-400">（必做，未完成无法提交）</span>
               </div>
               <Button
                 variant="outlined"
@@ -1079,7 +1089,7 @@ export default function InventoryPage() {
                 disabled={aiLoading || isCompleted || !!aiResult}
                 sx={{ fontSize: '0.78rem', py: 0.5 }}
               >
-                {aiLoading ? '识别中...' : aiResult ? '✅ 已识别' : 'AI 识别（可选）'}
+                {aiLoading ? '识别中...' : aiResult ? '✅ 已识别' : 'AI 资产识别（必做）'}
               </Button>
               {aiMsg && (
                 <Alert severity={aiMsg.type === 'success' ? 'success' : aiMsg.type === 'error' ? 'error' : 'info'} sx={{ fontSize: '0.78rem' }}>
@@ -1113,7 +1123,7 @@ export default function InventoryPage() {
         {/* ── 卡E：盘点信息（备注）── */}
         <div className="bg-white rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-2">
           <div className="flex items-center gap-1.5">
-            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white ${currentStep === STEP_SUBMIT ? 'bg-indigo-600' : 'bg-gray-300'}`}>4</span>
+            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white ${currentStep === STEP_SUBMIT ? 'bg-indigo-600' : 'bg-gray-300'}`}>5</span>
             <h3 className="font-semibold text-gray-900 text-sm">盘点信息</h3>
           </div>
           <TextField
@@ -1176,6 +1186,11 @@ export default function InventoryPage() {
           <Button variant="contained" fullWidth size="medium" disabled
             sx={{ py: 1.2, fontWeight: 700, fontSize: '0.95rem', bgcolor: 'grey.400', '&.Mui-disabled': { bgcolor: 'grey.300', color: 'grey.500' } }}>
             {photoStep === 1 ? '请先拍摄固定资产标签' : photoStep === 2 ? '请先拍摄资产正面' : '请先拍摄资产反面'}
+          </Button>
+        ) : currentStep === STEP_AI ? (
+          <Button variant="contained" fullWidth size="medium" disabled
+            sx={{ py: 1.2, fontWeight: 700, fontSize: '0.95rem', bgcolor: 'grey.400', '&.Mui-disabled': { bgcolor: 'grey.300', color: 'grey.500' } }}>
+            请先完成 AI 资产识别
           </Button>
         ) : (
           <Button

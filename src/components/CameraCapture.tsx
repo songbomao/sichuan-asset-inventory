@@ -319,7 +319,7 @@ export default function CameraCapture({
       <Button
         variant="contained"
         fullWidth
-        startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <CameraAltIcon />}
+        startIcon={loading ? <CircularProgress size={18} color="inherit" /> : undefined}
         onClick={() => openCamera('environment')}
         disabled={disabled || loading}
         size="small"
