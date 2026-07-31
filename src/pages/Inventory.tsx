@@ -37,6 +37,7 @@ import ProgressBar from '../components/ProgressBar';
 import type { RecognizeAssetResult } from '../api/ai';
 import { RecognizeAsset } from '../api/ai';
 import jsQR from 'jsqr';
+import dd from 'dingtalk-jsapi';
 
 /** 从照片 Base64 解码二维码（固定资产编号）
  *  jsQR 对全尺寸大图+低对比度/轻微模糊的二维码鲁棒性较差，这里用多尺度 + 中心裁剪 + 灰度增强
@@ -271,6 +272,25 @@ export default function InventoryPage() {
   // 资产信息折叠：默认展开，让用户一眼看到资产详情
   const [assetInfoExpanded, setAssetInfoExpanded] = useState(true);
 
+  // 扫码识别节点状态
+  const [scanVerified, setScanVerified] = useState(false);
+  const [scanResult, setScanResult] = useState<{
+    code: string;
+    assetName?: string;
+    department?: string;
+    location?: string;
+    matched: boolean;
+    mismatches?: string[];
+  } | null>(null);
+  const [scanLoading, setScanLoading] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
+  // 异常处理弹窗
+  const [mismatchDialogOpen, setMismatchDialogOpen] = useState(false); // 扫码不匹配弹窗
+  const [lostReportDialogOpen, setLostReportDialogOpen] = useState(false); // 丢失上报弹窗
+  const [lostReason, setLostReason] = useState('');
+  const [lostReportTime, setLostReportTime] = useState('');
+  const [lostReporter, setLostReporter] = useState('');
+
   // 手动标记二维码弹窗
   const [manualQrDialogOpen, setManualQrDialogOpen] = useState(false);
   const [manualQrTargetIdx, setManualQrTargetIdx] = useState<number>(-1);
@@ -354,6 +374,9 @@ export default function InventoryPage() {
       setInventoryQty('');
       setAllPhotos([]);
       setAiResult(null);
+      setScanVerified(false);
+      setScanResult(null);
+      setScanError(null);
       updateTime();
       // 获取资产完整详情
       setAssetDetailLoading(true);
@@ -409,6 +432,118 @@ export default function InventoryPage() {
       setAllPhotos((prev) => prev.map((p, i) => (i === idx ? { ...p, type: 'front' as const } : p)));
     }
   }, [allPhotos]);
+
+  /** 钉钉扫码识别：扫描固定资产标签二维码，与当前资产信息核对 */
+  const handleDingtalkScan = useCallback(async () => {
+    setScanLoading(true);
+    setScanError(null);
+    try {
+      dd.ready(() => {
+        dd.biz.util.scan({
+          type: 'qrCode',
+          onSuccess: (res: { text: string; scanType: string }) => {
+            const code = (res?.text ?? '').trim();
+            if (!code) {
+              setScanError('未识别到二维码内容，请重试');
+              setScanLoading(false);
+              return;
+            }
+            // 与当前任务资产列表核对
+            const matched = assets.find(
+              (a) => a.assetCode.trim() === code,
+            );
+            if (matched) {
+              // 匹配成功：核对各项信息
+              const currentAsset = assets[currentIndex];
+              const mismatches: string[] = [];
+              if (matched.assetName && currentAsset?.assetName && matched.assetName !== currentAsset.assetName) {
+                mismatches.push(`资产名称：扫描到「${matched.assetName}」，当前为「${currentAsset.assetName}」`);
+              }
+              if (matched.department && currentAsset?.department && matched.department !== currentAsset.department) {
+                mismatches.push(`使用部门：扫描到「${matched.department}」，当前为「${currentAsset.department}」`);
+              }
+              if (matched.location && currentAsset?.location && matched.location !== currentAsset.location) {
+                mismatches.push(`存放地点：扫描到「${matched.location}」，当前为「${currentAsset.location}」`);
+              }
+              const isMatch = matched.assetCode === currentAsset?.assetCode;
+              setScanResult({
+                code,
+                assetName: matched.assetName,
+                department: matched.department,
+                location: matched.location,
+                matched: isMatch,
+                mismatches: isMatch ? undefined : mismatches,
+              });
+              if (isMatch && mismatches.length === 0) {
+                // 完全匹配：解锁拍照采集
+                setScanVerified(true);
+                setScanError(null);
+              } else {
+                // 不匹配：弹出异常弹窗
+                setMismatchDialogOpen(true);
+              }
+            } else {
+              // 在任务资产列表中找不到该编码
+              setScanResult({
+                code,
+                matched: false,
+                mismatches: [`扫描到的资产编号「${code}」不在当前盘点任务中，请确认是否为正确资产`],
+              });
+              setMismatchDialogOpen(true);
+            }
+            setScanLoading(false);
+          },
+          onFail: (err: unknown) => {
+            const msg = err instanceof Error ? err.message : String(err ?? '');
+            setScanError(msg || '扫码失败，请重试');
+            setScanLoading(false);
+          },
+        });
+      });
+      dd.error((err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err ?? '');
+        setScanError(`钉钉扫码初始化失败：${msg}`);
+        setScanLoading(false);
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err ?? '');
+      setScanError(`扫码异常：${msg}`);
+      setScanLoading(false);
+    }
+  }, [assets, currentIndex]);
+
+  /** 扫码不匹配：处理重新扫码（关闭弹窗，重置状态） */
+  const handleRescan = useCallback(() => {
+    setMismatchDialogOpen(false);
+    setScanResult(null);
+    setScanError(null);
+  }, []);
+
+  /** 扫码不匹配：处理上报异常（切换到丢失状态） */
+  const handleReportLost = useCallback(() => {
+    setMismatchDialogOpen(false);
+    setLostReportTime(new Date().toLocaleString('zh-CN', { hour12: false }));
+    setLostReporter(user?.name || user?.username || '');
+    setLostReportDialogOpen(true);
+  }, [user]);
+
+  /** 确认丢失上报 */
+  const handleConfirmLost = useCallback(() => {
+    if (!lostReason.trim()) {
+      setSnackbar({ open: true, message: '❌ 请填写丢失原因', severity: 'error' });
+      return;
+    }
+    setAssetStatus('丢失');
+    setAllPhotos([]);
+    setAiResult(null);
+    setInventoryQty('0');
+    setRemark(`【资产丢失上报】${lostReportTime ? `时间：${lostReportTime}；` : ''}${lostReporter ? `上报人：${lostReporter}；` : ''}原因：${lostReason}`);
+    setScanVerified(true); // 允许跳过拍照
+    setLostReportDialogOpen(false);
+    setScanResult(null);
+    setScanError(null);
+    setSnackbar({ open: true, message: '⚠ 已记录资产丢失，请完善盘点结果信息后提交', severity: 'success' });
+  }, [lostReason, lostReportTime, lostReporter]);
 
   /** 删除指定索引照片 */
   const handleRemovePhoto = useCallback((idx: number) => {
@@ -650,12 +785,19 @@ export default function InventoryPage() {
   const currentAsset = assets[currentIndex];
   const isCompleted = currentAsset ? completedCodes.includes(currentAsset.assetCode) : false;
 
-  // 操作步骤定义
-  const STEP_PHOTO = 0;
-  const STEP_RESULT = 1;
-  const STEP_SUBMIT = 2;
-  // 当前步骤：照片未拍完 → 步骤0；照片拍完 → 步骤1
-  const currentStep = !IS_LOST(assetStatus) && (allPhotos.length < 2 || qrPhotoCount < 1) ? STEP_PHOTO : STEP_RESULT;
+  // 操作步骤定义：扫码识别 → 拍照采集 → 填写结果 → 提交
+  const STEP_SCAN = 0;
+  const STEP_PHOTO = 1;
+  const STEP_RESULT = 2;
+  const STEP_SUBMIT = 3;
+  // 当前步骤：丢失直接跳到填写结果；未扫码验证→步骤0；照片未拍完→步骤1；照片拍完→步骤2
+  const currentStep = IS_LOST(assetStatus)
+    ? STEP_RESULT
+    : !scanVerified
+    ? STEP_SCAN
+    : (allPhotos.length < 2 || qrPhotoCount < 1)
+    ? STEP_PHOTO
+    : STEP_RESULT;
 
   return (
     <div
@@ -719,11 +861,12 @@ export default function InventoryPage() {
         </Accordion>
 
         {/* 微型步骤条：放在基础信息卡和拍照采集卡之间，提示操作流程 */}
-        <div className="flex items-center justify-center gap-2 text-xs bg-white rounded-xl p-2 border border-gray-100">
+        <div className="flex items-center justify-center gap-1.5 text-[11px] bg-white rounded-xl p-2 border border-gray-100">
           {[
-            { label: '拍照采集', icon: <CameraAltIcon sx={{ fontSize: 14 }} />, active: currentStep === STEP_PHOTO, done: qrPhotoCount >= 1 && allPhotos.length >= 2 },
-            { label: '填写结果', icon: <AssignmentIcon sx={{ fontSize: 14 }} />, active: currentStep === STEP_RESULT && (qrPhotoCount >= 1 && allPhotos.length >= 2), done: false },
-            { label: '提交', icon: <CheckCircleOutlineIcon sx={{ fontSize: 14 }} />, active: false, done: false },
+            { label: '扫码识别', icon: <QrCodeScannerIcon sx={{ fontSize: 13 }} />, active: currentStep === STEP_SCAN, done: scanVerified },
+            { label: '拍照采集', icon: <CameraAltIcon sx={{ fontSize: 13 }} />, active: currentStep === STEP_PHOTO, done: qrPhotoCount >= 1 && allPhotos.length >= 2 },
+            { label: '填写结果', icon: <AssignmentIcon sx={{ fontSize: 13 }} />, active: currentStep === STEP_RESULT && (scanVerified && qrPhotoCount >= 1 && allPhotos.length >= 2), done: false },
+            { label: '提交', icon: <CheckCircleOutlineIcon sx={{ fontSize: 13 }} />, active: false, done: false },
           ].map((s, i) => (
             <Fragment key={s.label}>
               {i > 0 && <span className="w-6 border-t border-gray-300" />}
@@ -739,12 +882,58 @@ export default function InventoryPage() {
           <Alert severity="success" sx={{ fontSize: '0.8rem', py: 0.5 }}>该资产已盘点完成</Alert>
         )}
 
-        {/* ── 卡B：照片采集（视觉最重）── */}
+        {/* ── 卡B：扫码识别 ── */}
         {!IS_LOST(assetStatus) && (
+        <div className={`rounded-xl p-2.5 shadow-sm border space-y-2 transition-all ${currentStep === STEP_SCAN ? 'bg-white border-indigo-200 ring-1 ring-indigo-100' : 'bg-white border-gray-100'}`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white ${currentStep === STEP_SCAN ? 'bg-indigo-600' : scanVerified ? 'bg-green-600' : 'bg-gray-300'}`}>1</span>
+              <h3 className="font-semibold text-gray-900 text-sm">扫码识别</h3>
+            </div>
+            {scanVerified && (
+              <span className="text-green-600 text-xs font-medium">✅ 已通过</span>
+            )}
+          </div>
+          {!scanVerified ? (
+            <>
+              <p className="text-xs text-gray-400">使用钉钉扫描固定资产标签二维码，系统自动与当前任务资产核对</p>
+              <div className="flex gap-2">
+                <Button
+                  variant="contained"
+                  fullWidth
+                  size="small"
+                  color="primary"
+                  startIcon={scanLoading ? <CircularProgress size={14} color="inherit" /> : <QrCodeScannerIcon />}
+                  onClick={() => { handleDingtalkScan(); }}
+                  disabled={isCompleted || scanLoading}
+                  sx={{ py: 0.8, fontSize: '0.8rem' }}
+                >
+                  {scanLoading ? '扫描中...' : '钉钉扫码'}
+                </Button>
+              </div>
+              {scanError && (
+                <Alert severity="error" sx={{ fontSize: '0.78rem', py: 0.5 }}>{scanError}</Alert>
+              )}
+              {scanResult && !scanResult.matched && (
+                <Alert severity="warning" sx={{ fontSize: '0.78rem', py: 0.5 }}>
+                  扫描结果：编号「{scanResult.code}」未在任务中匹配到对应资产
+                </Alert>
+              )}
+            </>
+          ) : (
+            <Alert severity="success" sx={{ fontSize: '0.78rem', py: 0.5 }}>
+              扫码核对通过 · 编号：{scanResult?.code ?? currentAsset.assetCode} · {scanResult?.assetName ?? currentAsset.assetName}
+            </Alert>
+          )}
+        </div>
+        )}
+
+        {/* ── 卡C：照片采集（视觉最重）── */}
+        {!IS_LOST(assetStatus) && scanVerified && (
         <div className={`rounded-xl p-2.5 shadow-sm border space-y-2 transition-all ${currentStep === STEP_PHOTO ? 'bg-white border-indigo-200 ring-1 ring-indigo-100' : 'bg-white border-gray-100'}`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
-              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white ${currentStep === STEP_PHOTO ? 'bg-indigo-600' : 'bg-gray-300'}`}>1</span>
+              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white ${currentStep === STEP_PHOTO ? 'bg-indigo-600' : 'bg-gray-300'}`}>2</span>
               <h3 className="font-semibold text-gray-900 text-sm">拍摄照片</h3>
             </div>
             <div className="flex items-center gap-2 text-xs text-gray-400">
@@ -889,10 +1078,10 @@ export default function InventoryPage() {
         </div>
         )}
 
-        {/* ── 卡C：盘点结果（状态 + 数量 + 备注）── */}
+        {/* ── 卡D：盘点结果（状态 + 数量 + 备注）── */}
         <div className="bg-white rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-2">
           <div className="flex items-center gap-1.5">
-            <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white bg-indigo-600">2</span>
+            <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white bg-indigo-600">3</span>
             <h3 className="font-semibold text-gray-900 text-sm">盘点结果</h3>
           </div>
           {/* 状态选择 */}
@@ -1009,7 +1198,17 @@ export default function InventoryPage() {
         </div>
 
         {/* 提交按钮 */}
-        {currentStep === STEP_PHOTO && !IS_LOST(assetStatus) ? (
+        {currentStep === STEP_SCAN && !IS_LOST(assetStatus) ? (
+          <Button
+            variant="contained"
+            fullWidth
+            size="medium"
+            disabled
+            sx={{ py: 1.2, fontWeight: 700, fontSize: '0.95rem', bgcolor: 'grey.400', '&.Mui-disabled': { bgcolor: 'grey.300', color: 'grey.500' } }}
+          >
+            请先扫码识别
+          </Button>
+        ) : currentStep === STEP_PHOTO && !IS_LOST(assetStatus) ? (
           <Button
             variant="contained"
             fullWidth
@@ -1038,6 +1237,107 @@ export default function InventoryPage() {
           </Button>
         )}
       </div>
+
+      {/* 扫码不匹配弹窗 */}
+      <Dialog open={mismatchDialogOpen} onClose={handleRescan} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: 1 }}>
+          <span>⚠</span> 扫码核对异常
+        </DialogTitle>
+        <DialogContent>
+          <div className="space-y-2">
+            {scanResult?.code && (
+              <div className="text-sm">
+                <span className="text-gray-400">扫描结果：</span>
+                <span className="font-semibold text-gray-800">「{scanResult.code}」</span>
+                {scanResult.assetName && <span className="text-gray-500 ml-1">({scanResult.assetName})</span>}
+              </div>
+            )}
+            {scanResult?.mismatches && scanResult.mismatches.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-xs text-gray-400 font-medium">核对差异：</p>
+                <ul className="list-disc list-inside text-xs text-orange-700 space-y-0.5">
+                  {scanResult.mismatches.map((m, i) => (
+                    <li key={i}>{m}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {(!scanResult?.mismatches || scanResult.mismatches.length === 0) && scanResult && !scanResult.matched && (
+              <p className="text-xs text-orange-600">
+                扫描资产不在当前任务范围内，请确认是否为本次盘点对象
+              </p>
+            )}
+          </div>
+        </DialogContent>
+        <DialogActions sx={{ flexWrap: 'wrap', justifyContent: 'flex-end', gap: 1 }}>
+          <Button onClick={handleRescan} variant="outlined" size="small">重新扫码</Button>
+          <Button onClick={handleReportLost} variant="contained" color="error" size="small" sx={{ mr: 1 }}>上报资产丢失</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 资产丢失上报弹窗 */}
+      <Dialog open={lostReportDialogOpen} onClose={() => setLostReportDialogOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: 1 }}>
+          <span>📋</span> 资产丢失上报
+        </DialogTitle>
+        <DialogContent>
+          <div className="space-y-3 mt-1">
+            <p className="text-xs text-orange-600 bg-orange-50 rounded-lg p-2">
+              确认该资产已丢失？提交后将终止当前资产的拍照采集流程，直接进入盘点结果填写
+            </p>
+            {currentAsset && (
+              <div className="text-xs space-y-1 bg-gray-50 rounded-lg p-2">
+                <div><span className="text-gray-400">资产编号：</span><span className="font-medium text-gray-800">{currentAsset.assetCode}</span></div>
+                <div><span className="text-gray-400">资产名称：</span><span className="font-medium text-gray-800">{currentAsset.assetName}</span></div>
+                {currentAsset.location && <div><span className="text-gray-400">存放地点：</span><span className="text-gray-800">{currentAsset.location}</span></div>}
+              </div>
+            )}
+            <TextField
+              fullWidth
+              size="small"
+              label="丢失原因（必填）"
+              value={lostReason}
+              onChange={(e) => setLostReason(e.target.value)}
+              placeholder="请描述资产丢失原因..."
+              required
+              multiline
+              minRows={2}
+              maxRows={4}
+              sx={{ '& .MuiInputBase-root': { fontSize: '0.85rem' } }}
+            />
+            <TextField
+              fullWidth
+              size="small"
+              label="发现时间"
+              value={lostReportTime}
+              onChange={(e) => setLostReportTime(e.target.value)}
+              placeholder={new Date().toLocaleString('zh-CN', { hour12: false })}
+              sx={{ '& .MuiInputBase-root': { fontSize: '0.85rem' } }}
+            />
+            <TextField
+              fullWidth
+              size="small"
+              label="上报人"
+              value={lostReporter}
+              onChange={(e) => setLostReporter(e.target.value)}
+              placeholder={user?.name || user?.username || ''}
+              sx={{ '& .MuiInputBase-root': { fontSize: '0.85rem' } }}
+            />
+          </div>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setLostReportDialogOpen(false)} size="small" color="inherit">取消</Button>
+          <Button
+            onClick={handleConfirmLost}
+            variant="contained"
+            color="error"
+            size="small"
+            disabled={!lostReason.trim()}
+          >
+            确认丢失
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* 手动标记二维码弹窗 */}
       <Dialog open={manualQrDialogOpen} onClose={handleManualQrClose} maxWidth="xs" fullWidth>

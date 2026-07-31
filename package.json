@@ -15,6 +15,7 @@
     "@emotion/styled": "^11.13.0",
     "@mui/icons-material": "^5.16.0",
     "@mui/material": "^5.16.0",
+    "@undecaf/zbar-wasm": "^0.11.0",
     "axios": "^1.7.2",
     "dingtalk-jsapi": "^3.2.9",
     "jsqr": "^1.4.0",

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>jsQR test</title></head>
+<body>
+<canvas id="c" style="display:none"></canvas>
+<pre id="out"></pre>
+<script type="module">
+import jsQR from '/node_modules/jsqr/dist/jsQR.js';
+
+const out = document.getElementById('out');
+function log(s) { out.textContent += s + '\n'; }
+
+async function testPhoto(dataUrl) {
+  log('--- testing photo ---');
+  const img = new Image();
+  await new Promise((resolve, reject) => {
+    img.onload = resolve;
+    img.onerror = reject;
+    img.src = dataUrl;
+  });
+  log(`loaded: ${img.width}x${img.height}`);
+
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+
+  // Strategy 1: full image at 1200 max long side
+  const maxLong = 1200;
+  const scale = Math.min(1, maxLong / Math.max(img.width, img.height));
+  const bw = Math.round(img.width * scale);
+  const bh = Math.round(img.height * scale);
+  canvas.width = bw;
+  canvas.height = bh;
+  ctx.drawImage(img, 0, 0, bw, bh);
+  let raw = ctx.getImageData(0, 0, bw, bh);
+  let res = jsQR(raw.data, raw.width, raw.height);
+  log(`full 1200px: ${res ? res.data : 'null'}`);
+
+  // Strategy 2: center crop bottom 65%
+  ctx.drawImage(img, 0, Math.round(img.height * 0.35 * scale), bw, Math.round(bh * 0.65), 0, 0, bw, Math.round(bh * 0.65));
+  canvas.width = bw;
+  canvas.height = Math.round(bh * 0.65);
+  raw = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  res = jsQR(raw.data, raw.width, raw.height);
+  log(`crop bottom 65%: ${res ? res.data : 'null'}`);
+
+  // Strategy 3: multi-scale (0.5)
+  for (const s of [0.8, 0.65, 0.5, 0.35]) {
+    canvas.width = Math.round(bw * s);
+    canvas.height = Math.round(bh * s);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    raw = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    res = jsQR(raw.data, raw.width, raw.height);
+    log(`scale ${s}: ${res ? res.data : 'null'}`);
+    if (res) break;
+  }
+
+  // Strategy 4: invert colors (white QR on dark bg)
+  ctx.drawImage(img, 0, 0, bw, bh);
+  raw = ctx.getImageData(0, 0, bw, bh);
+  const px = raw.data;
+  for (let i = 0; i < px.length; i += 4) {
+    px[i] = 255 - px[i];
+    px[i+1] = 255 - px[i+1];
+    px[i+2] = 255 - px[i+2];
+  }
+  res = jsQR(raw.data, bw, bh);
+  log(`inverted: ${res ? res.data : 'null'}`);
+
+  // Strategy 5: Otsu-like binary threshold
+  ctx.drawImage(img, 0, 0, bw, bh);
+  raw = ctx.getImageData(0, 0, bw, bh);
+  const px2 = raw.data;
+  let sum = 0;
+  for (let i = 0; i < px2.length; i += 4) {
+    sum += px2[i] * 0.299 + px2[i+1] * 0.587 + px2[i+2] * 0.114;
+  }
+  const avg = sum / (bw * bh);
+  log(`avg gray: ${avg.toFixed(0)}`);
+  for (let i = 0; i < px2.length; i += 4) {
+    const g = px2[i] * 0.299 + px2[i+1] * 0.587 + px2[i+2] * 0.114;
+    const v = g < avg * 0.7 ? 0 : 255;
+    px2[i] = v;
+    px2[i+1] = v;
+    px2[i+2] = v;
+  }
+  res = jsQR(raw.data, bw, bh);
+  log(`binary threshold: ${res ? res.data : 'null'}`);
+
+  // Strategy 6: try finder patterns — check if jsQR even sees them
+  ctx.drawImage(img, 0, 0, bw, bh);
+  raw = ctx.getImageData(0, 0, bw, bh);
+  // Check if there's a dark region in the bottom area
+  const bottomStart = Math.round(bh * 0.7);
+  let darkCount = 0, totalCount = 0;
+  for (let y = bottomStart; y < bh; y++) {
+    for (let x = 0; x < bw; x++) {
+      const idx = (y * bw + x) * 4;
+      const g = raw.data[idx] * 0.299 + raw.data[idx+1] * 0.587 + raw.data[idx+2] * 0.114;
+      if (g < 128) darkCount++;
+      totalCount++;
+    }
+  }
+  log(`bottom 30% dark ratio: ${(darkCount/totalCount*100).toFixed(1)}%`);
+}
+
+// Load the photo
+const resp = await fetch('data:image/jpeg;base64,...');
+log('loading photo from disk...');
+</script>
+</body>
+</html>

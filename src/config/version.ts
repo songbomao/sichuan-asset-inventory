@@ -6,16 +6,21 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607311211';
+export const APP_VERSION = 'v202607311227';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-31 12:11';
-export const RELEASE_NOTES = '移除钉钉扫码+增强二维码识别：1)钉钉扫码按钮及逻辑彻底移除；2)decodeQRCode改用自适应分辨率(640~1600px)+Otsu大津法二值化+反转尝试，大幅提升二维码命中率。';
+export const RELEASE_TIME = '2026-07-31 12:27';
+export const RELEASE_NOTES = '采集流程扩展为四节点：①扫码识别（钉钉扫码→核对资产信息→匹配成功解锁拍照）→②拍照采集→③填写结果→④提交；新增异常处理闭环：扫码不匹配弹窗（重新扫码/上报丢失）+ 丢失上报弹窗（原因/时间/责任人），丢失状态跳过拍照。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607311227',
+    time: '2026-07-31 12:27',
+    notes: '采集流程扩展为四节点：①扫码识别（钉钉扫码→核对资产信息→匹配成功解锁拍照）→②拍照采集→③填写结果→④提交；新增异常处理闭环：扫码不匹配弹窗（重新扫码/上报丢失）+ 丢失上报弹窗（原因/时间/责任人），丢失状态跳过拍照。',
+  },
   {
     version: 'v202607311211',
     time: '2026-07-31 12:11',
