@@ -6,16 +6,21 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607310906';
+export const APP_VERSION = 'v202607310919';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-31 09:06';
-export const RELEASE_NOTES = '修复拍照Dialog黑屏：优化getUserMedia约束、video流绑定重试、5秒未就绪提示；底部快门按钮在拿到流后即显示（未就绪时半透明禁用），避免黑屏无按钮。';
+export const RELEASE_TIME = '2026-07-31 09:19';
+export const RELEASE_NOTES = '修复拍照Dialog快门按钮缺失：改用div实现快门按钮（避免原生button在部分WebView中被压缩），明确固定尺寸，适配iPhone底部安全区域，确保取景画面中快门按钮可见可点击。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607310919',
+    time: '2026-07-31 09:19',
+    notes: '修复拍照Dialog快门按钮缺失：改用div实现快门按钮（避免原生button在部分WebView中被压缩），明确固定尺寸，适配iPhone底部安全区域，确保取景画面中快门按钮可见可点击。',
+  },
   {
     version: 'v202607310906',
     time: '2026-07-31 09:06',

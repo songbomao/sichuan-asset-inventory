@@ -512,9 +512,14 @@ export default function CameraCapture({
 
           {/* 底部拍照按钮 — 只要有流就显示，不必等 cameraReady */}
           {hasStream && (
-            <div className="absolute bottom-0 left-0 right-0 z-20 flex justify-center pb-8 pt-4"
-              style={{ background: 'linear-gradient(0deg, rgba(0,0,0,0.6) 0%, transparent 100%)' }}>
-              <div className="flex items-center gap-6">
+            <div
+              className="absolute bottom-0 left-0 right-0 z-20 flex justify-center pt-6"
+              style={{
+                background: 'linear-gradient(0deg, rgba(0,0,0,0.7) 0%, transparent 100%)',
+                paddingBottom: 'max(32px, env(safe-area-inset-bottom))',
+              }}
+            >
+              <div className="flex items-center justify-between w-full max-w-md px-6">
                 <Button
                   variant="outlined"
                   onClick={handleClose}
@@ -523,25 +528,38 @@ export default function CameraCapture({
                     borderColor: 'rgba(255,255,255,0.4)',
                     borderRadius: '24px',
                     px: 3,
+                    minWidth: 80,
                     '&:hover': { borderColor: '#fff' },
                   }}
                 >
                   取消
                 </Button>
-                <button
-                  type="button"
-                  onClick={takePhoto}
-                  disabled={!cameraReady}
-                  className="relative cursor-pointer bg-transparent border-none p-0"
-                  style={{ touchAction: 'manipulation', opacity: cameraReady ? 1 : 0.5 }}
+
+                {/* 快门按钮：使用 div 避免原生 <button> 在部分 WebView 中被压缩或样式异常 */}
+                <div
+                  onClick={cameraReady ? takePhoto : undefined}
+                  role="button"
+                  tabIndex={cameraReady ? 0 : -1}
                   aria-label="拍照"
+                  className="flex items-center justify-center rounded-full"
+                  style={{
+                    width: 84,
+                    height: 84,
+                    flexShrink: 0,
+                    cursor: cameraReady ? 'pointer' : 'not-allowed',
+                    touchAction: 'manipulation',
+                    opacity: cameraReady ? 1 : 0.45,
+                    border: '4px solid rgba(255,255,255,0.85)',
+                    padding: 4,
+                  }}
                 >
-                  {/* 外圈 */}
-                  <div className="w-20 h-20 rounded-full border-4 border-white/80 flex items-center justify-center">
-                    {/* 内圈 */}
-                    <div className="w-16 h-16 rounded-full bg-white" />
-                  </div>
-                </button>
+                  <div
+                    className="rounded-full bg-white"
+                    style={{ width: 64, height: 64 }}
+                  />
+                </div>
+
+                {/* 右侧对称占位，保持快门居中 */}
                 <div style={{ width: 80 }} />
               </div>
             </div>
