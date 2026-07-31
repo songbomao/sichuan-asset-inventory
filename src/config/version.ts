@@ -6,16 +6,21 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607312341';
+export const APP_VERSION = 'v202607312356';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-31 23:41';
-export const RELEASE_NOTES = '物资状态对齐盘点页：盘点记录页状态筛选由「正常/待维修/报废/丢失」4种调整为「正常/丢失/损坏」3种（与盘点页 STATUS_OPTIONS 一致）；StatusBadge 补充「损坏」映射（warning）；同步 inventory.ts 提交参数注释。';
+export const RELEASE_TIME = '2026-07-31 23:56';
+export const RELEASE_NOTES = '全局进度看板向全员开放：移除仅管理员可见限制，普通用户经底部导航「进度概览」(/admin/dashboard)可查看整体进度 + 各部门完成率 + 本人进度卡（数据复用 getTaskList(true)）；任务汇总下钻与部门/类别的盘亏·差异标记仅管理员可见；本页返回按钮按角色落地对应控制台首页（管理员→/admin/tasks，责任人→/tasks）。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607312356',
+    time: '2026-07-31 23:56',
+    notes: '全局进度看板向全员开放：移除仅管理员可见限制，普通用户经底部导航「进度概览」(/admin/dashboard)可查看整体进度 + 各部门完成率 + 本人进度卡（数据复用 getTaskList(true)）；任务汇总下钻与部门/类别的盘亏·差异标记仅管理员可见；本页返回按钮按角色落地对应控制台首页（管理员→/admin/tasks，责任人→/tasks）。',
+  },
   {
     version: 'v202607312341',
     time: '2026-07-31 23:41',

@@ -9,9 +9,13 @@ import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import Paper from '@mui/material/Paper';
 import { useAuth } from '../contexts/AuthContext';
 
-/** 责任人（业主）底部导航 */
+/** 责任人（业主）底部导航
+ * 「进度概览」指向全局进度看板（/admin/dashboard，已对全员开放），
+ * 普通用户进入后仅见整体进度 + 各部门完成率 + 本人进度，任务下钻等管理功能不可见。
+ */
 const ownerTabs = [
   { path: '/tasks', label: '我的盘点', icon: <InventoryIcon /> },
+  { path: '/admin/dashboard', label: '进度概览', icon: <DashboardIcon /> },
   { path: '/assets', label: '资产档案', icon: <ArchiveIcon /> },
   { path: '/profile', label: '我的', icon: <PersonIcon /> },
 ];

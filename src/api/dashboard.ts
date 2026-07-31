@@ -13,6 +13,10 @@ export interface DeptStat {
   department: string;
   total: number;
   completed: number;
+  /** 盘亏数量（仅管理员额外展示，普通用户不展示） */
+  deficit?: number;
+  /** 差异数量（仅管理员额外展示，普通用户不展示） */
+  difference?: number;
 }
 
 /** 个人维度统计 */
@@ -26,6 +30,10 @@ export interface CategoryStat {
   category: string;
   total: number;
   completed: number;
+  /** 盘亏数量（仅管理员额外展示，普通用户不展示） */
+  deficit?: number;
+  /** 差异数量（仅管理员额外展示，普通用户不展示） */
+  difference?: number;
 }
 
 /** 任务汇总（全局视图，可下钻） */

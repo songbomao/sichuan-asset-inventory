@@ -139,13 +139,10 @@ export default function App() {
             </RequireAdmin>
           }
         />
+        {/* 全局进度看板：所有登录用户均可访问（页面内部按角色区分展示内容） */}
         <Route
           path="/admin/dashboard"
-          element={
-            <RequireAdmin>
-              <Dashboard />
-            </RequireAdmin>
-          }
+          element={<Dashboard />}
         />
         <Route
           path="/admin/report"

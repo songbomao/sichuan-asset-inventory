@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
@@ -9,13 +9,14 @@ import Alert from '@mui/material/Alert';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import LinearProgress from '@mui/material/LinearProgress';
 import { getDashboard, type DashboardData } from '../api/dashboard';
-import { getTaskDetail } from '../api/tasks';
+import { getTaskDetail, getTaskList, type TaskItem } from '../api/tasks';
 import { useAuth } from '../contexts/AuthContext';
+import ProgressBar from '../components/ProgressBar';
 
 /**
- * 进度监控看板
+ * 进度监控看板（所有登录用户均可访问）
  * - 任务级（/tasks/:taskId/dashboard）：部门/个人双维度
- * - 全局级（/admin/dashboard，taskId 缺省）：传 '0'，部门/类别双维度 + 任务汇总，可下钻
+ * - 全局级（/admin/dashboard，taskId 缺省）：传 '0'，部门/类别双维度 + 本人进度 +（管理员专属）任务汇总下钻
  */
 export default function DashboardPage() {
   const { taskId } = useParams<{ taskId: string }>();
@@ -23,12 +24,14 @@ export default function DashboardPage() {
   const { user } = useAuth();
 
   const isGlobal = !taskId;
+  const isAdmin = !!user?.isAdmin;
   // 全局视图（/admin/dashboard）渲染在 Layout 内，顶部留白已由 Layout 的 <main> 提供（pt-12）；
   // 任务级视图（/tasks/:taskId/dashboard）为独立页，无 Layout，需自身补 pt-12 避开 fixed 顶栏。
   const topPad = isGlobal ? '' : 'pt-12';
 
   const [data, setData] = useState<DashboardData | null>(null);
   const [taskName, setTaskName] = useState('');
+  const [myTasks, setMyTasks] = useState<TaskItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,9 +47,13 @@ export default function DashboardPage() {
         setTaskName(detail.taskName);
         setData(dashboard);
       } else {
-        // 全局视图：taskId='0'
-        const dashboard = await getDashboard('0');
+        // 全局视图：taskId='0'；同时拉取本人名下任务列表用于「本人进度」卡（失败不影响主看板）
+        const [dashboard, myTasksRes] = await Promise.all([
+          getDashboard('0'),
+          getTaskList(true).catch(() => [] as TaskItem[]),
+        ]);
         setData(dashboard);
+        setMyTasks(myTasksRes);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : '加载看板失败';
@@ -60,19 +67,22 @@ export default function DashboardPage() {
     fetchData();
   }, [fetchData]);
 
-  // 全局聚合视图（任务级看板 taskId 存在）仅管理员可见；任务级进度看板对所有责任人开放
-  if (isGlobal && !user?.isAdmin) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gray-50">
-        <Alert severity="warning" sx={{ mb: 2, width: '100%', maxWidth: 360 }}>无权限：仅管理员可查看全局进度监控。</Alert>
-        <Button variant="outlined" onClick={() => navigate(-1)}>返回</Button>
-      </div>
-    );
-  }
+  // 本人进度汇总（仅全局视图展示，复用 getTaskList(true) 数据，无需新接口）
+  const mySummary = useMemo(() => {
+    const totalTasks = myTasks.length;
+    const doneTasks = myTasks.filter(
+      (t) => t.assetCount > 0 && t.completedCount >= t.assetCount,
+    ).length;
+    const totalAssets = myTasks.reduce((s, t) => s + (t.assetCount || 0), 0);
+    const doneAssets = myTasks.reduce((s, t) => s + (t.completedCount || 0), 0);
+    const percent = totalAssets > 0 ? Math.round((doneAssets / totalAssets) * 100) : 0;
+    return { totalTasks, doneTasks, totalAssets, doneAssets, percent };
+  }, [myTasks]);
 
   const goBack = () => {
     if (isGlobal) {
-      navigate('/admin/tasks');
+      // 按角色返回对应控制台首页
+      navigate(isAdmin ? '/admin/tasks' : '/tasks');
     } else {
       navigate(-1);
     }
@@ -109,6 +119,16 @@ export default function DashboardPage() {
   return (
     <div className={`min-h-screen bg-gray-50 flex flex-col ${topPad}`}>
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* 全局视图：标题 + 副标题，普通用户与管理员共用入口 */}
+        {isGlobal && (
+          <div className="mb-1">
+            <Typography variant="h6" className="font-bold text-gray-900">进度概览</Typography>
+            <Typography variant="caption" className="text-gray-400">
+              整体进度 · 各部门盘点完成率{isAdmin ? ' · 任务下钻' : ''} · 本人进度
+            </Typography>
+          </div>
+        )}
+
         {/* 整体进度 */}
         <Card className="glow-border">
           <CardContent>
@@ -145,6 +165,28 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
+        {/* 本人进度（仅全局视图，所有用户可见） */}
+        {isGlobal && !loading && myTasks.length > 0 && (
+          <Card className="glow-border" sx={{ cursor: 'pointer' }} onClick={() => navigate('/my-progress')}>
+            <CardContent>
+              <div className="flex items-center justify-between mb-2">
+                <Typography variant="subtitle1" className="font-semibold text-gray-900">
+                  本人进度
+                </Typography>
+                <span className="text-lg font-bold text-blue-600">{mySummary.percent}%</span>
+              </div>
+              <ProgressBar current={mySummary.doneAssets} total={mySummary.totalAssets} />
+              <div className="flex items-center gap-4 text-xs text-gray-500 mt-2">
+                <span>📦 资产合计 {mySummary.totalAssets} 项</span>
+                <span>✅ 已盘 {mySummary.doneAssets} 项</span>
+                <span className="ml-auto text-gray-400 flex items-center">
+                  查看明细 <ChevronRightIcon sx={{ fontSize: 16 }} />
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* 部门维度（全局 / 任务级均展示） */}
         <Card>
           <CardContent>
@@ -178,6 +220,13 @@ export default function DashboardPage() {
                         },
                       }}
                     />
+                    {isAdmin && (((d.deficit ?? 0) > 0) || ((d.difference ?? 0) > 0)) && (
+                      <div className="text-xs text-gray-400 mt-1">
+                        {(d.deficit ?? 0) > 0 && <span className="text-red-500">盘亏 {d.deficit}</span>}
+                        {(d.deficit ?? 0) > 0 && (d.difference ?? 0) > 0 && <span className="mx-1 text-gray-300">·</span>}
+                        {(d.difference ?? 0) > 0 && <span>差异 {d.difference}</span>}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -216,6 +265,13 @@ export default function DashboardPage() {
                         },
                       }}
                     />
+                    {isAdmin && (((c.deficit ?? 0) > 0) || ((c.difference ?? 0) > 0)) && (
+                      <div className="text-xs text-gray-400 mt-1">
+                        {(c.deficit ?? 0) > 0 && <span className="text-red-500">盘亏 {c.deficit}</span>}
+                        {(c.deficit ?? 0) > 0 && (c.difference ?? 0) > 0 && <span className="mx-1 text-gray-300">·</span>}
+                        {(c.difference ?? 0) > 0 && <span>差异 {c.difference}</span>}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -254,8 +310,8 @@ export default function DashboardPage() {
           </Card>
         )}
 
-        {/* 任务汇总（仅全局视图，可下钻） */}
-        {tasks && tasks.length > 0 && (
+        {/* 任务汇总（仅全局视图 + 管理员可见，可下钻到任务级看板） */}
+        {isAdmin && tasks && tasks.length > 0 && (
           <Card>
             <CardContent>
               <Typography variant="subtitle1" className="font-semibold text-gray-900 mb-3">
