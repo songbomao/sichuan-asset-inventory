@@ -11,6 +11,7 @@ import Snackbar from '@mui/material/Snackbar';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import InboxIcon from '@mui/icons-material/Inbox';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { getTaskList, type TaskItem } from '../api/tasks';
 import MyRecords from './MyRecords';
 import AssetLocalTable from './AssetLocalTable';
@@ -140,6 +141,18 @@ export default function TaskListPage() {
     [tasks],
   );
 
+  /** 汇总统计（原「我的进度」页总体完成率，方案B合并至此）：总任务数 / 已完成任务数 / 总资产完成率 */
+  const summary = useMemo(() => {
+    const totalTasks = tasks.length;
+    const doneTasks = tasks.filter(
+      (t) => t.assetCount > 0 && t.completedCount >= t.assetCount,
+    ).length;
+    const totalAssets = tasks.reduce((s, t) => s + (t.assetCount || 0), 0);
+    const doneAssets = tasks.reduce((s, t) => s + (t.completedCount || 0), 0);
+    const percent = totalAssets > 0 ? Math.round((doneAssets / totalAssets) * 100) : 0;
+    return { totalTasks, doneTasks, totalAssets, doneAssets, percent };
+  }, [tasks]);
+
   return (
     <div className="p-4 space-y-4">
       {/* 版块切换（样式参照管理员 AdminTasks 3-Tab） */}
@@ -164,6 +177,26 @@ export default function TaskListPage() {
           </p>
         </div>
       </div>
+
+      {/* 总体完成率汇总卡（原「我的进度」页核心信息，方案B合并至此） */}
+      {!loading && !error && tasks.length > 0 && (
+        <Card className="glow-border">
+          <CardContent>
+            <div className="flex items-center justify-between mb-2">
+              <Typography variant="subtitle1" className="font-semibold text-gray-900">
+                总体完成率
+              </Typography>
+              <span className="text-lg font-bold text-blue-600">{summary.percent}%</span>
+            </div>
+            <ProgressBar current={summary.doneAssets} total={summary.totalAssets} />
+            <div className="flex items-center gap-4 text-xs text-gray-500 mt-2">
+              <span>📦 资产合计 {summary.totalAssets} 项</span>
+              <span>✅ 已盘 {summary.doneAssets} 项</span>
+              <span>📋 已完成 {summary.doneTasks}/{summary.totalTasks} 个任务</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* 错误提示 */}
       {error && (
@@ -225,6 +258,17 @@ export default function TaskListPage() {
                 )}
 
                 <ProgressBar current={task.completedCount} total={task.assetCount} />
+
+                <div
+                  className="flex items-center justify-end text-xs text-blue-500 mt-2 cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/tasks/${task.taskId}/dashboard`);
+                  }}
+                >
+                  查看进度看板
+                  <ChevronRightIcon sx={{ fontSize: 16 }} />
+                </div>
               </CardContent>
             </CardActionArea>
           </Card>

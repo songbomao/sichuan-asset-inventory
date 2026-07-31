@@ -5,7 +5,6 @@ import InventoryIcon from '@mui/icons-material/Inventory';
 import PersonIcon from '@mui/icons-material/Person';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import DashboardIcon from '@mui/icons-material/Dashboard';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import Paper from '@mui/material/Paper';
 import { useAuth } from '../contexts/AuthContext';
@@ -13,7 +12,6 @@ import { useAuth } from '../contexts/AuthContext';
 /** 责任人（业主）底部导航 */
 const ownerTabs = [
   { path: '/tasks', label: '我的盘点', icon: <InventoryIcon /> },
-  { path: '/my-progress', label: '我的进度', icon: <TrendingUpIcon /> },
   { path: '/assets', label: '资产档案', icon: <ArchiveIcon /> },
   { path: '/profile', label: '我的', icon: <PersonIcon /> },
 ];
@@ -21,13 +19,12 @@ const ownerTabs = [
 /**
  * 管理员底部导航（含通用「我的」页）
  * 「盘点报告」不再作为独立入口，已合并至任务详情（任务卡片 → 盘点报告卡片）。
- * 「我的进度」为所有角色通用入口，管理员亦可追踪个人名下任务。
- * 「我的任务」允许管理员/超级管理员以自己作为责任人的身份快速执行盘点。
  * 「管理」（原「盘点任务」）承载任务管理/资产对比同步/固资查询，置于最右侧入口。
+ * 原「我的进度」入口已取消（方案B）：其总体完成率汇总已合并至「我的盘点」页顶部，
+ * 进度看板入口保留在任务详情页（任务卡片 → 进度看板），避免底部导航过度拥挤。
  */
 const adminTabs = [
   { path: '/tasks', label: '我的盘点', icon: <InventoryIcon /> },
-  { path: '/my-progress', label: '我的进度', icon: <TrendingUpIcon /> },
   { path: '/admin/dashboard', label: '全局进度', icon: <DashboardIcon /> },
   { path: '/profile', label: '我的', icon: <PersonIcon /> },
   { path: '/admin/tasks', label: '管理', icon: <AdminPanelSettingsIcon /> },

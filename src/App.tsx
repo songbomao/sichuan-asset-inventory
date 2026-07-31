@@ -125,7 +125,7 @@ export default function App() {
         <Route path="/tasks" element={<TaskList />} />
         <Route path="/assets" element={<AssetsArchive />} />
         <Route path="/profile" element={<Profile />} />
-        {/* 我的进度 — 所有角色通用入口，追踪个人名下任务盘点进度 */}
+        {/* 我的进度 — 方案B已取消底部导航入口，路由保留（URL /my-progress 仍可达）。其总体完成率汇总已合并至「我的盘点」页顶部，进度看板入口在任务卡片。 */}
         <Route path="/my-progress" element={<MyProgress />} />
         {/* 历史兼容别名：原 /records 统一到「我的盘点记录」单一入口 */}
         <Route path="/records" element={<Navigate to="/my-records" replace />} />

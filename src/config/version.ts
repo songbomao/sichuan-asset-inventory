@@ -6,16 +6,21 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607312236';
+export const APP_VERSION = 'v202607312246';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-31 22:36';
-export const RELEASE_NOTES = '任务列表页：已过期盘点任务禁止点击进入盘点详情，点击时提示「该盘点任务已过期，无法进入盘点」；过期卡片视觉降级（透明度降低、背景置灰）。';
+export const RELEASE_TIME = '2026-07-31 22:46';
+export const RELEASE_NOTES = '方案B：取消底部导航「我的进度」入口（责任人/管理员均移除）；其总体完成率汇总卡合并至「我的盘点」页顶部；任务卡片新增「查看进度看板」入口（跳 /tasks/:taskId/dashboard）；/my-progress 路由保留（URL 仍可达）。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607312246',
+    time: '2026-07-31 22:46',
+    notes: '方案B：取消底部导航「我的进度」入口（责任人/管理员均移除）；其总体完成率汇总卡合并至「我的盘点」页顶部；任务卡片新增「查看进度看板」入口（跳 /tasks/:taskId/dashboard）；/my-progress 路由保留（URL 仍可达）。',
+  },
   {
     version: 'v202607312236',
     time: '2026-07-31 22:36',
