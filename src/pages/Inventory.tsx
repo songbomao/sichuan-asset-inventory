@@ -23,6 +23,13 @@ import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import LabelIcon from '@mui/icons-material/Label';
 import PhotoCameraBackIcon from '@mui/icons-material/PhotoCameraBack';
 import PhotoCameraFrontIcon from '@mui/icons-material/PhotoCameraFront';
+import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogActions from '@mui/material/DialogActions';
+import dd from 'dingtalk-jsapi';
 import { getTaskDetail, getProgress, type AssetInfo } from '../api/tasks';
 import { submitRecord, type AssetDetail, getAssetByCode } from '../api/inventory';
 import { getCurrentLocation } from '../api/reverseGeocode';
@@ -252,6 +259,17 @@ export default function InventoryPage() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiMsg, setAiMsg] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
+  // ── 钉钉扫码 ──
+  const [scanLoading, setScanLoading] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [scanResult, setScanResult] = useState<{
+    code: string;
+    assetName?: string;
+    matched: boolean;
+    mismatches?: string[];
+  } | null>(null);
+  const [mismatchDialogOpen, setMismatchDialogOpen] = useState(false);
+
   // 资产信息折叠：默认展开
   const [assetInfoExpanded, setAssetInfoExpanded] = useState(true);
 
@@ -289,11 +307,12 @@ export default function InventoryPage() {
     }
   }, []);
 
-  /** 三张照片是否全部就绪 */
-  const allPhotosReady = tagPhoto !== null && frontPhoto !== null && backPhoto !== null;
+  /** 三张照片是否全部就绪（扫码成功也算标签照完成） */
+  const allPhotosReady = (tagPhoto !== null || tagPhoto === '__SCANNED__') && frontPhoto !== null && backPhoto !== null;
 
-  /** 拍摄步骤：1→标签, 2→正面, 3→反面, 0→全部完成 */
-  const photoStep = !tagPhoto ? 1 : !frontPhoto ? 2 : !backPhoto ? 3 : 0;
+  /** 拍摄步骤：1→标签, 2→正面, 3→反面, 0→全部完成（扫码也算标签完成） */
+  const tagDone = tagPhoto !== null; // null=未拍, '__SCANNED__'=扫码完成, dataUrl=已拍摄
+  const photoStep = !tagDone ? 1 : !frontPhoto ? 2 : !backPhoto ? 3 : 0;
 
   /** 加载任务详情 */
   const fetchData = useCallback(async () => {
@@ -340,6 +359,9 @@ export default function InventoryPage() {
       setCurrentStepMode(null);
       setAiResult(null);
       setAiMsg(null);
+      setScanError(null);
+      setScanResult(null);
+      setMismatchDialogOpen(false);
       updateTime();
       // 获取资产完整详情
       setAssetDetailLoading(true);
@@ -420,6 +442,89 @@ export default function InventoryPage() {
       setAiResult(null);
     }
   }, []);
+
+  /** 钉钉扫码：扫描固定资产标签二维码，与当前资产核对 */
+  const handleDingtalkScan = useCallback(async () => {
+    setScanLoading(true);
+    setScanError(null);
+    setScanResult(null);
+    try {
+      dd.ready(() => {
+        dd.biz.util.scan({
+          type: 'qrCode',
+          onSuccess: (res: { text: string; scanType: string }) => {
+            const code = (res?.text ?? '').trim();
+            if (!code) {
+              setScanError('未识别到二维码内容，请重试');
+              setScanLoading(false);
+              return;
+            }
+            // 在任务资产中查找
+            const matched = assets.find(
+              (a) => a.assetCode.trim() === code,
+            );
+            const current = assets[currentIndex];
+            if (matched) {
+              const isExactMatch = matched.assetCode === current?.assetCode;
+              const mismatches: string[] = [];
+              if (!isExactMatch) {
+                if (matched.assetName && current?.assetName && matched.assetName !== current.assetName) {
+                  mismatches.push(`资产名称：扫描到「${matched.assetName}」，当前为「${current.assetName}」`);
+                }
+              }
+              setScanResult({
+                code,
+                assetName: matched.assetName,
+                matched: isExactMatch,
+                mismatches: mismatches.length > 0 ? mismatches : undefined,
+              });
+              if (isExactMatch) {
+                // 完全匹配：标记标签照为"已扫码"（用特殊标记代替拍摄）
+                setTagPhoto('__SCANNED__');
+                setScanError(null);
+                // 自动前进到正面照拍摄
+                setCurrentStepMode('front');
+              } else {
+                setMismatchDialogOpen(true);
+              }
+            } else {
+              setScanResult({
+                code,
+                matched: false,
+                mismatches: [`扫描到的资产编号「${code}」不在当前盘点任务中`],
+              });
+              setMismatchDialogOpen(true);
+            }
+            setScanLoading(false);
+          },
+          onFail: (err: unknown) => {
+            const msg = err instanceof Error ? err.message : String(err ?? '');
+            setScanError(msg || '扫码失败，请重试');
+            setScanLoading(false);
+          },
+        });
+      });
+      dd.error((err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err ?? '');
+        setScanError(`钉钉扫码初始化失败：${msg}`);
+        setScanLoading(false);
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err ?? '');
+      setScanError(`扫码异常：${msg}`);
+      setScanLoading(false);
+    }
+  }, [assets, currentIndex]);
+
+  /** 关闭不匹配弹窗，重置扫码 */
+  const handleRescan = useCallback(() => {
+    setMismatchDialogOpen(false);
+    setScanResult(null);
+    setScanError(null);
+  }, []);
+
+  // ── scanVerified 派生：标签照是否已扫码完成 ──
+  const tagScanned = tagPhoto === '__SCANNED__';
 
   /** AI 识别候选 */
   const aiCandidates = useMemo(
@@ -523,7 +628,8 @@ export default function InventoryPage() {
     setSubmitting(true);
     try {
       const photoUrls: string[] = [];
-      if (tagPhoto) photoUrls.push(tagPhoto);
+      if (tagPhoto && tagPhoto !== '__SCANNED__') photoUrls.push(tagPhoto);
+      // 扫码成功的标签照不传 base64（无实际照片），但仍计入完成
       if (frontPhoto) photoUrls.push(frontPhoto);
       if (backPhoto) photoUrls.push(backPhoto);
 
@@ -775,7 +881,7 @@ export default function InventoryPage() {
           {/* ── 拍照步骤引导条 ── */}
           <div className="flex items-center justify-center gap-1 text-[11px]">
             {[
-              { label: '标签', icon: <LabelIcon sx={{ fontSize: 13 }} />, done: !!tagPhoto, current: photoStep === 1 },
+              { label: '标签', icon: <LabelIcon sx={{ fontSize: 13 }} />, done: tagDone, current: photoStep === 1 },
               { label: '正面', icon: <PhotoCameraFrontIcon sx={{ fontSize: 13 }} />, done: !!frontPhoto, current: photoStep === 2 },
               { label: '反面', icon: <PhotoCameraBackIcon sx={{ fontSize: 13 }} />, done: !!backPhoto, current: photoStep === 3 },
             ].map((s, i) => (
@@ -797,8 +903,18 @@ export default function InventoryPage() {
             <div className="relative aspect-square rounded-lg overflow-hidden border border-gray-100">
               {tagPhoto ? (
                 <>
-                  <img src={tagPhoto} alt="标签照" className="w-full h-full object-cover" />
-                  <span className="absolute top-0.5 left-0.5 text-[10px] px-1 py-0.5 rounded-full bg-green-500 text-white">标签</span>
+                  {tagScanned ? (
+                    /* 钉钉扫码成功的虚拟标签照 */
+                    <div className="w-full h-full flex items-center justify-center bg-green-50">
+                      <div className="text-center">
+                        <QrCodeScannerIcon sx={{ fontSize: 28, color: '#16a34a' }} />
+                        <span className="block text-[10px] text-green-600 mt-0.5 font-medium">已扫码</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <img src={tagPhoto} alt="标签照" className="w-full h-full object-cover" />
+                  )}
+                  <span className="absolute top-0.5 left-0.5 text-[10px] px-1 py-0.5 rounded-full bg-green-500 text-white">{tagScanned ? '扫码' : '标签'}</span>
                   {!isCompleted && (
                     <>
                       <button onClick={() => handleRemovePhoto('tag')} className="absolute top-0.5 right-0.5 bg-red-500 text-white w-4 h-4 rounded-full flex items-center justify-center text-[10px]"><DeleteIcon fontSize="inherit" /></button>
@@ -807,10 +923,24 @@ export default function InventoryPage() {
                   )}
                 </>
               ) : photoStep === 1 && !currentStepMode ? (
-                <button onClick={() => setCurrentStepMode('tag')} className="w-full h-full flex flex-col items-center justify-center gap-1 bg-indigo-50 hover:bg-indigo-100 transition-colors">
-                  <LabelIcon sx={{ fontSize: 24, color: '#6366f1' }} />
-                  <span className="text-[10px] text-indigo-600 font-medium">点击拍摄</span>
-                </button>
+                <div className="w-full h-full flex flex-col items-center justify-center gap-0.5">
+                  <button onClick={() => setCurrentStepMode('tag')} className="w-full h-[60%] flex flex-col items-center justify-center bg-indigo-50 hover:bg-indigo-100 transition-colors">
+                    <LabelIcon sx={{ fontSize: 22, color: '#6366f1' }} />
+                    <span className="text-[10px] text-indigo-600 font-medium">拍摄标签</span>
+                  </button>
+                  <button
+                    onClick={() => { handleDingtalkScan(); }}
+                    disabled={scanLoading || isCompleted}
+                    className="w-full h-[40%] flex flex-col items-center justify-center bg-green-50 hover:bg-green-100 transition-colors border-t border-gray-100"
+                  >
+                    {scanLoading ? (
+                      <CircularProgress size={12} sx={{ color: '#16a34a' }} />
+                    ) : (
+                      <QrCodeScannerIcon sx={{ fontSize: 18, color: '#16a34a' }} />
+                    )}
+                    <span className="text-[10px] text-green-600 font-medium">{scanLoading ? '扫描中' : '钉钉扫码'}</span>
+                  </button>
+                </div>
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-gray-100">
                   <LabelIcon sx={{ fontSize: 22, color: '#d1d5db' }} />
@@ -890,6 +1020,40 @@ export default function InventoryPage() {
                 : (d) => validateFacePhoto(d, currentStepMode === 'front' ? '正面' : '反面')}
             />
           )}
+
+          {/* ── 钉钉扫码错误提示 ── */}
+          {scanError && (
+            <Alert severity="error" sx={{ fontSize: '0.78rem', py: 0.5 }}>{scanError}</Alert>
+          )}
+
+          {/* ── 扫码不匹配对话框 ── */}
+          <Dialog open={mismatchDialogOpen} onClose={handleRescan} maxWidth="xs" fullWidth>
+            <DialogTitle sx={{ fontSize: '0.95rem' }}>扫码核对结果</DialogTitle>
+            <DialogContent>
+              {scanResult && scanResult.matched === false ? (
+                <DialogContentText sx={{ fontSize: '0.85rem' }}>
+                  扫描到的资产编号「{scanResult.code}」不在当前盘点任务中，请确认是否为正确资产。
+                </DialogContentText>
+              ) : scanResult && !scanResult.matched ? (
+                <>
+                  <DialogContentText sx={{ fontSize: '0.85rem', mb: 1 }}>
+                    扫描结果：编号「{scanResult.code}」与当前资产「{currentAsset.assetCode}」不匹配
+                  </DialogContentText>
+                  {scanResult.mismatches && scanResult.mismatches.length > 0 && (
+                    <div className="bg-gray-50 rounded-lg p-2 text-xs space-y-1">
+                      {scanResult.mismatches.map((m, i) => (
+                        <div key={i} className="text-red-600">{m}</div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : null}
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleRescan} size="small">重新扫码</Button>
+              <Button onClick={handleRescan} variant="contained" size="small" color="primary">确认</Button>
+            </DialogActions>
+          </Dialog>
 
           {/* ── AI 识别（3 张拍完后可选）── */}
           {allPhotosReady && (

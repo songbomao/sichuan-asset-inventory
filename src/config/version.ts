@@ -6,16 +6,21 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607311416';
+export const APP_VERSION = 'v202607311440';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-31 14:16';
-export const RELEASE_NOTES = '根治「返回控制台」失效：移除 transform 居中（WebView 兼容性）+去掉 useCallback/多级 admin 判据间接层，回归内联 onClick 与原始 ConsoleButton 同款的 navigate 方式。';
+export const RELEASE_TIME = '2026-07-31 14:40';
+export const RELEASE_NOTES = '恢复盘点页钉钉扫码功能：标签照区域新增「钉钉扫码」按钮，扫描二维码自动核对资产信息，匹配成功则跳过标签照拍摄直接进入正面照采集。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607311440',
+    time: '2026-07-31 14:40',
+    notes: '恢复盘点页钉钉扫码功能：标签照区域新增「钉钉扫码」按钮，扫描二维码自动核对资产信息，匹配成功则跳过标签照拍摄直接进入正面照采集。',
+  },
   {
     version: 'v202607311416',
     time: '2026-07-31 14:16',
