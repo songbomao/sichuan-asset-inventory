@@ -417,8 +417,8 @@ export default function CameraCapture({
           {loading
             ? '正在打开摄像头...'
             : photoCount === 0
-            ? '📷 拍照'
-            : `📷 再拍一张（${photoCount}/${maxPhotos}）`}
+            ? '拍照'
+            : `再拍一张（${photoCount}/${maxPhotos}）`}
         </Button>
       </div>
 

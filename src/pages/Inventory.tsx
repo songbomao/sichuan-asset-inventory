@@ -556,6 +556,16 @@ export default function InventoryPage() {
       return;
     }
 
+    // 强制 AI 识别：已拍摄照片但未完成 AI 识别，禁止跳过该步骤
+    if (!lost && allPhotos.length >= 2 && qrPhotoCount >= 1 && !aiResult) {
+      if (!qrDecodedCode) {
+        setSnackbar({ open: true, message: '❌ 请先识别固定资产二维码（点击照片上的「码?」手动标记编号）', severity: 'error' });
+      } else {
+        setSnackbar({ open: true, message: '❌ 请先点击「AI 识别」完成资产外观识别，不能跳过该步骤', severity: 'error' });
+      }
+      return;
+    }
+
     // 非正常状态：备注必填
     if (NEED_REMARK_STATUSES.has(assetStatus) && remark.trim() === '') {
       setSnackbar({ open: true, message: '❌ 该状态必须填写备注说明', severity: 'error' });
@@ -699,7 +709,6 @@ export default function InventoryPage() {
               </div>
             ) : assetDetailError && !assetDetail ? (
               <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-                <div><dt className="text-gray-400">资产名称</dt><dd className="text-gray-800 break-words">{currentAsset.assetName}</dd></div>
                 <div><dt className="text-gray-400">类别</dt><dd className="text-gray-800">{currentAsset.category || '—'}</dd></div>
                 <div><dt className="text-gray-400">使用部门</dt><dd className="text-gray-800">{currentAsset.department || '—'}</dd></div>
                 <div><dt className="text-gray-400">责任人</dt><dd className="text-gray-800">{currentAsset.userName || '—'}</dd></div>
@@ -711,7 +720,6 @@ export default function InventoryPage() {
               <AssetDetailTabs asset={assetDetail} />
             ) : (
               <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-                <div><dt className="text-gray-400">资产名称</dt><dd className="text-gray-800 break-words">{currentAsset.assetName}</dd></div>
                 <div><dt className="text-gray-400">类别</dt><dd className="text-gray-800">{currentAsset.category || '—'}</dd></div>
                 <div><dt className="text-gray-400">使用部门</dt><dd className="text-gray-800">{currentAsset.department || '—'}</dd></div>
                 <div><dt className="text-gray-400">责任人</dt><dd className="text-gray-800">{currentAsset.userName || '—'}</dd></div>
@@ -753,7 +761,7 @@ export default function InventoryPage() {
               <h3 className="font-semibold text-gray-900 text-sm">拍摄照片</h3>
             </div>
             <div className="flex items-center gap-2 text-xs text-gray-400">
-              <span className={qrPhotoCount >= 1 ? 'text-green-600 font-medium' : ''}>二维码 {qrPhotoCount}</span>
+              <span className={qrPhotoCount >= 1 ? 'text-green-600 font-medium' : ''}>二维码标签 {qrPhotoCount}</span>
               <span className="text-gray-300">|</span>
               <span className={allPhotos.length >= 2 ? 'text-green-600 font-medium' : ''}>实物照 {frontPhotoCount}</span>
             </div>
@@ -860,6 +868,14 @@ export default function InventoryPage() {
               maxPhotos={5}
             />
           )}
+
+          {/* 强制 AI 识别提示：已拍摄照片但未完成 AI 识别时，要求用户必须先点击 AI 识别 */}
+          {!isCompleted && !IS_LOST(assetStatus) && qrPhotoCount >= 1 && frontPhotoCount >= 1 && qrDecodedCode && !aiResult && (
+            <Alert severity="warning" sx={{ fontSize: '0.78rem', py: 0.5 }}>
+              已拍摄照片，请先点击右侧「AI 识别」完成资产外观识别（必做步骤，未识别无法提交）
+            </Alert>
+          )}
+
           <div className="flex gap-2">
             <Button
               variant="outlined"
@@ -873,16 +889,16 @@ export default function InventoryPage() {
               钉钉扫码
             </Button>
             <Button
-              variant="outlined"
+              variant="contained"
               fullWidth
               size="small"
               color="secondary"
               startIcon={aiLoading ? <CircularProgress size={14} color="inherit" /> : <span>✨</span>}
               onClick={handleAIRecognize}
-              disabled={aiLoading || isCompleted || qrPhotoCount === 0 || frontPhotoCount === 0 || !qrDecodedCode}
+              disabled={aiLoading || isCompleted || qrPhotoCount === 0 || frontPhotoCount === 0 || !qrDecodedCode || !!aiResult}
               sx={{ fontSize: '0.78rem', py: 0.5 }}
             >
-              {aiLoading ? '识别中...' : 'AI 识别'}
+              {aiLoading ? '识别中...' : aiResult ? '✅ 已识别' : 'AI 识别（必做）'}
             </Button>
           </div>
           {aiMsg && (
@@ -1048,7 +1064,7 @@ export default function InventoryPage() {
             fullWidth
             size="medium"
             onClick={handleSubmit}
-            disabled={submitting || isCompleted}
+            disabled={submitting || isCompleted || !!(!IS_LOST(assetStatus) && qrPhotoCount >= 1 && frontPhotoCount >= 1 && qrDecodedCode && !aiResult)}
             sx={{ py: 1.2, fontWeight: 700, fontSize: '0.95rem' }}
           >
             {submitting ? (

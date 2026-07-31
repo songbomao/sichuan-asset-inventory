@@ -6,16 +6,21 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607310959';
+export const APP_VERSION = 'v202607311012';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-31 09:59';
-export const RELEASE_NOTES = '重构拍照交互：明确区分「拍二维码」与「拍实物照」两个入口，二维码照即使自动识别失败也标记为「码?」而非实物照，支持手动标记编号，避免用户混淆。';
+export const RELEASE_TIME = '2026-07-31 10:12';
+export const RELEASE_NOTES = 'UI 四项优化：1)拍照按钮移除冗余📷表情、仅保留白色相机图标；2)卡B标题右侧「二维码」改为「二维码标签」；3)强制AI识别——存在照片时未识别无法提交且按钮置为（必做）；4)固定资产详情卡移除重复的「资产名称」字段。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607311012',
+    time: '2026-07-31 10:12',
+    notes: 'UI 四项优化：1)拍照按钮移除冗余📷表情、仅保留白色相机图标；2)卡B标题右侧「二维码」改为「二维码标签」；3)强制AI识别——存在照片时未识别无法提交且按钮置为（必做）；4)固定资产详情卡移除重复的「资产名称」字段。',
+  },
   {
     version: 'v202607310959',
     time: '2026-07-31 09:59',
