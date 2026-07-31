@@ -13,9 +13,27 @@ export interface PhotoValidationResult {
   reason?: string;
 }
 
+/** 拍照证据元数据（随盘点提交上送，用于后端置信率计算） */
+export interface PhotoMeta {
+  /** 拍摄时间戳（毫秒） */
+  capturedAt: number;
+  /** 拍摄时纬度 */
+  lat: number;
+  /** 拍摄时经度 */
+  lng: number;
+  /** 定位精度（米），无则 0 */
+  acc: number;
+  /** 摄像头方向：environment（后置，实拍）/ user（前置） */
+  facingMode: string;
+  /** 成图宽度 */
+  w: number;
+  /** 成图高度 */
+  h: number;
+}
+
 interface CameraCaptureProps {
-  /** 照片拍摄成功回调 */
-  onCapture: (dataUrl: string) => void;
+  /** 照片拍摄成功回调（附带实拍证据元数据） */
+  onCapture: (dataUrl: string, meta: PhotoMeta) => void;
   onClose?: () => void;
   /** 水印信息 */
   watermark: {
@@ -31,6 +49,8 @@ interface CameraCaptureProps {
   stepHint?: string;
   /** 拍后校验函数：传入 base64 照片，返回校验结果 */
   onValidate?: (dataUrl: string) => Promise<PhotoValidationResult> | PhotoValidationResult;
+  /** 父组件在打开相机时传入的最新定位（用于拍照证据元数据） */
+  gps?: { lat: number; lng: number; acc: number } | null;
 }
 
 /**
@@ -48,6 +68,7 @@ export default function CameraCapture({
   stepLabel,
   stepHint,
   onValidate,
+  gps,
 }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -223,11 +244,20 @@ export default function CameraCapture({
         ctx.restore();
 
         const watermarked = canvas.toDataURL('image/jpeg', 0.7);
-        onCapture(watermarked);
+        const meta: PhotoMeta = {
+          capturedAt: Date.now(),
+          lat: gps?.lat ?? 0,
+          lng: gps?.lng ?? 0,
+          acc: gps?.acc ?? 0,
+          facingMode,
+          w: canvas.width,
+          h: canvas.height,
+        };
+        onCapture(watermarked, meta);
       };
       img.src = rawDataUrl;
     },
-    [watermark, onCapture],
+    [watermark, onCapture, gps, facingMode],
   );
 
   /** 拍照 */

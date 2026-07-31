@@ -15,6 +15,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import TextField from '@mui/material/TextField';
+import LinearProgress from '@mui/material/LinearProgress';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import AssignmentIcon from '@mui/icons-material/Assignment';
@@ -33,7 +34,7 @@ import { getTaskDetail, getProgress, type AssetInfo } from '../api/tasks';
 import { submitRecord, type AssetDetail, getAssetByCode } from '../api/inventory';
 import { getCurrentLocation } from '../api/reverseGeocode';
 import { useAuth } from '../contexts/AuthContext';
-import CameraCapture, { type PhotoValidationResult } from '../components/CameraCapture';
+import CameraCapture, { type PhotoValidationResult, type PhotoMeta } from '../components/CameraCapture';
 import AssetDetailTabs from '../components/AssetDetailTabs';
 import ProgressBar from '../components/ProgressBar';
 import type { RecognizeAssetResult } from '../api/ai';
@@ -50,6 +51,17 @@ const STATUS_OPTIONS = [
 const NEED_REMARK_STATUSES = new Set<string | null>(['丢失', '损坏']);
 /** 丢失状态 */
 const IS_LOST = (status: string | null) => status === '丢失';
+
+/** 定位点（置信率证据采集） */
+type GeoPoint = { lat: number; lng: number; acc: number };
+
+/** 综合置信率分数 → 进度条/文字配色（≥85 绿 / 60-84 蓝 / 40-59 橙 / <40 红） */
+function confidenceHue(score: number): { bar: string; text: string } {
+  if (score >= 85) return { bar: '#16a34a', text: 'text-green-600' };
+  if (score >= 60) return { bar: '#2563eb', text: 'text-blue-600' };
+  if (score >= 40) return { bar: '#ea580c', text: 'text-orange-600' };
+  return { bar: '#dc2626', text: 'text-red-600' };
+}
 
 /** 🚨 HOTFIX v202607301419 - React Hooks 顺序修复 */
 const HOTFIX_202607301419 = (() => {
@@ -247,6 +259,20 @@ export default function InventoryPage() {
   /** AI 识别完整结果（3 张拍完后必做，未完成阻止提交） */
   const [aiResult, setAiResult] = useState<RecognizeAssetResult | null>(null);
 
+  // ── 置信率证据采集 ──
+  /** 扫码成功时间戳 */
+  const [scanAt, setScanAt] = useState<number | null>(null);
+  /** 扫码时定位 */
+  const [scanLoc, setScanLoc] = useState<GeoPoint | null>(null);
+  /** 打开相机时的最新定位（传给 CameraCapture 写入照片元数据） */
+  const [captureLoc, setCaptureLoc] = useState<GeoPoint | null>(null);
+  /** 三张照片的实拍元数据 */
+  const [tagMeta, setTagMeta] = useState<PhotoMeta | null>(null);
+  const [frontMeta, setFrontMeta] = useState<PhotoMeta | null>(null);
+  const [backMeta, setBackMeta] = useState<PhotoMeta | null>(null);
+  /** 提交成功后后端返回的综合置信率（按 assetCode 存） */
+  const [confidenceMap, setConfidenceMap] = useState<Record<string, { score: number; level: string }>>({});
+
   // 加载状态
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -308,6 +334,20 @@ export default function InventoryPage() {
     }
   }, []);
 
+  /** 取一次即时定位（置信率证据用，失败返回零值不阻断流程） */
+  const captureLocation = useCallback(async (): Promise<GeoPoint> => {
+    try {
+      const loc = await getCurrentLocation();
+      return {
+        lat: loc.latitude,
+        lng: loc.longitude,
+        acc: (loc as { accuracy?: number }).accuracy ?? 0,
+      };
+    } catch {
+      return { lat: 0, lng: 0, acc: 0 };
+    }
+  }, []);
+
   /** 三张照片是否全部就绪 */
   const allPhotosReady = tagPhoto !== null && frontPhoto !== null && backPhoto !== null;
 
@@ -364,6 +404,12 @@ export default function InventoryPage() {
       setScanResultInfo(null);
       setAiResult(null);
       setAiMsg(null);
+      setScanAt(null);
+      setScanLoc(null);
+      setCaptureLoc(null);
+      setTagMeta(null);
+      setFrontMeta(null);
+      setBackMeta(null);
       updateTime();
       // 获取资产完整详情
       setAssetDetailLoading(true);
@@ -396,6 +442,11 @@ export default function InventoryPage() {
       setScanVerified(false);
       setScanError(null);
       setAiResult(null);
+      setTagMeta(null);
+      setFrontMeta(null);
+      setBackMeta(null);
+      setScanAt(null);
+      setScanLoc(null);
     }
     if (val !== '正常' && prev === '正常') {
       setRemark('');
@@ -403,29 +454,37 @@ export default function InventoryPage() {
   }, [assetStatus]);
 
   /** 拍照回调：根据当前 stepMode 存入对应照片并前进 */
-  const handlePhotoCapture = useCallback((dataUrl: string) => {
+  const handlePhotoCapture = useCallback((dataUrl: string, meta: PhotoMeta) => {
     if (currentStepMode === 'tag') {
       setTagPhoto(dataUrl);
+      setTagMeta(meta);
       setCurrentStepMode('front'); // 自动前进到正面照
     } else if (currentStepMode === 'front') {
       setFrontPhoto(dataUrl);
+      setFrontMeta(meta);
       setCurrentStepMode('back'); // 自动前进到反面照
     } else if (currentStepMode === 'back') {
       setBackPhoto(dataUrl);
+      setBackMeta(meta);
       setCurrentStepMode(null); // 全部完成
     }
   }, [currentStepMode]);
 
   /** 删除指定照片 */
   const handleRemovePhoto = useCallback((type: 'tag' | 'front' | 'back') => {
-    if (type === 'back') { setBackPhoto(null); return; }
-    if (type === 'front') { setFrontPhoto(null); return; }
+    if (type === 'back') { setBackPhoto(null); setBackMeta(null); return; }
+    if (type === 'front') { setFrontPhoto(null); setFrontMeta(null); return; }
     if (type === 'tag') {
       // 删除标签照（含已扫码）→ 同时清空正反面，回到扫码步骤
       setTagPhoto(null);
       setFrontPhoto(null);
       setBackPhoto(null);
+      setTagMeta(null);
+      setFrontMeta(null);
+      setBackMeta(null);
       setScanVerified(false);
+      setScanAt(null);
+      setScanLoc(null);
       setCurrentStepMode(null);
       setAiResult(null);
     }
@@ -457,6 +516,12 @@ export default function InventoryPage() {
                 setTagPhoto('__SCANNED__');
                 setScanVerified(true);
                 setScanError(null);
+                // 置信率证据：记录扫码时间与定位（异步获取，不阻断流程）
+                setScanAt(Date.now());
+                captureLocation().then((loc) => {
+                  setScanLoc(loc);
+                  setCaptureLoc(loc);
+                });
                 setCurrentStepMode('front'); // 自动进入正面照拍摄
               } else {
                 // 匹配到任务内其他资产但非当前资产 → 提示不匹配，停留当前资产
@@ -487,24 +552,31 @@ export default function InventoryPage() {
       setScanError(`扫码异常：${msg}`);
       setScanLoading(false);
     }
-  }, [assets, currentIndex]);
+  }, [assets, currentIndex, captureLocation]);
 
   /** 重新拍摄某一步照片 */
-  const handleRetakePhoto = useCallback((type: 'tag' | 'front' | 'back') => {
+  const handleRetakePhoto = useCallback(async (type: 'tag' | 'front' | 'back') => {
+    const loc = await captureLocation();
+    setCaptureLoc(loc);
     setCurrentStepMode(type);
     if (type === 'tag') {
       setTagPhoto(null);
       setFrontPhoto(null);
       setBackPhoto(null);
+      setTagMeta(null);
+      setFrontMeta(null);
+      setBackMeta(null);
       setAiResult(null);
     } else if (type === 'front') {
       setFrontPhoto(null);
+      setFrontMeta(null);
       setAiResult(null);
     } else {
       setBackPhoto(null);
+      setBackMeta(null);
       setAiResult(null);
     }
-  }, []);
+  }, [captureLocation]);
 
   /** AI 识别候选 */
   const aiCandidates = useMemo(
@@ -624,7 +696,11 @@ export default function InventoryPage() {
       if (frontPhoto) photoUrls.push(frontPhoto);
       if (backPhoto) photoUrls.push(backPhoto);
 
-      await submitRecord({
+      // ── 置信率证据：提交时定位 + 照片元数据 + AI 原始结果 ──
+      const subLoc = await captureLocation();
+      const photoMeta: (PhotoMeta | null)[] = [tagMeta, frontMeta, backMeta];
+
+      const resp = await submitRecord({
         taskId,
         assetCode: asset.assetCode,
         status: assetStatus ?? '',
@@ -635,7 +711,21 @@ export default function InventoryPage() {
         location: gpsLocation,
         operatorName: user?.name || user?.username || 'unknown',
         inventoryQty: lost ? -1 : 1,
+        scanTime: scanAt ? new Date(scanAt).toISOString() : undefined,
+        scanLat: scanLoc?.lat,
+        scanLng: scanLoc?.lng,
+        scanAcc: scanLoc?.acc,
+        photoMeta,
+        submitLat: subLoc.lat,
+        submitLng: subLoc.lng,
+        submitAcc: subLoc.acc,
+        aiResultJson: aiResult ? JSON.stringify(aiResult) : undefined,
+        assetResponsibleName: assetDetail?.userName || asset.userName || '',
       });
+      setConfidenceMap((m) => ({
+        ...m,
+        [asset.assetCode]: { score: resp.confidence, level: resp.level },
+      }));
       setSnackbar({ open: true, message: '✅ 盘点提交成功！', severity: 'success' });
 
       setCompletedCodes((prev) => [...prev, asset.assetCode]);
@@ -655,6 +745,12 @@ export default function InventoryPage() {
       setScanVerified(false);
       setScanError(null);
       setAiResult(null);
+      setScanAt(null);
+      setScanLoc(null);
+      setCaptureLoc(null);
+      setTagMeta(null);
+      setFrontMeta(null);
+      setBackMeta(null);
       updateTime();
 
       const newCompletedCount = completedCodes.length + 1;
@@ -669,7 +765,7 @@ export default function InventoryPage() {
     } finally {
       setSubmitting(false);
     }
-  }, [taskId, assets, currentIndex, assetStatus, remark, allPhotosReady, tagPhoto, frontPhoto, backPhoto, gpsCoords, gpsLocation, completedCodes, user, navigate, updateTime]);
+  }, [taskId, assets, currentIndex, assetStatus, remark, allPhotosReady, tagPhoto, frontPhoto, backPhoto, gpsCoords, gpsLocation, completedCodes, user, navigate, updateTime, scanVerified, aiResult, scanAt, scanLoc, tagMeta, frontMeta, backMeta, assetDetail, captureLocation]);
 
   // ===================== 渲染 =====================
 
@@ -732,6 +828,8 @@ export default function InventoryPage() {
 
   const currentAsset = assets[currentIndex];
   const isCompleted = currentAsset ? completedCodes.includes(currentAsset.assetCode) : false;
+  /** 当前资产的综合置信率（提交成功后由后端返回） */
+  const currentConfidence = currentAsset ? confidenceMap[currentAsset.assetCode] : undefined;
 
   // 水印数据
   const wmData = {
@@ -822,7 +920,11 @@ export default function InventoryPage() {
         </div>
 
         {isCompleted && (
-          <Alert severity="success" sx={{ fontSize: '0.8rem', py: 0.5 }}>该资产已盘点完成</Alert>
+          <Alert severity="success" sx={{ fontSize: '0.8rem', py: 0.5 }}>
+            {currentConfidence
+              ? `该资产已盘点完成 · 置信率 ${currentConfidence.score} 分（${currentConfidence.level}）`
+              : '该资产已盘点完成'}
+          </Alert>
         )}
 
         {/* ── 卡B：资产状态 ── */}
@@ -988,7 +1090,7 @@ export default function InventoryPage() {
                   )}
                 </>
               ) : photoStep === 1 && !currentStepMode ? (
-                <button onClick={() => setCurrentStepMode('tag')} className="w-full h-full flex flex-col items-center justify-center gap-1 bg-indigo-50 hover:bg-indigo-100 transition-colors">
+                <button onClick={async () => { const loc = await captureLocation(); setCaptureLoc(loc); setCurrentStepMode('tag'); }} className="w-full h-full flex flex-col items-center justify-center gap-1 bg-indigo-50 hover:bg-indigo-100 transition-colors">
                   <LabelIcon sx={{ fontSize: 24, color: '#6366f1' }} />
                   <span className="text-[10px] text-indigo-600 font-medium">点击拍摄</span>
                 </button>
@@ -1014,7 +1116,7 @@ export default function InventoryPage() {
                   )}
                 </>
               ) : photoStep === 2 && !currentStepMode ? (
-                <button onClick={() => setCurrentStepMode('front')} className="w-full h-full flex flex-col items-center justify-center gap-1 bg-indigo-50 hover:bg-indigo-100 transition-colors">
+                <button onClick={async () => { const loc = await captureLocation(); setCaptureLoc(loc); setCurrentStepMode('front'); }} className="w-full h-full flex flex-col items-center justify-center gap-1 bg-indigo-50 hover:bg-indigo-100 transition-colors">
                   <PhotoCameraFrontIcon sx={{ fontSize: 24, color: '#6366f1' }} />
                   <span className="text-[10px] text-indigo-600 font-medium">点击拍摄</span>
                 </button>
@@ -1040,7 +1142,7 @@ export default function InventoryPage() {
                   )}
                 </>
               ) : photoStep === 3 && !currentStepMode ? (
-                <button onClick={() => setCurrentStepMode('back')} className="w-full h-full flex flex-col items-center justify-center gap-1 bg-indigo-50 hover:bg-indigo-100 transition-colors">
+                <button onClick={async () => { const loc = await captureLocation(); setCaptureLoc(loc); setCurrentStepMode('back'); }} className="w-full h-full flex flex-col items-center justify-center gap-1 bg-indigo-50 hover:bg-indigo-100 transition-colors">
                   <PhotoCameraBackIcon sx={{ fontSize: 24, color: '#6366f1' }} />
                   <span className="text-[10px] text-indigo-600 font-medium">点击拍摄</span>
                 </button>
@@ -1056,9 +1158,10 @@ export default function InventoryPage() {
           {/* ── CameraCapture 实例 ── */}
           {currentStepMode && (
             <CameraCapture
-              onCapture={(dataUrl: string) => handlePhotoCapture(dataUrl)}
+              onCapture={(dataUrl: string, meta: PhotoMeta) => handlePhotoCapture(dataUrl, meta)}
               onClose={() => setCurrentStepMode(null)}
               watermark={wmData}
+              gps={captureLoc}
               disabled={isCompleted}
               stepLabel={currentStepMode === 'tag' ? '固定资产标签' : currentStepMode === 'front' ? '资产正面' : '资产反面'}
               stepHint={currentStepMode === 'tag'
@@ -1118,6 +1221,37 @@ export default function InventoryPage() {
           </div>
         )}
         </div>
+        )}
+
+        {/* ── 综合置信率（提交成功后由后端返回）── */}
+        {currentConfidence && (
+          <div className="bg-white rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-gray-700">
+                综合置信率 <span className={`font-bold ${confidenceHue(currentConfidence.score).text}`}>{currentConfidence.score}</span> 分
+              </span>
+              <span
+                className="text-[10px] px-1.5 py-0.5 rounded-full text-white font-medium"
+                style={{ backgroundColor: confidenceHue(currentConfidence.score).bar }}
+              >
+                {currentConfidence.level || '—'}
+              </span>
+            </div>
+            <LinearProgress
+              variant="determinate"
+              value={Math.min(100, Math.max(0, currentConfidence.score))}
+              sx={{
+                height: 6,
+                borderRadius: 3,
+                bgcolor: 'rgb(243,244,246)',
+                '& .MuiLinearProgress-bar': {
+                  borderRadius: 3,
+                  backgroundColor: confidenceHue(currentConfidence.score).bar,
+                },
+              }}
+            />
+            <p className="text-[10px] text-gray-400">基于扫码、定位、实拍照片与 AI 识别的多维证据综合评分</p>
+          </div>
         )}
 
         {/* ── 卡E：盘点信息（备注）── */}

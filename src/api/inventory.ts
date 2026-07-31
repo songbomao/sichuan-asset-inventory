@@ -1,4 +1,7 @@
 import client from './client';
+import type { PhotoMeta } from '../components/CameraCapture';
+
+export type { PhotoMeta };
 
 /** 提交盘点记录参数 */
 export interface SubmitRecordParams {
@@ -13,12 +16,24 @@ export interface SubmitRecordParams {
   location: string;
   operatorName: string;  // 盘点人姓名
   inventoryQty?: number; // 盘点数量（可选）
+
+  // ── 置信率证据（多维证据，供后端综合评分）──
+  scanTime?: string;                  // 扫码时间（ISO 字符串）
+  scanLat?: number;                   // 扫码时纬度
+  scanLng?: number;                   // 扫码时经度
+  scanAcc?: number;                   // 扫码时定位精度（米）
+  photoMeta?: (PhotoMeta | null)[];   // 三张照片元数据（标签/正面/反面，允许 null）
+  submitLat?: number;                 // 提交时纬度
+  submitLng?: number;                 // 提交时经度
+  submitAcc?: number;                 // 提交时定位精度（米）
+  aiResultJson?: string;              // AI 识别原始结果 JSON
+  assetResponsibleName?: string;      // 资产责任人姓名
 }
 
 /** 提交盘点响应 */
 interface SubmitRecordResponse {
   code: number;
-  data: { recordId: string };
+  data: { recordId: string; confidence?: number | string; level?: string };
   message: string;
   msg?: string;
 }
@@ -26,14 +41,21 @@ interface SubmitRecordResponse {
 /**
  * 提交盘点记录
  * POST /api/Account/Task/Submit
+ * @returns recordId + 后端综合置信率分数与等级
  */
-export async function submitRecord(params: SubmitRecordParams): Promise<string> {
+export async function submitRecord(
+  params: SubmitRecordParams,
+): Promise<{ recordId: string; confidence: number; level: string }> {
   const { data } = await client.post<SubmitRecordResponse>(
     '/api/Account/Task/SubmitRecord',
     params,
   );
   if (data.code === 0 || data.code === 200) {
-    return data.data.recordId;
+    return {
+      recordId: data.data.recordId,
+      confidence: Number(data.data.confidence ?? 0),
+      level: data.data.level ?? '',
+    };
   }
   throw new Error(data.msg || data.message || '提交盘点记录失败');
 }

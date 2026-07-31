@@ -34,10 +34,10 @@ describe('submitRecord', () => {
 
   it('should return recordId on success', async () => {
     mockPost.mockResolvedValueOnce({
-      data: { code: 0, data: { recordId: 'r-123' }, message: 'ok' },
+      data: { code: 0, data: { recordId: 'r-123', confidence: 88, level: '高' }, message: 'ok' },
     });
     const result = await submitRecord(validParams);
-    expect(result).toBe('r-123');
+    expect(result).toEqual({ recordId: 'r-123', confidence: 88, level: '高' });
     expect(mockPost).toHaveBeenCalledWith('/api/Account/Task/Submit', validParams);
   });
 
@@ -46,7 +46,7 @@ describe('submitRecord', () => {
       data: { code: 200, data: { recordId: 'r-456' }, message: 'ok' },
     });
     const result = await submitRecord(validParams);
-    expect(result).toBe('r-456');
+    expect(result).toEqual({ recordId: 'r-456', confidence: 0, level: '' });
   });
 
   it('should throw error on failure', async () => {
