@@ -6,16 +6,21 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607301835';
+export const APP_VERSION = 'v202607311416';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-30 18:35';
-export const RELEASE_NOTES = '重构拍照流程为三步骤引导拍摄——①标签照(校验标签内容)②正面照(校验实物轮廓)③反面照(校验实物轮廓)，每步拍摄后实时校验照片内容是否匹配，校验不通过引导重拍，校验通过自动进入下一步。废除原有自动二维码分类逻辑，改为人工引导三步采集。';
+export const RELEASE_TIME = '2026-07-31 14:16';
+export const RELEASE_NOTES = '根治「返回控制台」失效：移除 transform 居中（WebView 兼容性）+去掉 useCallback/多级 admin 判据间接层，回归内联 onClick 与原始 ConsoleButton 同款的 navigate 方式。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607311416',
+    time: '2026-07-31 14:16',
+    notes: '根治「返回控制台」失效：移除 transform 居中（WebView 兼容性）+去掉 useCallback/多级 admin 判据间接层，回归内联 onClick 与原始 ConsoleButton 同款的 navigate 方式。',
+  },
   {
     version: 'v202607301835',
     time: '2026-07-30 18:35',

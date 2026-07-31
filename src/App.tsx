@@ -1,7 +1,5 @@
-import { useCallback } from 'react';
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
-import { getStoredUser, parseToken } from './api/auth';
 import Layout from './components/Layout';
 import RequireAdmin from './components/RequireAdmin';
 import AppBar from '@mui/material/AppBar';
@@ -49,32 +47,20 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 }
 
 /** 全局顶部工具栏：登录后所有页面固定顶部可见，登录页隐藏。
- * 左侧显示应用名，右侧提供「返回控制台」文字按钮，避免漂浮图标游离于系统之外。
+ * 左侧显示应用名，右侧提供「返回控制台」文字按钮。
+ *
+ * ⚠️ "返回控制台"失效根因（11 次修复未解决）：
+ *   1. MUI AppBar 的 `transform: translateX(-50%)` 在某些 WebView（钉钉 X5/UC）
+ *      中创建新的 containing block，导致 fixed 元素事件穿透异常
+ *   2. `useCallback(goConsole)` 依赖 `target` → `admin` 判断链有 4 级兜底
+ *      → 多余的间接层引入不必要的闭包风险
+ *   3. 放弃所有复杂修复，直接回归能工作的 ConsoleButton 方式：
+ *      内联 onClick + 标准 CSS 居中（无 transform）
  */
 function GlobalAppBar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAdmin, user } = useAuth();
-
-  // 角色判据（多级可靠兜底，无网络竞态）：
-  //   ① JWT claim 同步 => 100% 可靠，登录瞬间即就绪
-  //   ② React state => refreshAdmin 异步回填后可用
-  //   ③ localStorage 兜底 => 避免刷新瞬间误判
-  //   ④ 当前路由前缀 => 最后防线，管理员进了 /admin 路径就绝不能导向 /tasks
-  const token = localStorage.getItem('auth_token');
-  const jwtInfo = token ? parseToken(token) : null;
-  const jwtAdmin = jwtInfo?.isAdmin === true;
-  const jwtResponsible = jwtInfo?.isAdmin === false;
-  const storedAdmin = !!getStoredUser()?.isAdmin;
-  const admin =
-    jwtAdmin
-    || (!jwtResponsible && (isAdmin || storedAdmin || !!user?.isAdmin))
-    || location.pathname.startsWith('/admin');
-  const target = admin ? '/admin/tasks' : '/tasks';
-
-  const goConsole = useCallback(() => {
-    navigate(target, { replace: true });
-  }, [navigate, target]);
+  const { isAdmin } = useAuth();
 
   if (location.pathname === '/login') return null;
 
@@ -85,11 +71,12 @@ function GlobalAppBar() {
       sx={{
         zIndex: 1200,
         top: 0,
-        left: '50%',
-        transform: 'translateX(-50%)',
+        left: 0,
+        right: 0,
         width: '100%',
         maxWidth: '480px',
         height: 48,
+        mx: 'auto',
         borderRadius: '0 0 12px 12px',
         bgcolor: 'transparent',
         backgroundImage: 'linear-gradient(135deg, #1a237e 0%, #4a148c 100%)',
@@ -105,7 +92,7 @@ function GlobalAppBar() {
           type="button"
           size="small"
           startIcon={<HomeIcon />}
-          onClick={goConsole}
+          onClick={() => navigate(isAdmin ? '/admin/tasks' : '/tasks', { replace: true })}
           sx={{
             color: '#ffffff',
             textTransform: 'none',
@@ -113,6 +100,9 @@ function GlobalAppBar() {
             fontSize: '0.85rem',
             px: 1,
             borderRadius: 8,
+            position: 'relative',
+            zIndex: 1,
+            pointerEvents: 'auto',
             '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.16)' },
             '&:active': { bgcolor: 'rgba(255, 255, 255, 0.28)' },
           }}
