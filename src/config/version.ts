@@ -6,16 +6,21 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607301835';
+export const APP_VERSION = 'v202607311515';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-30 18:35';
-export const RELEASE_NOTES = '重构拍照流程为三步骤引导拍摄——①标签照(校验标签内容)②正面照(校验实物轮廓)③反面照(校验实物轮廓)，每步拍摄后实时校验照片内容是否匹配，校验不通过引导重拍，校验通过自动进入下一步。废除原有自动二维码分类逻辑，改为人工引导三步采集。';
+export const RELEASE_TIME = '2026-07-31 15:15';
+export const RELEASE_NOTES = '四节点盘点流程：①资产状态→②钉钉扫码识别(二维码核对资产)→③拍照采集(标签/正面/反面三步引导)→④盘点信息(备注+提交)；丢失状态跳过扫码与拍照；AppBar用纯div替代MUI(修复WebView点击穿透)。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607311515',
+    time: '2026-07-31 15:15',
+    notes: '四节点盘点流程：①资产状态→②钉钉扫码识别(二维码核对资产)→③拍照采集(标签/正面/反面三步引导)→④盘点信息(备注+提交)；丢失状态跳过扫码与拍照；AppBar用纯div替代MUI(修复WebView点击穿透)。',
+  },
   {
     version: 'v202607301835',
     time: '2026-07-30 18:35',

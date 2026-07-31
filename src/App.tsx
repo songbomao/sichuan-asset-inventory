@@ -1,13 +1,9 @@
-import { useCallback } from 'react';
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
-import { getStoredUser, parseToken } from './api/auth';
 import Layout from './components/Layout';
 import RequireAdmin from './components/RequireAdmin';
-import AppBar from '@mui/material/AppBar';
-import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
-import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
 import HomeIcon from '@mui/icons-material/Home';
 import Login from './pages/Login';
 import TaskList from './pages/TaskList';
@@ -48,41 +44,22 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-/** 全局顶部工具栏：登录后所有页面固定顶部可见，登录页隐藏。
- * 左侧显示应用名，右侧提供「返回控制台」文字按钮，避免漂浮图标游离于系统之外。
+/** 全局顶部导航栏
+ *
+ * MUI AppBar position="fixed" 在钉钉 WebView (X5/UC 内核) 中有事件穿透 bug，
+ * 故改用纯 div + position:fixed + flexbox，对齐 ConsoleButton 的可用模式。
  */
 function GlobalAppBar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAdmin, user } = useAuth();
-
-  // 角色判据（多级可靠兜底，无网络竞态）：
-  //   ① JWT claim 同步 => 100% 可靠，登录瞬间即就绪
-  //   ② React state => refreshAdmin 异步回填后可用
-  //   ③ localStorage 兜底 => 避免刷新瞬间误判
-  //   ④ 当前路由前缀 => 最后防线，管理员进了 /admin 路径就绝不能导向 /tasks
-  const token = localStorage.getItem('auth_token');
-  const jwtInfo = token ? parseToken(token) : null;
-  const jwtAdmin = jwtInfo?.isAdmin === true;
-  const jwtResponsible = jwtInfo?.isAdmin === false;
-  const storedAdmin = !!getStoredUser()?.isAdmin;
-  const admin =
-    jwtAdmin
-    || (!jwtResponsible && (isAdmin || storedAdmin || !!user?.isAdmin))
-    || location.pathname.startsWith('/admin');
-  const target = admin ? '/admin/tasks' : '/tasks';
-
-  const goConsole = useCallback(() => {
-    navigate(target, { replace: true });
-  }, [navigate, target]);
+  const { isAdmin } = useAuth();
 
   if (location.pathname === '/login') return null;
 
   return (
-    <AppBar
-      position="fixed"
-      elevation={0}
-      sx={{
+    <div
+      style={{
+        position: 'fixed',
         zIndex: 1200,
         top: 0,
         left: '50%',
@@ -90,37 +67,33 @@ function GlobalAppBar() {
         width: '100%',
         maxWidth: '480px',
         height: 48,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 16px',
+        boxSizing: 'border-box',
         borderRadius: '0 0 12px 12px',
-        bgcolor: 'transparent',
         backgroundImage: 'linear-gradient(135deg, #1a237e 0%, #4a148c 100%)',
         color: '#ffffff',
         boxShadow: '0 2px 10px rgba(26, 35, 126, 0.28)',
       }}
     >
-      <Toolbar variant="dense" sx={{ minHeight: 48, px: 2, justifyContent: 'space-between' }}>
-        <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#ffffff', fontSize: '0.95rem', letterSpacing: '0.04em' }}>
-          AI 盘点·账实秒合
-        </Typography>
-        <Button
-          type="button"
-          size="small"
-          startIcon={<HomeIcon />}
-          onClick={goConsole}
-          sx={{
-            color: '#ffffff',
-            textTransform: 'none',
-            fontWeight: 600,
-            fontSize: '0.85rem',
-            px: 1,
-            borderRadius: 8,
-            '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.16)' },
-            '&:active': { bgcolor: 'rgba(255, 255, 255, 0.28)' },
-          }}
-        >
-          返回控制台
-        </Button>
-      </Toolbar>
-    </AppBar>
+      <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#ffffff', fontSize: '0.95rem', letterSpacing: '0.04em' }}>
+        AI 盘点·账实秒合
+      </Typography>
+      <IconButton
+        color="inherit"
+        size="small"
+        onClick={() => navigate(isAdmin ? '/admin/tasks' : '/tasks', { replace: true })}
+        title="返回控制台"
+        aria-label="返回控制台"
+        sx={{
+          '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.16)' },
+        }}
+      >
+        <HomeIcon fontSize="small" />
+      </IconButton>
+    </div>
   );
 }
 
