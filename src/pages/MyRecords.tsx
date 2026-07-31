@@ -1,4 +1,5 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
@@ -13,12 +14,14 @@ import TextField from '@mui/material/TextField';
 import CircularProgress from '@mui/material/CircularProgress';
 import SearchIcon from '@mui/icons-material/Search';
 import InventoryIcon from '@mui/icons-material/Inventory';
-import AssignmentIcon from '@mui/icons-material/Assignment';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import BadgeIcon from '@mui/icons-material/Badge';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { getMyRecordsFiltered, getRecordDetail, type RecordItem } from '../api/inventory';
+import { getTaskList, type TaskItem } from '../api/tasks';
 import StatusBadge from '../components/StatusBadge';
+import ProgressBar from '../components/ProgressBar';
 import { DetailDrawer, formatTime } from '../components/RecordDetailDrawer';
 
 /** 筛选选项 */
@@ -30,12 +33,65 @@ const FILTERS = [
   { key: '丢失', label: '丢失' },
 ];
 
+/** 派生卡片状态：本人名下资产全部盘点完成 → 已完成；否则沿用任务级状态 */
+function deriveTaskStatus(t: TaskItem): string {
+  if (t.assetCount > 0 && t.completedCount >= t.assetCount) return 'completed';
+  return t.status;
+}
+
+/** 格式化截止时间（精确到秒） */
+function formatDeadline(deadline: string): string {
+  if (!deadline) return '--';
+  try {
+    const date = new Date(deadline);
+    const now = new Date();
+    const diffDays = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    const datePart = date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });
+    const timePart = date.toLocaleTimeString('zh-CN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    });
+    const formatted = `${datePart} ${timePart}`;
+    if (diffDays < 0) return `已过期 ${formatted}`;
+    if (diffDays === 0) return `今日截止 ${formatted}`;
+    if (diffDays <= 3) return `剩余 ${diffDays} 天 · ${formatted}`;
+    return formatted;
+  } catch {
+    return deadline;
+  }
+}
+
+/** 判断是否临近/逾期 */
+function isUrgent(deadline: string): boolean {
+  try {
+    const date = new Date(deadline);
+    const now = new Date();
+    return date.getTime() - now.getTime() < 3 * 24 * 60 * 60 * 1000;
+  } catch {
+    return false;
+  }
+}
+
+interface TaskGroup {
+  task: TaskItem;
+  records: RecordItem[];
+}
+
 /**
- * 我的盘点记录（责任人视角）
- * 独立页：筛选（状态/关键字）+ 列表（含盘点数量）+ 分页 + 复用详情抽屉
+ * 我的盘点记录（责任人视角）— 按盘点任务维度组织
+ * 外层按任务分组（卡片样式/内容对齐「我的盘点任务」），组内平铺该任务下所有固定资产盘点记录。
+ * 顶部保留关键字（资产名称/编码）+ 状态筛选，可跨任务查询某一类物资的全部盘点记录。
  */
 export default function MyRecords({ embedded = false }: { embedded?: boolean }) {
+  const navigate = useNavigate();
+
+  // 平铺记录（来自 GetMyRecords，每条带 taskId/taskName）
   const [records, setRecords] = useState<RecordItem[]>([]);
+  // 任务元数据（来自 GetTaskList，用于分组卡片展示进度/截止/位置等）
+  const [tasks, setTasks] = useState<TaskItem[]>([]);
+
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,6 +111,16 @@ export default function MyRecords({ embedded = false }: { embedded?: boolean }) 
   const [selectedRecord, setSelectedRecord] = useState<RecordItem | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
+
+  /** 拉取任务元数据（仅一次，不随记录筛选变化） */
+  const loadTasks = useCallback(async () => {
+    try {
+      const list = await getTaskList(true);
+      setTasks(list);
+    } catch {
+      // 任务元数据拉取失败不阻断记录展示，分组时按记录内 taskName 兜底
+    }
+  }, []);
 
   const fetchRecords = useCallback(async (isLoadMore = false) => {
     if (isLoadMore) setLoadingMore(true);
@@ -83,6 +149,7 @@ export default function MyRecords({ embedded = false }: { embedded?: boolean }) 
   }, [page, pageSize, status, keyword]);
 
   useEffect(() => {
+    void loadTasks();
     fetchRecords();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -137,6 +204,42 @@ export default function MyRecords({ embedded = false }: { embedded?: boolean }) 
     setSelectedRecord(null);
   };
 
+  /** 按 taskId 分组（任务顺序对齐 GetTaskList，记录中出现的未知任务兜底补到末尾） */
+  const groups = useMemo<TaskGroup[]>(() => {
+    const byTask = new Map<string, RecordItem[]>();
+    for (const r of records) {
+      const arr = byTask.get(r.taskId);
+      if (arr) arr.push(r);
+      else byTask.set(r.taskId, [r]);
+    }
+
+    const result: TaskGroup[] = [];
+    for (const t of tasks) {
+      const recs = byTask.get(t.taskId);
+      if (recs) {
+        result.push({ task: t, records: recs });
+        byTask.delete(t.taskId);
+      }
+    }
+    // 兜底：记录所属任务不在 GetTaskList 返回中（如已归档/移除），用记录内信息构造最小任务卡
+    for (const [taskId, recs] of byTask.entries()) {
+      result.push({
+        task: {
+          taskId,
+          taskName: recs[0]?.taskName ?? '盘点任务',
+          assetCount: recs.length,
+          completedCount: recs.length,
+          deadline: '',
+          status: 'completed',
+          createTime: '',
+          location: '',
+        },
+        records: recs,
+      });
+    }
+    return result;
+  }, [records, tasks]);
+
   return (
     <div className={embedded ? 'space-y-4' : 'min-h-screen bg-gray-50 pt-12'}>
       <div className={embedded ? 'space-y-4' : 'p-4 space-y-4'}>
@@ -155,12 +258,12 @@ export default function MyRecords({ embedded = false }: { embedded?: boolean }) 
           ))}
         </div>
 
-        {/* 关键字筛选 */}
+        {/* 关键字筛选（资产名称/编码），跨任务查询某一类物资全部盘点记录 */}
         <PaperFilter>
           <Stack spacing={1.5}>
             <div className="flex gap-2">
               <TextField
-                label="关键字（资产名称/编码）"
+                label="关键字 / 资产编码"
                 size="small"
                 fullWidth
                 value={keyword}
@@ -195,7 +298,7 @@ export default function MyRecords({ embedded = false }: { embedded?: boolean }) 
               <CardContent>
                 <Skeleton variant="text" width="50%" height={24} />
                 <Skeleton variant="text" width="70%" height={20} />
-                <Skeleton variant="text" width="30%" height={20} />
+                <Skeleton variant="rounded" height={8} sx={{ mt: 1 }} />
               </CardContent>
             </Card>
           ))}
@@ -209,60 +312,15 @@ export default function MyRecords({ embedded = false }: { embedded?: boolean }) 
           </div>
         )}
 
-        {/* 记录列表 */}
+        {/* 按任务分组的记录列表 */}
         {!loading &&
-          records.map((record) => (
-            <Card
-              key={record.recordId}
-              className="glow-border hover:shadow-glow transition-shadow cursor-pointer border-l-4"
-              sx={{ borderLeftColor: record.status === '正常' ? '#4caf50' : '#ff9800' }}
-              onClick={() => openDetail(record)}
-            >
-              <CardContent sx={{ pb: '16px !important' }}>
-                <div className="flex items-start gap-3">
-                  <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                    <InventoryIcon className="text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <Typography
-                        variant="subtitle1"
-                        component="h3"
-                        className="font-semibold text-gray-900 truncate"
-                      >
-                        {record.assetName}
-                      </Typography>
-                      <StatusBadge status={record.status} />
-                    </div>
-                    <Typography variant="caption" className="text-gray-400 font-mono block">
-                      {record.assetCode}
-                    </Typography>
-                    <div className="flex flex-wrap items-center gap-2 mt-2 text-xs text-gray-500">
-                      <span className="flex items-center gap-0.5">
-                        <AssignmentIcon fontSize="inherit" />
-                        {record.taskName}
-                      </span>
-                      <span className="flex items-center gap-0.5">
-                        <ScheduleIcon fontSize="inherit" />
-                        {formatTime(record.createTime)}
-                      </span>
-                    </div>
-                    {typeof record.inventoryQty === 'number' && (
-                      <div className="flex items-center gap-0.5 text-xs text-primary mt-1">
-                        <BadgeIcon fontSize="inherit" />
-                        盘点数量：{record.inventoryQty}
-                      </div>
-                    )}
-                    {record.location && (
-                      <div className="flex items-center gap-0.5 text-xs text-gray-400 mt-1 truncate">
-                        <LocationOnIcon fontSize="inherit" />
-                        {record.location}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+          groups.map((group) => (
+            <TaskRecordGroup
+              key={group.task.taskId}
+              group={group}
+              onOpenRecord={openDetail}
+              onOpenBoard={(taskId) => navigate(`/tasks/${taskId}/dashboard`)}
+            />
           ))}
 
         {/* 加载更多 */}
@@ -293,6 +351,130 @@ export default function MyRecords({ embedded = false }: { embedded?: boolean }) 
         />
 
         <div className="h-4" />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 单个盘点任务分组卡片（样式/内容对齐「我的盘点任务」任务卡片）
+ * 头部展示任务信息 + 进度；下方平铺该任务下的资产盘点记录。
+ */
+function TaskRecordGroup({
+  group,
+  onOpenRecord,
+  onOpenBoard,
+}: {
+  group: TaskGroup;
+  onOpenRecord: (r: RecordItem) => void;
+  onOpenBoard: (taskId: string) => void;
+}) {
+  const task = group.task;
+  const hasMeta = !!task.deadline || !!task.location || task.assetCount > 0;
+
+  return (
+    <Card className="glow-border">
+      <CardContent>
+        {/* 任务头部：名称 + 状态 */}
+        <div className="flex items-start justify-between mb-2">
+          <Typography
+            variant="subtitle1"
+            component="h3"
+            className="font-semibold text-gray-900"
+            sx={{ flex: 1, mr: 1 }}
+          >
+            {task.taskName}
+          </Typography>
+          <StatusBadge status={deriveTaskStatus(task)} />
+        </div>
+
+        {/* 任务元信息：资产数 + 截止时间 */}
+        {hasMeta && (
+          <div className="flex items-center gap-4 text-sm text-gray-500 mb-2">
+            {task.assetCount > 0 && <span>📦 资产 {task.assetCount} 项</span>}
+            {task.deadline && (
+              <span className={isUrgent(task.deadline) ? 'text-red-500 font-medium' : ''}>
+                ⏰ {formatDeadline(task.deadline)}
+              </span>
+            )}
+          </div>
+        )}
+
+        {task.location && (
+          <div className="text-xs text-gray-400 mb-2">📍 {task.location}</div>
+        )}
+
+        {/* 进度条（有真实任务元数据时展示整体进度，否则展示已盘记录数） */}
+        {task.assetCount > 0 ? (
+          <ProgressBar current={task.completedCount} total={task.assetCount} />
+        ) : (
+          <div className="text-xs text-gray-400 mb-1">本任务已盘 {group.records.length} 条记录</div>
+        )}
+
+        {/* 查看进度看板（仅真实任务可跳） */}
+        {!!task.deadline || task.assetCount > 0 ? (
+          <div
+            className="flex items-center justify-end text-xs text-blue-500 mt-2 cursor-pointer"
+            onClick={() => onOpenBoard(task.taskId)}
+          >
+            查看进度看板
+            <ChevronRightIcon sx={{ fontSize: 16 }} />
+          </div>
+        ) : null}
+
+        {/* 组内资产盘点记录 */}
+        <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
+          {group.records.map((r) => (
+            <RecordRow key={r.recordId} record={r} onClick={() => onOpenRecord(r)} />
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+/** 组内单条资产盘点记录 */
+function RecordRow({ record, onClick }: { record: RecordItem; onClick: () => void }) {
+  return (
+    <div
+      onClick={onClick}
+      className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer border border-gray-100 transition-colors"
+    >
+      <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+        <InventoryIcon className="text-primary" sx={{ fontSize: 18 }} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between gap-2">
+          <Typography
+            variant="subtitle2"
+            component="h4"
+            className="font-semibold text-gray-900 truncate"
+          >
+            {record.assetName}
+          </Typography>
+          <StatusBadge status={record.status} />
+        </div>
+        <Typography variant="caption" className="text-gray-400 font-mono block">
+          {record.assetCode}
+        </Typography>
+        <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-gray-500">
+          <span className="flex items-center gap-0.5">
+            <ScheduleIcon fontSize="inherit" />
+            {formatTime(record.createTime)}
+          </span>
+          {typeof record.inventoryQty === 'number' && (
+            <span className="flex items-center gap-0.5 text-primary">
+              <BadgeIcon fontSize="inherit" />
+              盘点数量：{record.inventoryQty}
+            </span>
+          )}
+        </div>
+        {record.location && (
+          <div className="flex items-center gap-0.5 text-xs text-gray-400 mt-0.5 truncate">
+            <LocationOnIcon fontSize="inherit" />
+            {record.location}
+          </div>
+        )}
       </div>
     </div>
   );
