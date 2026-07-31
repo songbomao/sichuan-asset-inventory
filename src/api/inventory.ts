@@ -7,7 +7,7 @@ export type { PhotoMeta };
 export interface SubmitRecordParams {
   taskId: string;
   assetCode: string;
-  status: string;        // 正常 | 待维修 | 报废 | 丢失
+  status: string;        // 正常 | 丢失 | 损坏（与盘点页 STATUS_OPTIONS 对齐）
   remark: string;
   photoUrls: string[];        // 多张水印照片 Base64
   photoBase64?: string;       // 兼容旧单图（可选，优先使用 photoUrls）

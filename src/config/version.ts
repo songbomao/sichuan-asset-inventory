@@ -6,16 +6,21 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607312337';
+export const APP_VERSION = 'v202607312341';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-31 23:37';
-export const RELEASE_NOTES = '「我的盘点记录」任务卡片截止时间文案调整：移除「已过期/今日截止/剩余N天」描述前缀，统一显示为「⏰ 盘点截止日期 MM/DD HH:mm:ss」，临近/已过期仍保持红色高亮（isUrgent）。';
+export const RELEASE_TIME = '2026-07-31 23:41';
+export const RELEASE_NOTES = '物资状态对齐盘点页：盘点记录页状态筛选由「正常/待维修/报废/丢失」4种调整为「正常/丢失/损坏」3种（与盘点页 STATUS_OPTIONS 一致）；StatusBadge 补充「损坏」映射（warning）；同步 inventory.ts 提交参数注释。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607312341',
+    time: '2026-07-31 23:41',
+    notes: '物资状态对齐盘点页：盘点记录页状态筛选由「正常/待维修/报废/丢失」4种调整为「正常/丢失/损坏」3种（与盘点页 STATUS_OPTIONS 一致）；StatusBadge 补充「损坏」映射（warning）；同步 inventory.ts 提交参数注释。',
+  },
   {
     version: 'v202607312337',
     time: '2026-07-31 23:37',

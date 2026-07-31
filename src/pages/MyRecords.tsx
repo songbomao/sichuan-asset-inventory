@@ -27,9 +27,8 @@ import { DetailDrawer, formatTime } from '../components/RecordDetailDrawer';
 const FILTERS = [
   { key: 'all', label: '全部' },
   { key: '正常', label: '正常' },
-  { key: '待维修', label: '待维修' },
-  { key: '报废', label: '报废' },
   { key: '丢失', label: '丢失' },
+  { key: '损坏', label: '损坏' },
 ];
 
 /** 派生卡片状态：本人名下资产全部盘点完成 → 已完成；否则沿用任务级状态 */

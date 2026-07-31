@@ -8,6 +8,7 @@ interface StatusBadgeProps {
 /** 状态 → 颜色映射 */
 const STATUS_MAP: Record<string, { label: string; color: 'success' | 'warning' | 'error' | 'default' }> = {
   '正常': { label: '正常', color: 'success' },
+  '损坏': { label: '损坏', color: 'warning' },
   '待维修': { label: '待维修', color: 'warning' },
   '报废': { label: '报废', color: 'error' },
   '丢失': { label: '丢失', color: 'error' },
