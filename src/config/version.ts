@@ -6,16 +6,21 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607311132';
+export const APP_VERSION = 'v202607312219';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-31 11:32';
-export const RELEASE_NOTES = '盘点页三处 UI 调整：①微型步骤条（资产状态→扫码识别→拍照采集→AI识别→提交信息）改为 sticky 吸顶，滚动时固定在屏幕顶部；②所有卡片序号圆圈（1/2/3/4）完成后不再显示对勾，改为绿色背景+保留原数字；③AI 识别结果区去除 Alert 成功图标与 ✅ emoji，仅保留文字结果。';
+export const RELEASE_TIME = '2026-07-31 22:19';
+export const RELEASE_NOTES = '盘点页三处交互调整：①资产信息卡片默认折叠（节省首屏空间，可手动展开）；②AI 资产识别降级为非独立环节——拍完反面照后由 useEffect 自动触发，结果内联展示于拍照采集卡末尾，移除独立卡E与步骤条 AI 项，步骤收缩为4项（资产状态→扫码识别→拍照采集→提交信息），提交按钮不再有独立 AI 拦截文案；③拍摄入口按钮恢复白色相机图标（CameraAltIcon 白色）。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607312219',
+    time: '2026-07-31 22:19',
+    notes: '盘点页三处交互调整：①资产信息卡片默认折叠（节省首屏空间，可手动展开）；②AI 资产识别降级为非独立环节——拍完反面照后由 useEffect 自动触发，结果内联展示于拍照采集卡末尾，移除独立卡E与步骤条 AI 项，步骤收缩为4项（资产状态→扫码识别→拍照采集→提交信息），提交按钮不再有独立 AI 拦截文案；③拍摄入口按钮恢复白色相机图标（CameraAltIcon 白色）。',
+  },
   {
     version: 'v202607311132',
     time: '2026-07-31 11:32',
