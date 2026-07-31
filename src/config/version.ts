@@ -6,16 +6,21 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607311227';
+export const APP_VERSION = 'v202607311337';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-31 12:27';
-export const RELEASE_NOTES = '采集流程扩展为四节点：①扫码识别（钉钉扫码→核对资产信息→匹配成功解锁拍照）→②拍照采集→③填写结果→④提交；新增异常处理闭环：扫码不匹配弹窗（重新扫码/上报丢失）+ 丢失上报弹窗（原因/时间/责任人），丢失状态跳过拍照。';
+export const RELEASE_TIME = '2026-07-31 13:37';
+export const RELEASE_NOTES = '调整四节点顺序：①盘点状态→②扫码识别→③拍照采集→④提交；丢失状态直接跳过扫码和拍照，先选状态再扫码，逻辑更合理。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607311337',
+    time: '2026-07-31 13:37',
+    notes: '调整四节点顺序：①盘点状态→②扫码识别→③拍照采集→④提交；丢失状态直接跳过扫码和拍照，先选状态再扫码，逻辑更合理。',
+  },
   {
     version: 'v202607311227',
     time: '2026-07-31 12:27',

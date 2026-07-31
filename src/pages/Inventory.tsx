@@ -785,19 +785,19 @@ export default function InventoryPage() {
   const currentAsset = assets[currentIndex];
   const isCompleted = currentAsset ? completedCodes.includes(currentAsset.assetCode) : false;
 
-  // 操作步骤定义：扫码识别 → 拍照采集 → 填写结果 → 提交
-  const STEP_SCAN = 0;
-  const STEP_PHOTO = 1;
-  const STEP_RESULT = 2;
+  // 操作步骤定义：盘点状态 → 扫码识别 → 拍照采集 → 提交
+  const STEP_STATUS = 0;
+  const STEP_SCAN = 1;
+  const STEP_PHOTO = 2;
   const STEP_SUBMIT = 3;
-  // 当前步骤：丢失直接跳到填写结果；未扫码验证→步骤0；照片未拍完→步骤1；照片拍完→步骤2
+  // 当前步骤：丢失直接跳到提交；状态未选→步骤0；未扫码→步骤1；照片未拍完→步骤2；拍完→步骤3
   const currentStep = IS_LOST(assetStatus)
-    ? STEP_RESULT
-    : !scanVerified
+    ? STEP_SUBMIT
+    : assetStatus === '正常' && !scanVerified
     ? STEP_SCAN
-    : (allPhotos.length < 2 || qrPhotoCount < 1)
+    : !IS_LOST(assetStatus) && (allPhotos.length < 2 || qrPhotoCount < 1)
     ? STEP_PHOTO
-    : STEP_RESULT;
+    : STEP_SUBMIT;
 
   return (
     <div
@@ -860,13 +860,13 @@ export default function InventoryPage() {
           </AccordionDetails>
         </Accordion>
 
-        {/* 微型步骤条：放在基础信息卡和拍照采集卡之间，提示操作流程 */}
+        {/* 微型步骤条 */}
         <div className="flex items-center justify-center gap-1.5 text-[11px] bg-white rounded-xl p-2 border border-gray-100">
           {[
-            { label: '扫码识别', icon: <QrCodeScannerIcon sx={{ fontSize: 13 }} />, active: currentStep === STEP_SCAN, done: scanVerified },
-            { label: '拍照采集', icon: <CameraAltIcon sx={{ fontSize: 13 }} />, active: currentStep === STEP_PHOTO, done: qrPhotoCount >= 1 && allPhotos.length >= 2 },
-            { label: '填写结果', icon: <AssignmentIcon sx={{ fontSize: 13 }} />, active: currentStep === STEP_RESULT && (scanVerified && qrPhotoCount >= 1 && allPhotos.length >= 2), done: false },
-            { label: '提交', icon: <CheckCircleOutlineIcon sx={{ fontSize: 13 }} />, active: false, done: false },
+            { label: '盘点状态', icon: <RadioButtonUncheckedIcon sx={{ fontSize: 13 }} />, active: (currentStep as number) === STEP_STATUS, done: IS_LOST(assetStatus) || NEED_REMARK_STATUSES.has(assetStatus) },
+            { label: '扫码识别', icon: <QrCodeScannerIcon sx={{ fontSize: 13 }} />, active: (currentStep as number) === STEP_SCAN, done: scanVerified },
+            { label: '拍照采集', icon: <CameraAltIcon sx={{ fontSize: 13 }} />, active: (currentStep as number) === STEP_PHOTO, done: qrPhotoCount >= 1 && allPhotos.length >= 2 },
+            { label: '提交', icon: <CheckCircleOutlineIcon sx={{ fontSize: 13 }} />, active: (currentStep as number) === STEP_SUBMIT, done: false },
           ].map((s, i) => (
             <Fragment key={s.label}>
               {i > 0 && <span className="w-6 border-t border-gray-300" />}
@@ -882,12 +882,55 @@ export default function InventoryPage() {
           <Alert severity="success" sx={{ fontSize: '0.8rem', py: 0.5 }}>该资产已盘点完成</Alert>
         )}
 
-        {/* ── 卡B：扫码识别 ── */}
+        {/* ── 卡B：盘点状态 ── */}
+        <div className={`rounded-xl p-2.5 shadow-sm border space-y-2 transition-all ${(currentStep as number) === STEP_STATUS ? 'bg-white border-indigo-200 ring-1 ring-indigo-100' : 'bg-white border-gray-100'}`}>
+          <div className="flex items-center gap-1.5">
+            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white ${(currentStep as number) === STEP_STATUS ? 'bg-indigo-600' : 'bg-gray-300'}`}>1</span>
+            <h3 className="font-semibold text-gray-900 text-sm">盘点状态</h3>
+          </div>
+          {/* 状态选择 */}
+          <div>
+            <p className="text-xs font-medium text-gray-700 mb-1.5">资产状态</p>
+            <ToggleButtonGroup
+              value={assetStatus}
+              exclusive
+              onChange={handleStatusChange}
+              size="small"
+              fullWidth
+              disabled={isCompleted}
+              sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.75 }}
+            >
+              {STATUS_OPTIONS.map((opt) => (
+                <ToggleButton
+                  key={opt.value}
+                  value={opt.value}
+                  sx={{
+                    borderRadius: '6px !important',
+                    border: '1px solid rgba(0,0,0,0.12) !important',
+                    fontSize: '0.75rem',
+                    py: 0.75,
+                    '&.Mui-selected': {
+                      bgcolor: 'rgba(26, 35, 126, 0.08)',
+                      borderColor: '#1a237e !important',
+                    },
+                  }}
+                >
+                  {opt.label}
+                </ToggleButton>
+              ))}
+            </ToggleButtonGroup>
+          </div>
+          {IS_LOST(assetStatus) && (
+            <Alert severity="warning" sx={{ fontSize: '0.78rem', py: 0.5 }}>资产已标记为丢失，将跳过扫码识别和拍照采集</Alert>
+          )}
+        </div>
+
+        {/* ── 卡C：扫码识别 ── */}
         {!IS_LOST(assetStatus) && (
-        <div className={`rounded-xl p-2.5 shadow-sm border space-y-2 transition-all ${currentStep === STEP_SCAN ? 'bg-white border-indigo-200 ring-1 ring-indigo-100' : 'bg-white border-gray-100'}`}>
+        <div className={`rounded-xl p-2.5 shadow-sm border space-y-2 transition-all ${(currentStep as number) === STEP_SCAN ? 'bg-white border-indigo-200 ring-1 ring-indigo-100' : 'bg-white border-gray-100'}`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
-              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white ${currentStep === STEP_SCAN ? 'bg-indigo-600' : scanVerified ? 'bg-green-600' : 'bg-gray-300'}`}>1</span>
+              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white ${(currentStep as number) === STEP_SCAN ? 'bg-indigo-600' : scanVerified ? 'bg-green-600' : 'bg-gray-300'}`}>2</span>
               <h3 className="font-semibold text-gray-900 text-sm">扫码识别</h3>
             </div>
             {scanVerified && (
@@ -930,10 +973,10 @@ export default function InventoryPage() {
 
         {/* ── 卡C：照片采集（视觉最重）── */}
         {!IS_LOST(assetStatus) && scanVerified && (
-        <div className={`rounded-xl p-2.5 shadow-sm border space-y-2 transition-all ${currentStep === STEP_PHOTO ? 'bg-white border-indigo-200 ring-1 ring-indigo-100' : 'bg-white border-gray-100'}`}>
+        <div className={`rounded-xl p-2.5 shadow-sm border space-y-2 transition-all ${(currentStep as number) === STEP_PHOTO ? 'bg-white border-indigo-200 ring-1 ring-indigo-100' : 'bg-white border-gray-100'}`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
-              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white ${currentStep === STEP_PHOTO ? 'bg-indigo-600' : 'bg-gray-300'}`}>2</span>
+              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white ${(currentStep as number) === STEP_PHOTO ? 'bg-indigo-600' : 'bg-gray-300'}`}>3</span>
               <h3 className="font-semibold text-gray-900 text-sm">拍摄照片</h3>
             </div>
             <div className="flex items-center gap-2 text-xs text-gray-400">
@@ -1078,43 +1121,11 @@ export default function InventoryPage() {
         </div>
         )}
 
-        {/* ── 卡D：盘点结果（状态 + 数量 + 备注）── */}
+        {/* ── 卡D：盘点数量与备注 ── */}
         <div className="bg-white rounded-xl p-2.5 shadow-sm border border-gray-100 space-y-2">
           <div className="flex items-center gap-1.5">
-            <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white bg-indigo-600">3</span>
-            <h3 className="font-semibold text-gray-900 text-sm">盘点结果</h3>
-          </div>
-          {/* 状态选择 */}
-          <div>
-            <p className="text-xs font-medium text-gray-700 mb-1.5">盘点状态</p>
-            <ToggleButtonGroup
-              value={assetStatus}
-              exclusive
-              onChange={handleStatusChange}
-              size="small"
-              fullWidth
-              disabled={isCompleted}
-              sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.75 }}
-            >
-              {STATUS_OPTIONS.map((opt) => (
-                <ToggleButton
-                  key={opt.value}
-                  value={opt.value}
-                  sx={{
-                    borderRadius: '6px !important',
-                    border: '1px solid rgba(0,0,0,0.12) !important',
-                    fontSize: '0.75rem',
-                    py: 0.75,
-                    '&.Mui-selected': {
-                      bgcolor: 'rgba(26, 35, 126, 0.08)',
-                      borderColor: '#1a237e !important',
-                    },
-                  }}
-                >
-                  {opt.label}
-                </ToggleButton>
-              ))}
-            </ToggleButtonGroup>
+            <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white bg-indigo-600">4</span>
+            <h3 className="font-semibold text-gray-900 text-sm">盘点信息</h3>
           </div>
           {/* 盘点数量 */}
           <div>
@@ -1198,7 +1209,17 @@ export default function InventoryPage() {
         </div>
 
         {/* 提交按钮 */}
-        {currentStep === STEP_SCAN && !IS_LOST(assetStatus) ? (
+        {((currentStep as number) === STEP_STATUS && !IS_LOST(assetStatus)) ? (
+          <Button
+            variant="contained"
+            fullWidth
+            size="medium"
+            disabled
+            sx={{ py: 1.2, fontWeight: 700, fontSize: '0.95rem', bgcolor: 'grey.400', '&.Mui-disabled': { bgcolor: 'grey.300', color: 'grey.500' } }}
+          >
+            请先选择盘点状态
+          </Button>
+        ) : ((currentStep as number) === STEP_SCAN && !IS_LOST(assetStatus)) ? (
           <Button
             variant="contained"
             fullWidth
@@ -1208,7 +1229,7 @@ export default function InventoryPage() {
           >
             请先扫码识别
           </Button>
-        ) : currentStep === STEP_PHOTO && !IS_LOST(assetStatus) ? (
+        ) : ((currentStep as number) === STEP_PHOTO && !IS_LOST(assetStatus)) ? (
           <Button
             variant="contained"
             fullWidth
