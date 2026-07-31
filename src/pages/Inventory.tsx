@@ -215,7 +215,7 @@ export default function InventoryPage() {
   }
   const [allPhotos, setAllPhotos] = useState<PhotoItem[]>([]);
   /** 当前拍照模式：null=未选择，qr=拍二维码，front=拍实物照 */
-  const [captureMode, setCaptureMode] = useState<'qr' | 'front' | null>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
   /** 前端 jsQR 从照片中解码出的第一个固资编号（用于 AI 识别） */
   const qrDecodedCode = useMemo(() => {
     const qr = allPhotos.find((p) => p.type === 'qr' && p.decodedCode);
@@ -382,21 +382,21 @@ export default function InventoryPage() {
     }
   }, [assetStatus]);
 
-  /** 统一照片捕获：根据用户选择的模式直接分类，qr 模式再尝试解码二维码 */
-  const handlePhotoCapture = useCallback(async (dataUrl: string, photoType: 'qr' | 'front') => {
-    if (photoType === 'front') {
-      setAllPhotos((prev) => [...prev, { dataUrl, type: 'front' }]);
-      return;
-    }
-    // qr 模式：先以 qr 类型加入（用户明确要拍二维码），再异步尝试解码
-    setAllPhotos((prev) => [...prev, { dataUrl, type: 'qr' }]);
+  /** 统一照片捕获：所有照片先以 unknown 入库，再异步识别二维码决定类型 */
+  const handlePhotoCapture = useCallback(async (dataUrl: string) => {
+    // 先以 unknown 类型加入（乐观更新）
+    const idx = allPhotos.length;
+    setAllPhotos((prev) => [...prev, { dataUrl, type: 'unknown' as const }]);
+    // 异步解码二维码
     const code = await decodeQRCode(dataUrl);
     if (code) {
-      setAllPhotos((prev) =>
-        prev.map((p) => (p.dataUrl === dataUrl ? { ...p, decodedCode: code } : p)),
-      );
+      // 解码成功 → 标记为二维码照
+      setAllPhotos((prev) => prev.map((p, i) => (i === idx ? { ...p, type: 'qr' as const, decodedCode: code } : p)));
+    } else {
+      // 解码失败 → 标记为实物照
+      setAllPhotos((prev) => prev.map((p, i) => (i === idx ? { ...p, type: 'front' as const } : p)));
     }
-  }, []);
+  }, [allPhotos]);
 
   /** 删除指定索引照片 */
   const handleRemovePhoto = useCallback((idx: number) => {
@@ -818,44 +818,17 @@ export default function InventoryPage() {
             </Alert>
           ) : allPhotos.length > 0 && qrPhotoCount === 0 ? (
             <Alert severity="warning" sx={{ fontSize: '0.8rem', py: 0.5 }} icon={<QrCodeScannerIcon fontSize="inherit" />}>
-              未检测到二维码标签，请先点击「拍二维码」拍摄固定资产标签
+              未检测到二维码标签，请拍摄固定资产标签（系统会自动识别），或点击右侧「钉钉扫码」
             </Alert>
           ) : null}
-          {/* 拍照入口：明确区分二维码照与实物照 */}
-          {captureMode === null ? (
-            <div className="flex gap-2">
-              <Button
-                variant="contained"
-                fullWidth
-                size="small"
-                startIcon={<QrCodeScannerIcon />}
-                onClick={() => setCaptureMode('qr')}
-                disabled={isCompleted || allPhotos.length >= 5 || qrPhotoCount >= 1}
-                sx={{ py: 0.8, fontSize: '0.8rem' }}
-              >
-                拍二维码
-              </Button>
-              <Button
-                variant="contained"
-                fullWidth
-                size="small"
-                startIcon={<CameraAltIcon />}
-                onClick={() => setCaptureMode('front')}
-                disabled={isCompleted || allPhotos.length >= 5}
-                sx={{ py: 0.8, fontSize: '0.8rem' }}
-              >
-                拍实物照
-              </Button>
-            </div>
-          ) : (
+          {/* 统一拍照入口：一个按钮打开取景框，拍完自动识别二维码/实物照；钉钉扫码为辅助小按钮 */}
+          {cameraOpen ? (
             <CameraCapture
-              key={captureMode}
               onCapture={(dataUrl) => {
-                handlePhotoCapture(dataUrl, captureMode);
-                setCaptureMode(null);
+                handlePhotoCapture(dataUrl);
+                setCameraOpen(false);
               }}
-              onClose={() => setCaptureMode(null)}
-              noWatermark={captureMode === 'qr'}
+              onClose={() => setCameraOpen(false)}
               watermark={{
                 time: watermarkTime,
                 location: gpsLocation,
@@ -867,6 +840,30 @@ export default function InventoryPage() {
               minPhotos={2}
               maxPhotos={5}
             />
+          ) : (
+            <div className="flex gap-2">
+              <Button
+                variant="contained"
+                fullWidth
+                size="small"
+                startIcon={<CameraAltIcon />}
+                onClick={() => setCameraOpen(true)}
+                disabled={isCompleted || allPhotos.length >= 5}
+                sx={{ py: 0.8, fontSize: '0.8rem' }}
+              >
+                拍摄照片
+              </Button>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleDingtalkScan}
+                disabled={isCompleted}
+                sx={{ py: 0.8, fontSize: '0.8rem', minWidth: 44, px: 2 }}
+                title="钉钉扫码识别二维码标签"
+              >
+                <QrCodeScannerIcon sx={{ fontSize: 18 }} />
+              </Button>
+            </div>
           )}
 
           {/* 强制 AI 识别提示：已拍摄照片但未完成 AI 识别时，要求用户必须先点击 AI 识别 */}
