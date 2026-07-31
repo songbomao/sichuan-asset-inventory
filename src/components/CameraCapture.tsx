@@ -63,6 +63,7 @@ export default function CameraCapture({
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const bindAttemptsRef = useRef(0);
 
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
@@ -105,32 +106,128 @@ export default function CameraCapture({
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
+    bindAttemptsRef.current = 0;
     setCameraReady(false);
+  }, []);
+
+  /** 绑定 stream 到 video 元素，带重试 */
+  const bindStreamToVideo = useCallback(() => {
+    const video = videoRef.current;
+    if (!video || !streamRef.current) return;
+
+    // 如果已经绑定且视频有尺寸，直接标记 ready
+    if (video.srcObject === streamRef.current && video.videoWidth > 0 && video.videoHeight > 0) {
+      setCameraReady(true);
+      return;
+    }
+
+    video.srcObject = streamRef.current;
+    video.playsInline = true;
+    video.muted = true;
+    video.setAttribute('webkit-playsinline', 'true');
+
+    // 部分浏览器需要显式 load() 才会触发 loadedmetadata
+    try {
+      video.load();
+    } catch (e) {
+      console.warn('video.load() 失败', e);
+    }
+
+    // 尝试播放（用户已通过点击触发，应满足自动播放策略）
+    const tryPlay = () => {
+      if (!videoRef.current) return;
+      videoRef.current
+        .play()
+        .then(() => console.log('[Camera] video.play() 成功'))
+        .catch((e) => console.warn('[Camera] video.play() 被阻止', e));
+    };
+
+    // iOS Safari 上 loadedmetadata 可能不触发，加一个轮询兜底
+    const checkTimer = setInterval(() => {
+      const v = videoRef.current;
+      if (!v) return;
+      if (v.videoWidth > 0 && v.videoHeight > 0) {
+        setCameraReady(true);
+        clearInterval(checkTimer);
+      }
+    }, 300);
+
+    // 5 秒后仍不 ready，给出提示但不关闭
+    const timeoutTimer = setTimeout(() => {
+      clearInterval(checkTimer);
+      const v = videoRef.current;
+      if (!v || v.videoWidth === 0 || v.videoHeight === 0) {
+        console.warn('[Camera] 视频未能就绪');
+        setError('摄像头画面未能加载，可尝试切换前后摄像头或重试');
+      }
+    }, 5000);
+
+    const handleLoaded = () => {
+      console.log('[Camera] loadedmetadata', video.videoWidth, video.videoHeight);
+      if (video.videoWidth > 0 && video.videoHeight > 0) {
+        setCameraReady(true);
+        clearInterval(checkTimer);
+        clearTimeout(timeoutTimer);
+      }
+    };
+
+    const handleCanPlay = () => {
+      console.log('[Camera] canplay');
+      tryPlay();
+      if (video.videoWidth > 0 && video.videoHeight > 0) {
+        setCameraReady(true);
+        clearInterval(checkTimer);
+        clearTimeout(timeoutTimer);
+      }
+    };
+
+    video.addEventListener('loadedmetadata', handleLoaded);
+    video.addEventListener('canplay', handleCanPlay);
+
+    // 立即尝试一次播放
+    tryPlay();
+
+    return () => {
+      video.removeEventListener('loadedmetadata', handleLoaded);
+      video.removeEventListener('canplay', handleCanPlay);
+      clearInterval(checkTimer);
+      clearTimeout(timeoutTimer);
+    };
   }, []);
 
   /** 打开摄像头 */
   const openCamera = useCallback(async (mode: 'environment' | 'user' = 'environment') => {
     setError(null);
     setLoading(true);
+    setCameraReady(false);
     // 先关掉旧的
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: mode, width: { ideal: 1920 }, height: { ideal: 1080 } },
+      // 部分浏览器对 ideal 宽度/高度支持不好，使用更宽松的约束
+      const constraints: MediaStreamConstraints = {
+        video: {
+          facingMode: mode,
+        },
         audio: false,
-      });
+      };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
       setCameraOpen(true);
+      setFacingMode(mode);
+      // Dialog 打开有动画，延迟一点再绑定 stream
+      setTimeout(() => {
+        bindStreamToVideo();
+      }, 200);
     } catch (err) {
       console.warn('摄像头权限被拒绝', err);
       setError('摄像头权限不足，请在系统设置中允许相机权限后重试');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [bindStreamToVideo]);
 
   /** 切换前后摄像头 */
   const handleFlipCamera = useCallback(async () => {
@@ -141,44 +238,13 @@ export default function CameraCapture({
 
   /** 摄像头开启后，将 stream 绑定到 video 元素 */
   useEffect(() => {
-    const video = videoRef.current;
-    if (!cameraOpen || !video || !streamRef.current) return;
-
-    setCameraReady(false);
-    video.srcObject = streamRef.current;
-    video.playsInline = true;
-    video.muted = true;
-    video.setAttribute('webkit-playsinline', 'true');
-
-    const handleLoaded = () => {
-      if (video.videoWidth > 0 && video.videoHeight > 0) {
-        setCameraReady(true);
-      }
-    };
-
-    const handleCanPlay = async () => {
-      try {
-        await video.play();
-      } catch (e) {
-        console.warn('video.play() 被阻止', e);
-      }
-    };
-
-    video.addEventListener('loadedmetadata', handleLoaded);
-    video.addEventListener('canplay', handleCanPlay);
-
-    const timer = setTimeout(() => {
-      if (video.videoWidth > 0 && video.videoHeight > 0) {
-        setCameraReady(true);
-      }
-    }, 800);
-
+    if (!cameraOpen) return;
+    // 组件 mount / Dialog 打开后绑定
+    const cleanup = bindStreamToVideo();
     return () => {
-      video.removeEventListener('loadedmetadata', handleLoaded);
-      video.removeEventListener('canplay', handleCanPlay);
-      clearTimeout(timer);
+      if (cleanup) cleanup();
     };
-  }, [cameraOpen]);
+  }, [cameraOpen, bindStreamToVideo]);
 
   /** 在照片上叠加水印 */
   const addWatermark = useCallback(
@@ -256,6 +322,18 @@ export default function CameraCapture({
     const canvas = canvasRef.current;
     if (!video || !canvas) return;
 
+    // 如果视频还没播放，尝试播放一下
+    if (video.paused) {
+      try {
+        await video.play();
+      } catch (e) {
+        console.warn('拍照前 play 失败', e);
+      }
+    }
+
+    // 等一帧确保画面可用
+    await new Promise((r) => requestAnimationFrame(() => r(null)));
+
     if (video.videoWidth === 0 || video.videoHeight === 0) {
       setError('摄像头尚未就绪，请稍等片刻');
       return;
@@ -302,7 +380,11 @@ export default function CameraCapture({
     stopCamera();
     setCameraOpen(false);
     setError(null);
+    setCameraReady(false);
   }, [stopCamera]);
+
+  // 只要有流就允许显示快门按钮，不必等 cameraReady
+  const hasStream = !!streamRef.current;
 
   return (
     <div className="flex flex-col items-center gap-3 w-full">
@@ -353,7 +435,7 @@ export default function CameraCapture({
       >
         <div className="relative w-full h-full flex flex-col bg-black">
           {/* 顶部操作栏 */}
-          <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-3 py-2"
+          <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-3 py-2"
             style={{ background: 'linear-gradient(180deg, rgba(0,0,0,0.6) 0%, transparent 100%)' }}>
             <IconButton onClick={handleClose} sx={{ color: '#fff' }}>
               <CloseIcon />
@@ -367,17 +449,17 @@ export default function CameraCapture({
           </div>
 
           {/* 取景画面 */}
-          <div className="flex-1 flex items-center justify-center overflow-hidden">
-            {/* 加载中 */}
+          <div className="flex-1 flex items-center justify-center overflow-hidden relative">
+            {/* 加载中遮罩 */}
             {!cameraReady && !error && (
-              <div className="flex flex-col items-center gap-3 text-white/80">
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 text-white/80 bg-black/60">
                 <CircularProgress size={36} color="inherit" />
                 <span className="text-sm">正在启动摄像头...</span>
               </div>
             )}
             {/* 权限错误 */}
             {error && (
-              <div className="flex flex-col items-center gap-4 px-8 text-center">
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 px-8 text-center bg-black/80">
                 <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center">
                   <CameraAltIcon sx={{ color: '#fff', fontSize: 32 }} />
                 </div>
@@ -404,16 +486,33 @@ export default function CameraCapture({
             <video
               ref={videoRef}
               className="w-full h-full"
-              style={{ objectFit: 'cover' }}
+              style={{ objectFit: 'cover', backgroundColor: '#000' }}
               playsInline
               muted
               autoPlay
+              onLoadedMetadata={() => {
+                const v = videoRef.current;
+                if (v && v.videoWidth > 0 && v.videoHeight > 0) {
+                  console.log('[Camera] onLoadedMetadata inline', v.videoWidth, v.videoHeight);
+                  setCameraReady(true);
+                }
+              }}
+              onCanPlay={() => {
+                const v = videoRef.current;
+                if (v) {
+                  console.log('[Camera] onCanPlay inline');
+                  v.play().catch((e) => console.warn('inline play 失败', e));
+                  if (v.videoWidth > 0 && v.videoHeight > 0) {
+                    setCameraReady(true);
+                  }
+                }
+              }}
             />
           </div>
 
-          {/* 底部拍照按钮 */}
-          {cameraReady && !error && (
-            <div className="absolute bottom-0 left-0 right-0 z-10 flex justify-center pb-8 pt-4"
+          {/* 底部拍照按钮 — 只要有流就显示，不必等 cameraReady */}
+          {hasStream && (
+            <div className="absolute bottom-0 left-0 right-0 z-20 flex justify-center pb-8 pt-4"
               style={{ background: 'linear-gradient(0deg, rgba(0,0,0,0.6) 0%, transparent 100%)' }}>
               <div className="flex items-center gap-6">
                 <Button
@@ -429,17 +528,20 @@ export default function CameraCapture({
                 >
                   取消
                 </Button>
-                <div
+                <button
+                  type="button"
                   onClick={takePhoto}
-                  className="relative cursor-pointer"
-                  style={{ touchAction: 'manipulation' }}
+                  disabled={!cameraReady}
+                  className="relative cursor-pointer bg-transparent border-none p-0"
+                  style={{ touchAction: 'manipulation', opacity: cameraReady ? 1 : 0.5 }}
+                  aria-label="拍照"
                 >
                   {/* 外圈 */}
                   <div className="w-20 h-20 rounded-full border-4 border-white/80 flex items-center justify-center">
                     {/* 内圈 */}
                     <div className="w-16 h-16 rounded-full bg-white" />
                   </div>
-                </div>
+                </button>
                 <div style={{ width: 80 }} />
               </div>
             </div>

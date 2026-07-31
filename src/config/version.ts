@@ -6,16 +6,21 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607301834';
+export const APP_VERSION = 'v202607310906';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-30 18:34';
-export const RELEASE_NOTES = '拍照体验优化：取景框改为全屏弹出Dialog——点击拍照后取景框覆盖整屏居中显示，无需滚动；支持前后摄像头切换；权限错误在Dialog内友好提示并支持重试。';
+export const RELEASE_TIME = '2026-07-31 09:06';
+export const RELEASE_NOTES = '修复拍照Dialog黑屏：优化getUserMedia约束、video流绑定重试、5秒未就绪提示；底部快门按钮在拿到流后即显示（未就绪时半透明禁用），避免黑屏无按钮。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607310906',
+    time: '2026-07-31 09:06',
+    notes: '修复拍照Dialog黑屏：优化getUserMedia约束、video流绑定重试、5秒未就绪提示；底部快门按钮在拿到流后即显示（未就绪时半透明禁用），避免黑屏无按钮。',
+  },
   {
     version: 'v202607301834',
     time: '2026-07-30 18:34',
