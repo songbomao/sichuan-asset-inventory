@@ -132,12 +132,14 @@ export default function TaskListPage() {
     return t.status;
   };
 
-  /** 展示待盘点的新任务（pending）、进行中（running）以及本人已盘点完成（completed）的任务
-   *  注意：DispatchTask 下达后任务状态为 running，若仅过滤 pending 会导致责任人永远看不到已下达任务 */
+  /** 展示待盘点新任务（pending）与进行中（running）任务；本人已盘点完成（completed）的任务不再列出
+   *  注意：DispatchTask 下达后任务状态为 running，若仅过滤 pending 会导致责任人永远看不到已下达任务；
+   *  已完成任务可在「我的盘点记录」中按任务维度回溯，故此处隐藏以保持列表聚焦待办。 */
   const visibleTasks = useMemo(
-    () => tasks.filter(
-      (t) => t.status === PENDING_STATUS || t.status === 'running' || t.status === 'completed',
-    ),
+    () => tasks.filter((t) => {
+      const s = deriveTaskStatus(t);
+      return s === PENDING_STATUS || s === 'running';
+    }),
     [tasks],
   );
 
