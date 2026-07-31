@@ -47,9 +47,9 @@ const STATUS_OPTIONS = [
   { value: '其他', label: '📋 其他' },
 ];
 /** 需要强制备注的状态 */
-const NEED_REMARK_STATUSES = new Set(['丢失', '损坏', '其他']);
+const NEED_REMARK_STATUSES = new Set<string | null>(['丢失', '损坏', '其他']);
 /** 丢失状态 */
-const IS_LOST = (status: string) => status === '丢失';
+const IS_LOST = (status: string | null) => status === '丢失';
 
 /** 🚨 HOTFIX v202607301419 - React Hooks 顺序修复 */
 const HOTFIX_202607301419 = (() => {
@@ -214,8 +214,8 @@ export default function InventoryPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [taskName, setTaskName] = useState('');
 
-  // 当前资产的盘点状态
-  const [assetStatus, setAssetStatus] = useState('正常');
+  // 当前资产的盘点状态（默认 null：必须先主动选择，才能解锁后续步骤）
+  const [assetStatus, setAssetStatus] = useState<string | null>(null);
   const [remark, setRemark] = useState('');
   const [assetDetail, setAssetDetail] = useState<AssetDetail | null>(null);
   const [assetDetailLoading, setAssetDetailLoading] = useState(false);
@@ -351,7 +351,7 @@ export default function InventoryPage() {
   useEffect(() => {
     const currentAsset = assets[currentIndex];
     if (currentAsset) {
-      setAssetStatus('正常');
+      setAssetStatus(null);
       setRemark('');
       setTagPhoto(null);
       setFrontPhoto(null);
@@ -621,7 +621,7 @@ export default function InventoryPage() {
       await submitRecord({
         taskId,
         assetCode: asset.assetCode,
-        status: assetStatus,
+        status: assetStatus ?? '',
         remark,
         photoUrls,
         longitude: gpsCoords.longitude,
@@ -640,7 +640,7 @@ export default function InventoryPage() {
       }));
 
       // 重置
-      setAssetStatus('正常');
+      setAssetStatus(null);
       setRemark('');
       setTagPhoto(null);
       setFrontPhoto(null);
@@ -674,10 +674,11 @@ export default function InventoryPage() {
   const STEP_SUBMIT = 3;   // 盘点信息+提交
 
   const currentStep: number = (() => {
-    if (IS_LOST(assetStatus)) return STEP_SUBMIT;
-    if (!scanVerified) return STEP_SCAN;
-    if (!allPhotosReady) return STEP_PHOTO;
-    return STEP_SUBMIT;
+    if (!assetStatus) return STEP_STATUS;        // 未选择状态 → 停留第1步，引导用户先选
+    if (IS_LOST(assetStatus)) return STEP_SUBMIT; // 丢失 → 跳过扫码/拍照，直达提交
+    if (!scanVerified) return STEP_SCAN;          // 未扫码 → 第2步
+    if (!allPhotosReady) return STEP_PHOTO;       // 未完成拍照 → 第3步
+    return STEP_SUBMIT;                            // 全部完成 → 第4步提交
   })();
 
   // ===================== 加载态 =====================
@@ -796,7 +797,7 @@ export default function InventoryPage() {
         {/* 微型步骤条 */}
         <div className="flex items-center justify-center gap-1.5 text-[11px] bg-white rounded-xl p-2 border border-gray-100">
           {[
-            { label: '资产状态', icon: <RadioButtonUncheckedIcon sx={{ fontSize: 13 }} />, active: currentStep === STEP_STATUS, done: IS_LOST(assetStatus) || NEED_REMARK_STATUSES.has(assetStatus) },
+            { label: '资产状态', icon: <RadioButtonUncheckedIcon sx={{ fontSize: 13 }} />, active: currentStep === STEP_STATUS, done: !!assetStatus },
             { label: '扫码识别', icon: <QrCodeScannerIcon sx={{ fontSize: 13 }} />, active: currentStep === STEP_SCAN, done: scanVerified },
             { label: '拍照采集', icon: <CameraAltIcon sx={{ fontSize: 13 }} />, active: currentStep === STEP_PHOTO, done: allPhotosReady },
             { label: '提交信息', icon: <AssignmentIcon sx={{ fontSize: 13 }} />, active: currentStep === STEP_SUBMIT, done: false },
@@ -879,11 +880,14 @@ export default function InventoryPage() {
                 size="small"
                 startIcon={scanLoading ? <CircularProgress size={14} color="inherit" /> : <QrCodeScannerIcon />}
                 onClick={handleDingtalkScan}
-                disabled={scanLoading || isCompleted}
+                disabled={scanLoading || isCompleted || !assetStatus}
                 sx={{ py: 0.75, fontWeight: 600, fontSize: '0.85rem' }}
               >
-                {scanLoading ? '扫描中...' : '钉钉扫码'}
+                {!assetStatus ? '请先选择资产状态' : scanLoading ? '扫描中...' : '钉钉扫码'}
               </Button>
+              {!assetStatus && !scanVerified && (
+                <Alert severity="info" sx={{ fontSize: '0.78rem', py: 0.5 }}>请先在上方选择资产盘点状态</Alert>
+              )}
               {scanError && (
                 <Alert severity="error" sx={{ fontSize: '0.78rem', py: 0.5 }}>{scanError}</Alert>
               )}
@@ -910,16 +914,22 @@ export default function InventoryPage() {
         )}
 
         {/* ── 卡D：拍照采集（三步骤引导：标签照→正面照→反面照）── */}
-        {!IS_LOST(assetStatus) && scanVerified && (
-        <div className={`rounded-xl p-2.5 shadow-sm border space-y-2.5 transition-all ${currentStep === STEP_PHOTO ? 'bg-white border-indigo-200 ring-1 ring-indigo-100' : 'bg-white border-gray-100'}`}>
+        {!IS_LOST(assetStatus) && (
+        <div className={`rounded-xl p-2.5 shadow-sm border space-y-2.5 transition-all ${
+          scanVerified
+            ? (currentStep === STEP_PHOTO ? 'bg-white border-indigo-200 ring-1 ring-indigo-100' : 'bg-white border-gray-100')
+            : 'bg-gray-50 border-gray-100'
+        }`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
-              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white ${currentStep === STEP_PHOTO ? 'bg-indigo-600' : 'bg-gray-300'}`}>3</span>
-              <h3 className="font-semibold text-gray-900 text-sm">拍照采集</h3>
+              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white ${scanVerified ? (currentStep === STEP_PHOTO ? 'bg-indigo-600' : 'bg-gray-300') : 'bg-gray-300'}`}>3</span>
+              <h3 className={`font-semibold text-sm ${scanVerified ? 'text-gray-900' : 'text-gray-400'}`}>拍照采集</h3>
             </div>
-            <span className="text-xs text-gray-400">{photoStep <= 3 && photoStep > 0 ? `${photoStep}/3` : '✅'}</span>
+            {scanVerified && <span className="text-xs text-gray-400">{photoStep <= 3 && photoStep > 0 ? `${photoStep}/3` : '✅'}</span>}
           </div>
 
+          {scanVerified ? (
+          <>
           {/* ── 拍照步骤引导条 ── */}
           <div className="flex items-center justify-center gap-1 text-[11px]">
             {[
@@ -1087,6 +1097,13 @@ export default function InventoryPage() {
               )}
             </div>
           )}
+          </>
+        ) : (
+          <div className="flex flex-col items-center justify-center gap-1.5 py-4 text-gray-400">
+            <CameraAltIcon sx={{ fontSize: 26, color: '#d1d5db' }} />
+            <span className="text-xs">请先完成上方「扫码识别」后采集照片</span>
+          </div>
+        )}
         </div>
         )}
 

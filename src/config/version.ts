@@ -6,10 +6,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607311534';
+export const APP_VERSION = 'v202607311555';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-31 15:34';
-export const RELEASE_NOTES = '修复扫码识别跳转逻辑：对齐v202607311440正确逻辑——精确匹配当前资产后标记标签照已扫码(__SCANNED__)并解锁拍照步骤，不跳转、不误触其他已完成资产；移除模糊.includes匹配与setCurrentIndex嵌套副作用；修正提交误推虚拟标记、标签格裂图、删除已扫码标签回退等问题。';
+export const RELEASE_TIME = '2026-07-31 15:55';
+export const RELEASE_NOTES = '四节点交互优化：①资产状态默认不选中（null），必须主动选择后才解锁钉钉扫码按钮（未选时禁用+引导提示）；②步骤导航条实时联动——选状态/扫码/拍照完成即点亮对应节点（done=!!assetStatus）；③拍照采集节点始终占位显示，扫码后才高亮展开三步拍照网格，消除凭空出现的突兀感。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
@@ -20,6 +20,11 @@ export const VERSION_HISTORY: Array<{
     version: 'v202607311534',
     time: '2026-07-31 15:34',
     notes: '修复扫码识别跳转逻辑：对齐v202607311440正确逻辑——精确匹配当前资产后标记标签照已扫码(__SCANNED__)并解锁拍照步骤，不跳转、不误触其他已完成资产；移除模糊.includes匹配与setCurrentIndex嵌套副作用；修正提交误推虚拟标记、标签格裂图、删除已扫码标签回退等问题。',
+  },
+  {
+    version: 'v202607311555',
+    time: '2026-07-31 15:55',
+    notes: '四节点交互优化：①资产状态默认不选中（null），必须主动选择后才解锁钉钉扫码按钮（未选时禁用+引导提示）；②步骤导航条实时联动——选状态/扫码/拍照完成即点亮对应节点（done=!!assetStatus）；③拍照采集节点始终占位显示，扫码后才高亮展开三步拍照网格，消除凭空出现的突兀感。',
   },
   {
     version: 'v202607311515',
