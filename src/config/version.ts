@@ -6,16 +6,21 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607312318';
+export const APP_VERSION = 'v202607312322';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-31 23:18';
-export const RELEASE_NOTES = '「我的盘点任务」列表隐藏状态为「已完成」的任务：过滤改为基于 deriveTaskStatus 判定，凡是本人名下资产已全部盘点完成（卡片显示「已完成」徽章）的任务一律不在此处展示，列表仅保留待盘点（pending）与进行中（running）任务；已完成任务可在「我的盘点记录」按任务维度回溯。';
+export const RELEASE_TIME = '2026-07-31 23:22';
+export const RELEASE_NOTES = '「我的盘点记录」tab 页按任务分组的卡片：所属固资盘点记录由默认展开改为默认折叠，点击任务名/箭头展开；折叠态显示「共 N 条盘点记录，点击上方任务名展开」提示。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607312322',
+    time: '2026-07-31 23:22',
+    notes: '「我的盘点记录」tab 页按任务分组的卡片：所属固资盘点记录由默认展开改为默认折叠，点击任务名/箭头展开；折叠态显示「共 N 条盘点记录，点击上方任务名展开」提示。',
+  },
   {
     version: 'v202607312318',
     time: '2026-07-31 23:18',

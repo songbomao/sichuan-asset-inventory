@@ -370,13 +370,17 @@ function TaskRecordGroup({
   onOpenBoard: (taskId: string) => void;
 }) {
   const task = group.task;
+  const [expanded, setExpanded] = useState(false);
   const hasMeta = !!task.deadline || !!task.location || task.assetCount > 0;
 
   return (
     <Card className="glow-border">
       <CardContent>
-        {/* 任务头部：名称 + 状态 */}
-        <div className="flex items-start justify-between mb-2">
+        {/* 任务头部：名称 + 状态（点击整行展开/折叠所属盘点记录） */}
+        <div
+          className="flex items-start justify-between mb-2 cursor-pointer select-none"
+          onClick={() => setExpanded((v) => !v)}
+        >
           <Typography
             variant="subtitle1"
             component="h3"
@@ -385,7 +389,17 @@ function TaskRecordGroup({
           >
             {task.taskName}
           </Typography>
-          <StatusBadge status={deriveTaskStatus(task)} />
+          <div className="flex items-center gap-1 shrink-0">
+            <StatusBadge status={deriveTaskStatus(task)} />
+            <ChevronRightIcon
+              sx={{
+                fontSize: 20,
+                color: 'gray',
+                transition: 'transform 0.2s',
+                transform: expanded ? 'rotate(90deg)' : 'none',
+              }}
+            />
+          </div>
         </div>
 
         {/* 任务元信息：资产数 + 截止时间 */}
@@ -422,12 +436,18 @@ function TaskRecordGroup({
           </div>
         ) : null}
 
-        {/* 组内资产盘点记录 */}
-        <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
-          {group.records.map((r) => (
-            <RecordRow key={r.recordId} record={r} onClick={() => onOpenRecord(r)} />
-          ))}
-        </div>
+        {/* 组内资产盘点记录（默认折叠，点击任务头部展开） */}
+        {expanded ? (
+          <div className="mt-3 space-y-2 border-t border-gray-100 pt-3">
+            {group.records.map((r) => (
+              <RecordRow key={r.recordId} record={r} onClick={() => onOpenRecord(r)} />
+            ))}
+          </div>
+        ) : (
+          <div className="mt-3 text-xs text-gray-400 border-t border-gray-100 pt-3">
+            共 {group.records.length} 条盘点记录，点击上方任务名展开
+          </div>
+        )}
       </CardContent>
     </Card>
   );
