@@ -6,10 +6,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607311610';
+export const APP_VERSION = 'v202607311615';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-31 16:10';
-export const RELEASE_NOTES = '资产状态卡片优化：移除"选择盘点状态"文字标签（卡片标题已表达）；取消用途不明的"其他"状态按钮，状态收敛为正常/丢失/损坏三项，NEED_REMARK_STATUSES同步移除"其他"。';
+export const RELEASE_TIME = '2026-07-31 16:15';
+export const RELEASE_NOTES = '四节点视觉对齐：①②③④卡片序号圆圈在节点完成时统一变绿对勾（参考扫码卡）；四个卡片标题区统一改为 justify-between 布局，右上角显示进度分数（资产状态0/1、扫码0/1、拍照photoStep/3、盘点信息0/1），完成后显✅；拍照卡序号圆完成态由灰补为绿对勾。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
@@ -30,6 +30,11 @@ export const VERSION_HISTORY: Array<{
     version: 'v202607311610',
     time: '2026-07-31 16:10',
     notes: '资产状态卡片优化：移除"选择盘点状态"文字标签（卡片标题已表达）；取消用途不明的"其他"状态按钮，状态收敛为正常/丢失/损坏三项，NEED_REMARK_STATUSES同步移除"其他"。',
+  },
+  {
+    version: 'v202607311615',
+    time: '2026-07-31 16:15',
+    notes: '四节点视觉对齐：①②③④卡片序号圆圈在节点完成时统一变绿对勾（参考扫码卡）；四个卡片标题区统一 justify-between，右上角显示进度分数（资产状态0/1、扫码0/1、拍照photoStep/3、盘点信息0/1），完成显✅；拍照卡序号圆完成态由灰补绿对勾。',
   },
   {
     version: 'v202607311515',

@@ -817,9 +817,12 @@ export default function InventoryPage() {
 
         {/* ── 卡B：资产状态 ── */}
         <div className={`rounded-xl p-2.5 shadow-sm border space-y-2 transition-all ${currentStep === STEP_STATUS ? 'bg-white border-indigo-200 ring-1 ring-indigo-100' : 'bg-white border-gray-100'}`}>
-          <div className="flex items-center gap-1.5">
-            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white ${currentStep === STEP_STATUS ? 'bg-indigo-600' : 'bg-gray-300'}`}>1</span>
-            <h3 className="font-semibold text-gray-900 text-sm">资产状态</h3>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white ${currentStep === STEP_STATUS ? 'bg-indigo-600' : assetStatus ? 'bg-green-500' : 'bg-gray-300'}`}>{assetStatus ? <CheckCircleOutlineIcon sx={{ fontSize: 14 }} /> : 1}</span>
+              <h3 className="font-semibold text-gray-900 text-sm">资产状态</h3>
+            </div>
+            <span className="text-xs text-gray-400">{assetStatus ? '✅' : '0/1'}</span>
           </div>
           <div>
             <ToggleButtonGroup
@@ -859,10 +862,12 @@ export default function InventoryPage() {
         {/* ── 卡C：钉钉扫码识别 ── */}
         {!IS_LOST(assetStatus) && (
         <div className={`rounded-xl p-2.5 shadow-sm border space-y-2.5 transition-all ${currentStep === STEP_SCAN ? 'bg-white border-indigo-200 ring-1 ring-indigo-100' : scanVerified ? 'bg-white border-green-200' : 'bg-white border-gray-100'}`}>
-          <div className="flex items-center gap-1.5">
-            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white ${currentStep === STEP_SCAN ? 'bg-indigo-600' : scanVerified ? 'bg-green-500' : 'bg-gray-300'}`}>{scanVerified ? <CheckCircleOutlineIcon sx={{ fontSize: 14 }} /> : 2}</span>
-            <h3 className="font-semibold text-gray-900 text-sm">扫码识别</h3>
-            {scanVerified && <span className="text-xs text-green-600 font-medium">✅ 已核对</span>}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white ${currentStep === STEP_SCAN ? 'bg-indigo-600' : scanVerified ? 'bg-green-500' : 'bg-gray-300'}`}>{scanVerified ? <CheckCircleOutlineIcon sx={{ fontSize: 14 }} /> : 2}</span>
+              <h3 className="font-semibold text-gray-900 text-sm">扫码识别</h3>
+            </div>
+            <span className="text-xs text-gray-400">{scanVerified ? '✅' : '0/1'}</span>
           </div>
 
           {scanVerified ? (
@@ -920,7 +925,7 @@ export default function InventoryPage() {
         }`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
-              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white ${scanVerified ? (currentStep === STEP_PHOTO ? 'bg-indigo-600' : 'bg-gray-300') : 'bg-gray-300'}`}>3</span>
+              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white ${scanVerified ? (currentStep === STEP_PHOTO ? 'bg-indigo-600' : allPhotosReady ? 'bg-green-500' : 'bg-gray-300') : 'bg-gray-300'}`}>{allPhotosReady ? <CheckCircleOutlineIcon sx={{ fontSize: 14 }} /> : 3}</span>
               <h3 className={`font-semibold text-sm ${scanVerified ? 'text-gray-900' : 'text-gray-400'}`}>拍照采集</h3>
             </div>
             {scanVerified && <span className="text-xs text-gray-400">{photoStep <= 3 && photoStep > 0 ? `${photoStep}/3` : '✅'}</span>}
