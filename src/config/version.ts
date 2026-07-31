@@ -6,16 +6,21 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607312329';
+export const APP_VERSION = 'v202607312337';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-31 23:29';
-export const RELEASE_NOTES = '移除「我的盘点任务」与「我的盘点记录」两张页面任务卡片上的「查看进度看板」入口（含 MyRecords 的 onOpenBoard 参数与 useNavigate 一并清理）。';
+export const RELEASE_TIME = '2026-07-31 23:37';
+export const RELEASE_NOTES = '「我的盘点记录」任务卡片截止时间文案调整：移除「已过期/今日截止/剩余N天」描述前缀，统一显示为「⏰ 盘点截止日期 MM/DD HH:mm:ss」，临近/已过期仍保持红色高亮（isUrgent）。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607312337',
+    time: '2026-07-31 23:37',
+    notes: '「我的盘点记录」任务卡片截止时间文案调整：移除「已过期/今日截止/剩余N天」描述前缀，统一显示为「⏰ 盘点截止日期 MM/DD HH:mm:ss」，临近/已过期仍保持红色高亮（isUrgent）。',
+  },
   {
     version: 'v202607312329',
     time: '2026-07-31 23:29',

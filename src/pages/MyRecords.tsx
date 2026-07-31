@@ -43,8 +43,6 @@ function formatDeadline(deadline: string): string {
   if (!deadline) return '--';
   try {
     const date = new Date(deadline);
-    const now = new Date();
-    const diffDays = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
     const datePart = date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });
     const timePart = date.toLocaleTimeString('zh-CN', {
       hour: '2-digit',
@@ -53,9 +51,6 @@ function formatDeadline(deadline: string): string {
       hour12: false,
     });
     const formatted = `${datePart} ${timePart}`;
-    if (diffDays < 0) return `已过期 ${formatted}`;
-    if (diffDays === 0) return `今日截止 ${formatted}`;
-    if (diffDays <= 3) return `剩余 ${diffDays} 天 · ${formatted}`;
     return formatted;
   } catch {
     return deadline;
@@ -402,7 +397,7 @@ function TaskRecordGroup({
             {task.assetCount > 0 && <span>📦 资产 {task.assetCount} 项</span>}
             {task.deadline && (
               <span className={isUrgent(task.deadline) ? 'text-red-500 font-medium' : ''}>
-                ⏰ {formatDeadline(task.deadline)}
+                ⏰ 盘点截止日期 {formatDeadline(task.deadline)}
               </span>
             )}
           </div>
