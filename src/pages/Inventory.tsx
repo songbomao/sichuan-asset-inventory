@@ -867,7 +867,7 @@ export default function InventoryPage() {
               <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white ${currentStep === STEP_SCAN ? 'bg-indigo-600' : scanVerified ? 'bg-green-500' : 'bg-gray-300'}`}>{scanVerified ? <CheckCircleOutlineIcon sx={{ fontSize: 14 }} /> : 2}</span>
               <h3 className="font-semibold text-gray-900 text-sm">扫码识别</h3>
             </div>
-            <span className="text-xs text-gray-400">{scanVerified ? '✅' : '0/1'}</span>
+            {!scanVerified && <span className="text-xs text-gray-400">0/1</span>}
           </div>
 
           {scanVerified ? (
@@ -928,7 +928,7 @@ export default function InventoryPage() {
               <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white ${scanVerified ? (currentStep === STEP_PHOTO ? 'bg-indigo-600' : allPhotosReady ? 'bg-green-500' : 'bg-gray-300') : 'bg-gray-300'}`}>{allPhotosReady ? <CheckCircleOutlineIcon sx={{ fontSize: 14 }} /> : 3}</span>
               <h3 className={`font-semibold text-sm ${scanVerified ? 'text-gray-900' : 'text-gray-400'}`}>拍照采集</h3>
             </div>
-            {scanVerified && <span className="text-xs text-gray-400">{photoStep <= 3 && photoStep > 0 ? `${photoStep}/3` : '✅'}</span>}
+            {scanVerified && photoStep > 0 && photoStep <= 3 && <span className="text-xs text-gray-400">{photoStep}/3</span>}
           </div>
 
           {scanVerified ? (
