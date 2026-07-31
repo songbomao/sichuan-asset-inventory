@@ -1,5 +1,4 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
@@ -85,8 +84,6 @@ interface TaskGroup {
  * 顶部保留关键字（资产名称/编码）+ 状态筛选，可跨任务查询某一类物资的全部盘点记录。
  */
 export default function MyRecords({ embedded = false }: { embedded?: boolean }) {
-  const navigate = useNavigate();
-
   // 平铺记录（来自 GetMyRecords，每条带 taskId/taskName）
   const [records, setRecords] = useState<RecordItem[]>([]);
   // 任务元数据（来自 GetTaskList，用于分组卡片展示进度/截止/位置等）
@@ -319,7 +316,6 @@ export default function MyRecords({ embedded = false }: { embedded?: boolean }) 
               key={group.task.taskId}
               group={group}
               onOpenRecord={openDetail}
-              onOpenBoard={(taskId) => navigate(`/tasks/${taskId}/dashboard`)}
             />
           ))}
 
@@ -363,11 +359,9 @@ export default function MyRecords({ embedded = false }: { embedded?: boolean }) 
 function TaskRecordGroup({
   group,
   onOpenRecord,
-  onOpenBoard,
 }: {
   group: TaskGroup;
   onOpenRecord: (r: RecordItem) => void;
-  onOpenBoard: (taskId: string) => void;
 }) {
   const task = group.task;
   const [expanded, setExpanded] = useState(false);
@@ -424,17 +418,6 @@ function TaskRecordGroup({
         ) : (
           <div className="text-xs text-gray-400 mb-1">本任务已盘 {group.records.length} 条记录</div>
         )}
-
-        {/* 查看进度看板（仅真实任务可跳） */}
-        {!!task.deadline || task.assetCount > 0 ? (
-          <div
-            className="flex items-center justify-end text-xs text-blue-500 mt-2 cursor-pointer"
-            onClick={() => onOpenBoard(task.taskId)}
-          >
-            查看进度看板
-            <ChevronRightIcon sx={{ fontSize: 16 }} />
-          </div>
-        ) : null}
 
         {/* 组内资产盘点记录（默认折叠，点击任务头部展开） */}
         {expanded ? (

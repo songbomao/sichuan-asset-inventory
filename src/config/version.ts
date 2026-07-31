@@ -6,16 +6,21 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607312322';
+export const APP_VERSION = 'v202607312329';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-31 23:22';
-export const RELEASE_NOTES = '「我的盘点记录」tab 页按任务分组的卡片：所属固资盘点记录由默认展开改为默认折叠，点击任务名/箭头展开；折叠态显示「共 N 条盘点记录，点击上方任务名展开」提示。';
+export const RELEASE_TIME = '2026-07-31 23:29';
+export const RELEASE_NOTES = '移除「我的盘点任务」与「我的盘点记录」两张页面任务卡片上的「查看进度看板」入口（含 MyRecords 的 onOpenBoard 参数与 useNavigate 一并清理）。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607312329',
+    time: '2026-07-31 23:29',
+    notes: '移除「我的盘点任务」与「我的盘点记录」两张页面任务卡片上的「查看进度看板」入口（含 MyRecords 的 onOpenBoard 参数与 useNavigate 一并清理）。',
+  },
   {
     version: 'v202607312322',
     time: '2026-07-31 23:22',

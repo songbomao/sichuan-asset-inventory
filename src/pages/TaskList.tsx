@@ -228,17 +228,6 @@ export default function TaskListPage() {
                 )}
 
                 <ProgressBar current={task.completedCount} total={task.assetCount} />
-
-                <div
-                  className="flex items-center justify-end text-xs text-blue-500 mt-2 cursor-pointer"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/tasks/${task.taskId}/dashboard`);
-                  }}
-                >
-                  查看进度看板
-                  <ChevronRightIcon sx={{ fontSize: 16 }} />
-                </div>
               </CardContent>
             </CardActionArea>
           </Card>
