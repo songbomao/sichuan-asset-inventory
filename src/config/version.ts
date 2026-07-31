@@ -6,16 +6,21 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607310930';
+export const APP_VERSION = 'v202607310959';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-31 09:30';
-export const RELEASE_NOTES = '重写拍照底部栏布局：取消/快门/已拍数量三元素全部绝对定位同一基线，修复 iPhone 上快门被挤到取消下方的错位，快门白圈白心绝对定位居中。';
+export const RELEASE_TIME = '2026-07-31 09:59';
+export const RELEASE_NOTES = '重构拍照交互：明确区分「拍二维码」与「拍实物照」两个入口，二维码照即使自动识别失败也标记为「码?」而非实物照，支持手动标记编号，避免用户混淆。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607310959',
+    time: '2026-07-31 09:59',
+    notes: '重构拍照交互：明确区分「拍二维码」与「拍实物照」两个入口，二维码照即使自动识别失败也标记为「码?」而非实物照，支持手动标记编号，避免用户混淆。',
+  },
   {
     version: 'v202607310930',
     time: '2026-07-31 09:30',

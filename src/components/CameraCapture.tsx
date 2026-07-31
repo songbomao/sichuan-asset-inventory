@@ -17,6 +17,7 @@ import {
 
 interface CameraCaptureProps {
   onCapture: (dataUrl: string) => void;
+  onClose?: () => void;
   watermark: {
     time: string;
     location: string;
@@ -50,6 +51,7 @@ interface CameraCaptureProps {
  */
 export default function CameraCapture({
   onCapture,
+  onClose,
   watermark,
   disabled = false,
   photoCount = 0,
@@ -381,7 +383,8 @@ export default function CameraCapture({
     setCameraOpen(false);
     setError(null);
     setCameraReady(false);
-  }, [stopCamera]);
+    onClose?.();
+  }, [stopCamera, onClose]);
 
   // 只要有流就允许显示快门按钮，不必等 cameraReady
   const hasStream = !!streamRef.current;

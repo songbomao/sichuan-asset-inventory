@@ -207,13 +207,15 @@ export default function InventoryPage() {
   const [assetDetailLoading, setAssetDetailLoading] = useState(false);
   const [assetDetailError, setAssetDetailError] = useState<string | null>(null);
   // 照片拆为二维码照（不水印，用于识别固资编号）与正面照（水印，用于外观识别）
-  // 统一照片列表：每张照片带有类型标记（qr = 二维码，unknown = 待分类）
+  // 统一照片列表：每张照片带有类型标记（qr = 二维码，front = 实物照，unknown = 待分类）
   interface PhotoItem {
     dataUrl: string;
-    type: 'qr' | 'unknown';
+    type: 'qr' | 'front' | 'unknown';
     decodedCode?: string; // 二维码解码结果
   }
   const [allPhotos, setAllPhotos] = useState<PhotoItem[]>([]);
+  /** 当前拍照模式：null=未选择，qr=拍二维码，front=拍实物照 */
+  const [captureMode, setCaptureMode] = useState<'qr' | 'front' | null>(null);
   /** 前端 jsQR 从照片中解码出的第一个固资编号（用于 AI 识别） */
   const qrDecodedCode = useMemo(() => {
     const qr = allPhotos.find((p) => p.type === 'qr' && p.decodedCode);
@@ -221,8 +223,8 @@ export default function InventoryPage() {
   }, [allPhotos]);
   /** 二维码照片列表 */
   const qrPhotos = useMemo(() => allPhotos.filter((p) => p.type === 'qr'), [allPhotos]);
-  /** 非二维码照片列表（实物照） */
-  const frontPhotos = useMemo(() => allPhotos.filter((p) => p.type === 'unknown'), [allPhotos]);
+  /** 实物照照片列表 */
+  const frontPhotos = useMemo(() => allPhotos.filter((p) => p.type === 'front' || p.type === 'unknown'), [allPhotos]);
   /** 二维码照片数量 */
   const qrPhotoCount = qrPhotos.length;
   /** 非二维码照片数量（实物照） */
@@ -380,17 +382,18 @@ export default function InventoryPage() {
     }
   }, [assetStatus]);
 
-  /** 统一照片捕获：新照片自动解码二维码并分类（qr/unknown） */
-  const handlePhotoCapture = useCallback(async (dataUrl: string) => {
-    // 先以 unknown 类型加入列表（乐观更新）
-    const newItem: PhotoItem = { dataUrl, type: 'unknown' };
-    setAllPhotos((prev) => [...prev, newItem]);
-    // 异步解码二维码
+  /** 统一照片捕获：根据用户选择的模式直接分类，qr 模式再尝试解码二维码 */
+  const handlePhotoCapture = useCallback(async (dataUrl: string, photoType: 'qr' | 'front') => {
+    if (photoType === 'front') {
+      setAllPhotos((prev) => [...prev, { dataUrl, type: 'front' }]);
+      return;
+    }
+    // qr 模式：先以 qr 类型加入（用户明确要拍二维码），再异步尝试解码
+    setAllPhotos((prev) => [...prev, { dataUrl, type: 'qr' }]);
     const code = await decodeQRCode(dataUrl);
     if (code) {
-      // 解码成功 → 标记为二维码照
       setAllPhotos((prev) =>
-        prev.map((p) => (p.dataUrl === dataUrl ? { ...p, type: 'qr', decodedCode: code } : p)),
+        prev.map((p) => (p.dataUrl === dataUrl ? { ...p, decodedCode: code } : p)),
       );
     }
   }, []);
@@ -768,11 +771,11 @@ export default function InventoryPage() {
                       <QrCodeScannerIcon sx={{ fontSize: 20, color: '#16a34a' }} />
                     </div>
                   )}
-                  <span className={`absolute top-0.5 left-0.5 text-[10px] px-1 py-0.5 rounded-full font-medium ${photo.type === 'qr' ? 'bg-green-500 text-white' : 'bg-blue-500 text-white'}`}>
-                    {photo.type === 'qr' ? '码' : '物'}
+                  <span className={`absolute top-0.5 left-0.5 text-[10px] px-1 py-0.5 rounded-full font-medium ${photo.type === 'qr' ? (photo.decodedCode ? 'bg-green-500' : 'bg-orange-500') : 'bg-blue-500'} text-white`}>
+                    {photo.type === 'qr' ? (photo.decodedCode ? '码' : '码?') : '物'}
                   </span>
-                  {/* 手动标记二维码 按钮 */}
-                  {!isCompleted && photo.type === 'unknown' && photo.dataUrl && (
+                  {/* 手动标记二维码 按钮：允许将 unknown/front 改为 qr */}
+                  {!isCompleted && photo.type !== 'qr' && photo.dataUrl && (
                     <button
                       onClick={() => handleManualQrOpen(idx)}
                       className="absolute top-0.5 left-8 text-[10px] bg-orange-500 text-white w-4 h-4 rounded-full flex items-center justify-center"
@@ -801,26 +804,62 @@ export default function InventoryPage() {
           {/* 二维码状态提示 */}
           {qrDecodedCode ? (
             <Alert severity="success" sx={{ fontSize: '0.8rem', py: 0.5 }}>二维码识别：{qrDecodedCode}</Alert>
+          ) : qrPhotoCount > 0 && !qrDecodedCode ? (
+            <Alert severity="warning" sx={{ fontSize: '0.8rem', py: 0.5 }} icon={<QrCodeScannerIcon fontSize="inherit" />}>
+              已拍摄二维码但未能自动识别编号，请点击照片上的「码?」手动标记，或重拍更清晰的二维码
+            </Alert>
           ) : allPhotos.length > 0 && qrPhotoCount === 0 ? (
             <Alert severity="warning" sx={{ fontSize: '0.8rem', py: 0.5 }} icon={<QrCodeScannerIcon fontSize="inherit" />}>
-              未检测到二维码标签，请拍摄固定资产标签上的二维码，或使用右侧「钉钉扫码」/「手动标记」
+              未检测到二维码标签，请先点击「拍二维码」拍摄固定资产标签
             </Alert>
           ) : null}
-          {/* 拍照按钮 + 钉钉扫码 + AI 识别 */}
-          <CameraCapture
-            onCapture={handlePhotoCapture}
-            noWatermark
-            watermark={{
-              time: watermarkTime,
-              location: gpsLocation,
-              operator: user?.name || user?.username || '--',
-              assetCode: currentAsset.assetCode,
-            }}
-            disabled={isCompleted}
-            photoCount={allPhotos.length}
-            minPhotos={2}
-            maxPhotos={5}
-          />
+          {/* 拍照入口：明确区分二维码照与实物照 */}
+          {captureMode === null ? (
+            <div className="flex gap-2">
+              <Button
+                variant="contained"
+                fullWidth
+                size="small"
+                startIcon={<QrCodeScannerIcon />}
+                onClick={() => setCaptureMode('qr')}
+                disabled={isCompleted || allPhotos.length >= 5 || qrPhotoCount >= 1}
+                sx={{ py: 0.8, fontSize: '0.8rem' }}
+              >
+                拍二维码
+              </Button>
+              <Button
+                variant="contained"
+                fullWidth
+                size="small"
+                startIcon={<CameraAltIcon />}
+                onClick={() => setCaptureMode('front')}
+                disabled={isCompleted || allPhotos.length >= 5}
+                sx={{ py: 0.8, fontSize: '0.8rem' }}
+              >
+                拍实物照
+              </Button>
+            </div>
+          ) : (
+            <CameraCapture
+              key={captureMode}
+              onCapture={(dataUrl) => {
+                handlePhotoCapture(dataUrl, captureMode);
+                setCaptureMode(null);
+              }}
+              onClose={() => setCaptureMode(null)}
+              noWatermark={captureMode === 'qr'}
+              watermark={{
+                time: watermarkTime,
+                location: gpsLocation,
+                operator: user?.name || user?.username || '--',
+                assetCode: currentAsset.assetCode,
+              }}
+              disabled={isCompleted}
+              photoCount={allPhotos.length}
+              minPhotos={2}
+              maxPhotos={5}
+            />
+          )}
           <div className="flex gap-2">
             <Button
               variant="outlined"
