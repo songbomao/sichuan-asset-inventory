@@ -901,7 +901,7 @@ export default function InventoryPage() {
         </Accordion>
 
         {/* 微型步骤条 */}
-        <div className="flex items-center justify-center gap-1.5 text-[11px] bg-white rounded-xl p-2 border border-gray-100">
+        <div className="flex items-center justify-between gap-1 text-[11px] bg-white rounded-xl p-2 border border-gray-100 overflow-x-auto whitespace-nowrap no-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {[
             { label: '资产状态', icon: <RadioButtonUncheckedIcon sx={{ fontSize: 13 }} />, active: currentStep === STEP_STATUS, done: !!assetStatus },
             { label: '扫码识别', icon: <QrCodeScannerIcon sx={{ fontSize: 13 }} />, active: currentStep === STEP_SCAN, done: scanVerified },
@@ -910,10 +910,10 @@ export default function InventoryPage() {
             { label: '提交信息', icon: <AssignmentIcon sx={{ fontSize: 13 }} />, active: currentStep === STEP_SUBMIT, done: false },
           ].map((s, i) => (
             <Fragment key={s.label}>
-              {i > 0 && <span className="w-6 border-t border-gray-300" />}
+              {i > 0 && <span className="flex-1 min-w-[8px] max-w-[24px] border-t border-gray-300" />}
               <div className={`flex items-center gap-1 ${s.done ? 'text-green-600' : s.active ? 'text-indigo-700 font-semibold' : 'text-gray-400'}`}>
                 {s.done ? <CheckCircleOutlineIcon sx={{ fontSize: 14 }} /> : s.icon}
-                <span>{s.label}</span>
+                <span className="whitespace-nowrap">{s.label}</span>
               </div>
             </Fragment>
           ))}
@@ -934,7 +934,6 @@ export default function InventoryPage() {
               <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white ${currentStep === STEP_STATUS ? 'bg-indigo-600' : assetStatus ? 'bg-green-500' : 'bg-gray-300'}`}>{assetStatus ? <CheckCircleOutlineIcon sx={{ fontSize: 14 }} /> : 1}</span>
               <h3 className="font-semibold text-gray-900 text-sm">资产状态</h3>
             </div>
-            <span className="text-xs text-gray-400">{assetStatus ? '1/1' : '0/1'}</span>
           </div>
           <div>
             <ToggleButtonGroup
@@ -944,7 +943,7 @@ export default function InventoryPage() {
               size="small"
               fullWidth
               disabled={isCompleted}
-              sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.75 }}
+              sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 0.75 }}
             >
               {STATUS_OPTIONS.map((opt) => (
                 <ToggleButton
@@ -979,7 +978,6 @@ export default function InventoryPage() {
               <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white ${currentStep === STEP_SCAN ? 'bg-indigo-600' : scanVerified ? 'bg-green-500' : 'bg-gray-300'}`}>{scanVerified ? <CheckCircleOutlineIcon sx={{ fontSize: 14 }} /> : 2}</span>
               <h3 className="font-semibold text-gray-900 text-sm">扫码识别</h3>
             </div>
-            <span className="text-xs text-gray-400">{scanVerified ? '1/1' : '0/1'}</span>
           </div>
 
           {scanVerified ? (
@@ -996,7 +994,16 @@ export default function InventoryPage() {
                 startIcon={scanLoading ? <CircularProgress size={14} color="inherit" /> : <QrCodeScannerIcon />}
                 onClick={handleDingtalkScan}
                 disabled={scanLoading || isCompleted || !assetStatus}
-                sx={{ py: 0.75, fontWeight: 600, fontSize: '0.85rem' }}
+                sx={{
+                  py: 0.75,
+                  fontWeight: 600,
+                  fontSize: '0.85rem',
+                  bgcolor: '#1a237e',
+                  color: '#fff',
+                  '&:hover': { bgcolor: '#141b5c' },
+                  '& .MuiButton-startIcon': { color: '#fff' },
+                  '&.Mui-disabled': { bgcolor: 'rgba(0,0,0,0.12)', color: 'rgba(0,0,0,0.26)' },
+                }}
               >
                 {!assetStatus ? '请先选择资产状态' : scanLoading ? '扫描中...' : '钉钉扫码'}
               </Button>
@@ -1040,7 +1047,6 @@ export default function InventoryPage() {
               <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white ${scanVerified ? (currentStep === STEP_PHOTO ? 'bg-indigo-600' : allPhotosReady ? 'bg-green-500' : 'bg-gray-300') : 'bg-gray-300'}`}>{allPhotosReady ? <CheckCircleOutlineIcon sx={{ fontSize: 14 }} /> : 3}</span>
               <h3 className={`font-semibold text-sm ${scanVerified ? 'text-gray-900' : 'text-gray-400'}`}>拍照采集</h3>
             </div>
-            {scanVerified && <span className="text-xs text-gray-400">{(tagPhoto?1:0)+(frontPhoto?1:0)+(backPhoto?1:0)}/3</span>}
           </div>
 
           {scanVerified ? (
@@ -1175,44 +1181,7 @@ export default function InventoryPage() {
             />
           )}
 
-          {/* ── AI 识别（3 张拍完后必做）── */}
-          {allPhotosReady && (
-            <div className="border-t border-gray-100 pt-2 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-gray-700">AI 资产识别</span>
-                <span className="text-[10px] text-red-400">（必做，未完成无法提交）</span>
-              </div>
-              <Button
-                variant="outlined"
-                fullWidth
-                size="small"
-                color="secondary"
-                startIcon={aiLoading ? <CircularProgress size={14} color="inherit" /> : <span>✨</span>}
-                onClick={handleAIRecognize}
-                disabled={aiLoading || isCompleted || !!aiResult}
-                sx={{ fontSize: '0.78rem', py: 0.5 }}
-              >
-                {aiLoading ? '识别中...' : aiResult ? '✅ 已识别' : 'AI 资产识别（必做）'}
-              </Button>
-              {aiMsg && (
-                <Alert severity={aiMsg.type === 'success' ? 'success' : aiMsg.type === 'error' ? 'error' : 'info'} sx={{ fontSize: '0.78rem' }}>
-                  {aiMsg.text}
-                </Alert>
-              )}
-              {aiResult && (
-                <div className="text-xs space-y-1">
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">识别结果</span>
-                    <span className="text-gray-800 font-medium">{aiResult.name || '—'}（{aiResult.assetCode || '—'}）</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">置信度</span>
-                    <span className={aiResult.confidence >= 0.5 ? 'text-green-600' : 'text-orange-600'}>{Math.round((aiResult.confidence ?? 0) * 100)}%</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+          {/* AI 识别已提升为卡D之后的独立卡片，详见下方「卡E：AI 资产识别」 */}
           </>
         ) : (
           <div className="flex flex-col items-center justify-center gap-1.5 py-4 text-gray-400">
@@ -1221,6 +1190,48 @@ export default function InventoryPage() {
           </div>
         )}
         </div>
+        )}
+
+        {/* ── 卡E：AI 资产识别（独立卡片）── */}
+        {!IS_LOST(assetStatus) && allPhotosReady && (
+          <div className={`rounded-xl p-2.5 shadow-sm border space-y-2 transition-all ${currentStep === STEP_AI ? 'bg-white border-indigo-200 ring-1 ring-indigo-100' : aiResult ? 'bg-white border-green-200' : 'bg-white border-gray-100'}`}>
+            <div className="flex items-center gap-1.5">
+              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white ${currentStep === STEP_AI ? 'bg-indigo-600' : aiResult ? 'bg-green-500' : 'bg-gray-300'}`}>
+                {aiResult ? <CheckCircleOutlineIcon sx={{ fontSize: 14 }} /> : 4}
+              </span>
+              <h3 className="font-semibold text-gray-900 text-sm">AI 资产识别</h3>
+            </div>
+
+            {!aiResult ? (
+              <>
+                <p className="text-xs text-gray-500">请基于已拍摄的标签、正面、反面三张照片，进行 AI 资产识别</p>
+                <Button
+                  variant="contained"
+                  fullWidth
+                  size="small"
+                  startIcon={aiLoading ? <CircularProgress size={14} color="inherit" /> : <span>✨</span>}
+                  onClick={handleAIRecognize}
+                  disabled={aiLoading || isCompleted}
+                  sx={{
+                    py: 0.75,
+                    fontWeight: 600,
+                    fontSize: '0.85rem',
+                    bgcolor: '#1a237e',
+                    color: '#fff',
+                    '&:hover': { bgcolor: '#141b5c' },
+                    '& .MuiButton-startIcon': { color: '#fff' },
+                    '&.Mui-disabled': { bgcolor: 'rgba(0,0,0,0.12)', color: 'rgba(0,0,0,0.26)' },
+                  }}
+                >
+                  {aiLoading ? '识别中...' : 'AI 资产识别（必做）'}
+                </Button>
+              </>
+            ) : (
+              <Alert severity="success" sx={{ fontSize: '0.8rem', py: 0.5 }}>
+                ✅ AI 识别为 {aiResult.name}（{aiResult.assetCode}）· 置信度 {Math.round(aiResult.confidence * 100)}%
+              </Alert>
+            )}
+          </div>
         )}
 
         {/* ── 综合置信率（提交成功后由后端返回）── */}

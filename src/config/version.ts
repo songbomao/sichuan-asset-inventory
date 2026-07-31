@@ -6,10 +6,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607311714';
+export const APP_VERSION = 'v202607311723';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-31 17:14';
-export const RELEASE_NOTES = '新增资产盘点置信率：前端采集多维证据（扫码时刻+扫码定位、逐张照片拍摄时刻+定位+实拍模式facingMode、提交定位）随提交上送；提交成功后后端返回综合置信率(0-100)与等级(高/中/低/疑)，在「已盘点完成」提示与综合置信率面板展示。配套后端 v202607311715。';
+export const RELEASE_TIME = '2026-07-31 17:23';
+export const RELEASE_NOTES = '资产盘点页 UI 修正：①状态按钮三列等宽；②扫码按钮白字主色样式；③删除各卡片右上角分数；④AI识别提升为独立卡片并去重复展示；⑤步骤条单行自适应。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
@@ -17,9 +17,9 @@ export const VERSION_HISTORY: Array<{
   notes: string;
 }> = [
   {
-    version: 'v202607311714',
-    time: '2026-07-31 17:14',
-    notes: '新增资产盘点置信率：前端采集多维证据（扫码时刻+定位、逐张照片拍摄时刻+定位+实拍模式facingMode、提交定位）随提交上送；提交成功后后端返回综合置信率(0-100)与等级(高/中/低/疑)，在「已盘点完成」提示与综合置信率面板展示。配套后端 v202607311715。',
+    version: 'v202607311723',
+    time: '2026-07-31 17:23',
+    notes: '资产盘点页 UI 修正：①状态按钮三列等宽；②扫码按钮白字主色样式；③删除各卡片右上角分数；④AI识别提升为独立卡片并去重复展示；⑤步骤条单行自适应。',
   },
   {
     version: 'v202607311534',
