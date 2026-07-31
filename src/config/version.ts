@@ -6,16 +6,21 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607312246';
+export const APP_VERSION = 'v202607312252';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-31 22:46';
-export const RELEASE_NOTES = '方案B：取消底部导航「我的进度」入口（责任人/管理员均移除）；其总体完成率汇总卡合并至「我的盘点」页顶部；任务卡片新增「查看进度看板」入口（跳 /tasks/:taskId/dashboard）；/my-progress 路由保留（URL 仍可达）。';
+export const RELEASE_TIME = '2026-07-31 22:52';
+export const RELEASE_NOTES = '撤回「我的盘点」页顶部的总体完成率汇总卡（用户不想要该汇总信息）；保留底部导航取消「我的进度」入口及任务卡片「查看进度看板」入口。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607312252',
+    time: '2026-07-31 22:52',
+    notes: '撤回「我的盘点」页顶部的总体完成率汇总卡（用户不想要该汇总信息）；保留底部导航取消「我的进度」入口及任务卡片「查看进度看板」入口。',
+  },
   {
     version: 'v202607312246',
     time: '2026-07-31 22:46',
