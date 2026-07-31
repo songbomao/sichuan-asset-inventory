@@ -6,10 +6,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607311012';
+export const APP_VERSION = 'v202607311040';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-31 10:12';
-export const RELEASE_NOTES = 'UI 四项优化：1)拍照按钮移除冗余📷表情、仅保留白色相机图标；2)卡B标题右侧「二维码」改为「二维码标签」；3)强制AI识别——存在照片时未识别无法提交且按钮置为（必做）；4)固定资产详情卡移除重复的「资产名称」字段。';
+export const RELEASE_TIME = '2026-07-31 10:40';
+export const RELEASE_NOTES = '修复资产名称重复：真正在 AssetDetailTabs 主流程字段列表移除「资产名称」（此前仅删回退分支 dl，主流程仍显示），卡头已展示资产名称不再重复。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
@@ -17,9 +17,9 @@ export const VERSION_HISTORY: Array<{
   notes: string;
 }> = [
   {
-    version: 'v202607311012',
-    time: '2026-07-31 10:12',
-    notes: 'UI 四项优化：1)拍照按钮移除冗余📷表情、仅保留白色相机图标；2)卡B标题右侧「二维码」改为「二维码标签」；3)强制AI识别——存在照片时未识别无法提交且按钮置为（必做）；4)固定资产详情卡移除重复的「资产名称」字段。',
+    version: 'v202607311040',
+    time: '2026-07-31 10:40',
+    notes: '修复资产名称重复：真正在 AssetDetailTabs 主流程字段列表移除「资产名称」（此前仅删回退分支 dl，主流程仍显示），卡头已展示资产名称不再重复。',
   },
   {
     version: 'v202607310959',

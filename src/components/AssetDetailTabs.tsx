@@ -22,7 +22,6 @@ const renderValue = (value: string | undefined) => {
 };
 
 const ALL_FIELDS: Array<{ label: string; key: keyof AssetDetail; render?: (value: string | undefined) => React.ReactNode }> = [
-  { label: '资产名称', key: 'assetName' },
   { label: '资产类型', key: 'assetTypeName' },
   { label: '规格型号', key: 'standard' },
   { label: '使用部门', key: 'deptName' },
@@ -63,7 +62,7 @@ export default function AssetDetailTabs({ asset, loading, error }: AssetDetailTa
   return (
     <Paper className="rounded-xl shadow-sm border border-gray-100 overflow-hidden">
       <div className="px-3 py-2.5 space-y-1">
-        {/* 字段两列网格（资产名称/类型/规格/部门/成本中心/使用人/期间/转资日期/超龄/原值/净值） */}
+        {/* 字段两列网格（类型/规格/部门/成本中心/使用人/期间/转资日期/超龄/原值/净值）；资产名称已显示在卡头，此处不再重复 */}
         <div className="grid grid-cols-2 gap-x-3 gap-y-0">
           {ALL_FIELDS.map((f) => (
             <div key={f.key} className="flex items-baseline justify-between gap-1 text-xs py-1.5 border-b border-gray-50 last:border-b-0">
