@@ -6,16 +6,21 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607311440';
+export const APP_VERSION = 'v202607311131';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-31 14:40';
-export const RELEASE_NOTES = '恢复盘点页钉钉扫码功能：标签照区域新增「钉钉扫码」按钮，扫描二维码自动核对资产信息，匹配成功则跳过标签照拍摄直接进入正面照采集。';
+export const RELEASE_TIME = '2026-07-31 11:31';
+export const RELEASE_NOTES = '根治「返回控制台」失效(第14次)：根因是MUI AppBar position=fixed在钉钉WebView(X5/UC内核)中有事件穿透问题，改为纯div+flexbox+IconButton对齐ConsoleButton模式，onClick逻辑不变。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607311131',
+    time: '2026-07-31 11:31',
+    notes: '根治「返回控制台」失效(第14次)：根因是MUI AppBar position=fixed在钉钉WebView(X5/UC内核)中有事件穿透问题，改为纯div+flexbox+IconButton对齐ConsoleButton模式，onClick逻辑不变。',
+  },
   {
     version: 'v202607311440',
     time: '2026-07-31 14:40',

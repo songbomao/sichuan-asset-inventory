@@ -2,10 +2,8 @@ import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-
 import { useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout';
 import RequireAdmin from './components/RequireAdmin';
-import AppBar from '@mui/material/AppBar';
-import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
-import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
 import HomeIcon from '@mui/icons-material/Home';
 import Login from './pages/Login';
 import TaskList from './pages/TaskList';
@@ -46,16 +44,11 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-/** 全局顶部工具栏：登录后所有页面固定顶部可见，登录页隐藏。
- * 左侧显示应用名，右侧提供「返回控制台」文字按钮。
+/** ????????????????????????????
+ * ????????????????????????
  *
- * ⚠️ "返回控制台"失效根因（11 次修复未解决）：
- *   1. MUI AppBar 的 `transform: translateX(-50%)` 在某些 WebView（钉钉 X5/UC）
- *      中创建新的 containing block，导致 fixed 元素事件穿透异常
- *   2. `useCallback(goConsole)` 依赖 `target` → `admin` 判断链有 4 级兜底
- *      → 多余的间接层引入不必要的闭包风险
- *   3. 放弃所有复杂修复，直接回归能工作的 ConsoleButton 方式：
- *      内联 onClick + 标准 CSS 居中（无 transform）
+ * ?????MUI AppBar position="fixed" ??? WebView?X5/UC???????????
+ * ??? div + position:fixed + flexbox ???? ConsoleButton ????????
  */
 function GlobalAppBar() {
   const location = useLocation();
@@ -65,55 +58,45 @@ function GlobalAppBar() {
   if (location.pathname === '/login') return null;
 
   return (
-    <AppBar
-      position="fixed"
-      elevation={0}
-      sx={{
+    <div
+      style={{
+        position: 'fixed',
         zIndex: 1200,
         top: 0,
-        left: 0,
-        right: 0,
+        left: '50%',
+        transform: 'translateX(-50%)',
         width: '100%',
         maxWidth: '480px',
         height: 48,
-        mx: 'auto',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 16px',
+        boxSizing: 'border-box',
         borderRadius: '0 0 12px 12px',
-        bgcolor: 'transparent',
         backgroundImage: 'linear-gradient(135deg, #1a237e 0%, #4a148c 100%)',
         color: '#ffffff',
         boxShadow: '0 2px 10px rgba(26, 35, 126, 0.28)',
       }}
     >
-      <Toolbar variant="dense" sx={{ minHeight: 48, px: 2, justifyContent: 'space-between' }}>
-        <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#ffffff', fontSize: '0.95rem', letterSpacing: '0.04em' }}>
-          AI 盘点·账实秒合
-        </Typography>
-        <Button
-          type="button"
-          size="small"
-          startIcon={<HomeIcon />}
-          onClick={() => navigate(isAdmin ? '/admin/tasks' : '/tasks', { replace: true })}
-          sx={{
-            color: '#ffffff',
-            textTransform: 'none',
-            fontWeight: 600,
-            fontSize: '0.85rem',
-            px: 1,
-            borderRadius: 8,
-            position: 'relative',
-            zIndex: 1,
-            pointerEvents: 'auto',
-            '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.16)' },
-            '&:active': { bgcolor: 'rgba(255, 255, 255, 0.28)' },
-          }}
-        >
-          返回控制台
-        </Button>
-      </Toolbar>
-    </AppBar>
+      <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#ffffff', fontSize: '0.95rem', letterSpacing: '0.04em' }}>
+        AI ???????
+      </Typography>
+      <IconButton
+        color="inherit"
+        size="small"
+        onClick={() => navigate(isAdmin ? '/admin/tasks' : '/tasks', { replace: true })}
+        title="?????"
+        aria-label="?????"
+        sx={{
+          '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.16)' },
+        }}
+      >
+        <HomeIcon fontSize="small" />
+      </IconButton>
+    </div>
   );
 }
-
 export default function App() {
   return (
     <>
