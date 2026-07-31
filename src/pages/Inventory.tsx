@@ -44,10 +44,9 @@ const STATUS_OPTIONS = [
   { value: '正常', label: '✅ 正常' },
   { value: '丢失', label: '❌ 丢失' },
   { value: '损坏', label: '⚠ 损坏' },
-  { value: '其他', label: '📋 其他' },
 ];
 /** 需要强制备注的状态 */
-const NEED_REMARK_STATUSES = new Set<string | null>(['丢失', '损坏', '其他']);
+const NEED_REMARK_STATUSES = new Set<string | null>(['丢失', '损坏']);
 /** 丢失状态 */
 const IS_LOST = (status: string | null) => status === '丢失';
 
@@ -198,7 +197,7 @@ function validateFacePhoto(dataUrl: string, faceLabel: string): Promise<PhotoVal
  * 盘点操作页面（v202607311515 四节点）
  *
  * 核心流程：
- * ① 资产状态（正常/丢失/损坏/其他）
+ * ① 资产状态（正常/丢失/损坏）
  * ② 钉钉扫码识别（dd.biz.util.scan 扫二维码核对资产）
  * ③ 拍照采集（3 张：固定资产标签照 → 正面照 → 反面照，每步拍前提示+拍后校验）
  * ④ 盘点信息（备注+提交）
@@ -823,7 +822,6 @@ export default function InventoryPage() {
             <h3 className="font-semibold text-gray-900 text-sm">资产状态</h3>
           </div>
           <div>
-            <p className="text-xs font-medium text-gray-700 mb-1.5">选择盘点状态</p>
             <ToggleButtonGroup
               value={assetStatus}
               exclusive

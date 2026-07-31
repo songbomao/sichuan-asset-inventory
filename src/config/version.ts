@@ -6,10 +6,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607311555';
+export const APP_VERSION = 'v202607311610';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-31 15:55';
-export const RELEASE_NOTES = '四节点交互优化：①资产状态默认不选中（null），必须主动选择后才解锁钉钉扫码按钮（未选时禁用+引导提示）；②步骤导航条实时联动——选状态/扫码/拍照完成即点亮对应节点（done=!!assetStatus）；③拍照采集节点始终占位显示，扫码后才高亮展开三步拍照网格，消除凭空出现的突兀感。';
+export const RELEASE_TIME = '2026-07-31 16:10';
+export const RELEASE_NOTES = '资产状态卡片优化：移除"选择盘点状态"文字标签（卡片标题已表达）；取消用途不明的"其他"状态按钮，状态收敛为正常/丢失/损坏三项，NEED_REMARK_STATUSES同步移除"其他"。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
@@ -25,6 +25,11 @@ export const VERSION_HISTORY: Array<{
     version: 'v202607311555',
     time: '2026-07-31 15:55',
     notes: '四节点交互优化：①资产状态默认不选中（null），必须主动选择后才解锁钉钉扫码按钮（未选时禁用+引导提示）；②步骤导航条实时联动——选状态/扫码/拍照完成即点亮对应节点（done=!!assetStatus）；③拍照采集节点始终占位显示，扫码后才高亮展开三步拍照网格，消除凭空出现的突兀感。',
+  },
+  {
+    version: 'v202607311610',
+    time: '2026-07-31 16:10',
+    notes: '资产状态卡片优化：移除"选择盘点状态"文字标签（卡片标题已表达）；取消用途不明的"其他"状态按钮，状态收敛为正常/丢失/损坏三项，NEED_REMARK_STATUSES同步移除"其他"。',
   },
   {
     version: 'v202607311515',
