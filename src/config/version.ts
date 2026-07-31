@@ -6,16 +6,21 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607311802';
+export const APP_VERSION = 'v202607311132';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-31 18:02';
-export const RELEASE_NOTES = '固定资产标签二维码防伪与批量打印：扫码解析 assetCode|sig 整串、调 VerifyQrSignature 判断真实/旧标签/伪造(伪造阻止继续)；新增标签批量打印页 LabelsPrint(管理员，按组织/类别/成本中心或指定编号生成、qrcode 渲染二维码、浏览器打印/PDF)、AdminTasks 新增「标签打印」Tab、路由 /labels/print；安装 qrcode 依赖。配套后端 v202607311801。';
+export const RELEASE_TIME = '2026-07-31 11:32';
+export const RELEASE_NOTES = '盘点页三处 UI 调整：①微型步骤条（资产状态→扫码识别→拍照采集→AI识别→提交信息）改为 sticky 吸顶，滚动时固定在屏幕顶部；②所有卡片序号圆圈（1/2/3/4）完成后不再显示对勾，改为绿色背景+保留原数字；③AI 识别结果区去除 Alert 成功图标与 ✅ emoji，仅保留文字结果。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607311132',
+    time: '2026-07-31 11:32',
+    notes: '盘点页三处 UI 调整：①微型步骤条（资产状态→扫码识别→拍照采集→AI识别→提交信息）改为 sticky 吸顶，滚动时固定在屏幕顶部；②所有卡片序号圆圈（1/2/3/4）完成后不再显示对勾，改为绿色背景+保留原数字；③AI 识别结果区去除 Alert 成功图标与 ✅ emoji，仅保留文字结果。',
+  },
   {
     version: 'v202607311802',
     time: '2026-07-31 18:02',
