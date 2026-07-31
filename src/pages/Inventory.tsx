@@ -214,8 +214,6 @@ export default function InventoryPage() {
   // 当前资产的盘点状态
   const [assetStatus, setAssetStatus] = useState('正常');
   const [remark, setRemark] = useState('');
-  /** 盘点数量（可选，留空表示不填） */
-  const [inventoryQty, setInventoryQty] = useState('');
   const [assetDetail, setAssetDetail] = useState<AssetDetail | null>(null);
   const [assetDetailLoading, setAssetDetailLoading] = useState(false);
   const [assetDetailError, setAssetDetailError] = useState<string | null>(null);
@@ -371,7 +369,6 @@ export default function InventoryPage() {
     if (currentAsset) {
       setAssetStatus('正常');
       setRemark('');
-      setInventoryQty('');
       setAllPhotos([]);
       setAiResult(null);
       setScanVerified(false);
@@ -396,20 +393,15 @@ export default function InventoryPage() {
     }
   }, [currentIndex, assets]);
 
-  /** 状态切换：丢失→强制数量0+清照片；损坏/其他→清备注提醒；正常→清备注 */
+  /** 状态切换：丢失→清照片；损坏/其他→清备注提醒；正常→清备注 */
   const handleStatusChange = useCallback((_e: unknown, val: string | null) => {
     if (!val) return;
     const prev = assetStatus;
     setAssetStatus(val);
-    // 切换到丢失：清照片、数量强制0
+    // 切换到丢失：清照片
     if (val === '丢失' && prev !== '丢失') {
       setAllPhotos([]);
       setAiResult(null);
-      setInventoryQty('0');
-    }
-    // 切出丢失：恢复数量为空
-    if (prev === '丢失' && val !== '丢失') {
-      setInventoryQty('');
     }
     // 切换到非正常：清备注（提醒用户填写）
     if (val !== '正常' && prev === '正常') {
@@ -536,7 +528,6 @@ export default function InventoryPage() {
     setAssetStatus('丢失');
     setAllPhotos([]);
     setAiResult(null);
-    setInventoryQty('0');
     setRemark(`【资产丢失上报】${lostReportTime ? `时间：${lostReportTime}；` : ''}${lostReporter ? `上报人：${lostReporter}；` : ''}原因：${lostReason}`);
     setScanVerified(true); // 允许跳过拍照
     setLostReportDialogOpen(false);
@@ -706,7 +697,7 @@ export default function InventoryPage() {
         latitude: gpsCoords.latitude,
         location: gpsLocation,
         operatorName: user?.name || user?.username || 'unknown',
-        inventoryQty: lost ? 0 : (inventoryQty.trim() === '' ? undefined : Number(inventoryQty)),
+        inventoryQty: lost ? -1 : 1,
       });
       setSnackbar({ open: true, message: '✅ 盘点提交成功！', severity: 'success' });
 
@@ -721,7 +712,6 @@ export default function InventoryPage() {
       // 重置当前盘点表单（照片/备注/状态/水印时间），避免带入下一个资产
       setAssetStatus('正常');
       setRemark('');
-      setInventoryQty('');
       setAllPhotos([]);
       setAiResult(null);
       updateTime();
@@ -785,7 +775,7 @@ export default function InventoryPage() {
   const currentAsset = assets[currentIndex];
   const isCompleted = currentAsset ? completedCodes.includes(currentAsset.assetCode) : false;
 
-  // 操作步骤定义：盘点状态 → 扫码识别 → 拍照采集 → 提交
+  // 操作步骤定义：资产状态 → 扫码识别 → 拍照采集 → 提交
   const STEP_STATUS = 0;
   const STEP_SCAN = 1;
   const STEP_PHOTO = 2;
@@ -863,7 +853,7 @@ export default function InventoryPage() {
         {/* 微型步骤条 */}
         <div className="flex items-center justify-center gap-1.5 text-[11px] bg-white rounded-xl p-2 border border-gray-100">
           {[
-            { label: '盘点状态', icon: <RadioButtonUncheckedIcon sx={{ fontSize: 13 }} />, active: (currentStep as number) === STEP_STATUS, done: IS_LOST(assetStatus) || NEED_REMARK_STATUSES.has(assetStatus) },
+            { label: '资产状态', icon: <RadioButtonUncheckedIcon sx={{ fontSize: 13 }} />, active: (currentStep as number) === STEP_STATUS, done: IS_LOST(assetStatus) || NEED_REMARK_STATUSES.has(assetStatus) },
             { label: '扫码识别', icon: <QrCodeScannerIcon sx={{ fontSize: 13 }} />, active: (currentStep as number) === STEP_SCAN, done: scanVerified },
             { label: '拍照采集', icon: <CameraAltIcon sx={{ fontSize: 13 }} />, active: (currentStep as number) === STEP_PHOTO, done: qrPhotoCount >= 1 && allPhotos.length >= 2 },
             { label: '提交', icon: <CheckCircleOutlineIcon sx={{ fontSize: 13 }} />, active: (currentStep as number) === STEP_SUBMIT, done: false },
@@ -882,11 +872,11 @@ export default function InventoryPage() {
           <Alert severity="success" sx={{ fontSize: '0.8rem', py: 0.5 }}>该资产已盘点完成</Alert>
         )}
 
-        {/* ── 卡B：盘点状态 ── */}
+        {/* ── 卡B：资产状态 ── */}
         <div className={`rounded-xl p-2.5 shadow-sm border space-y-2 transition-all ${(currentStep as number) === STEP_STATUS ? 'bg-white border-indigo-200 ring-1 ring-indigo-100' : 'bg-white border-gray-100'}`}>
           <div className="flex items-center gap-1.5">
             <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white ${(currentStep as number) === STEP_STATUS ? 'bg-indigo-600' : 'bg-gray-300'}`}>1</span>
-            <h3 className="font-semibold text-gray-900 text-sm">盘点状态</h3>
+            <h3 className="font-semibold text-gray-900 text-sm">资产状态</h3>
           </div>
           {/* 状态选择 */}
           <div>
@@ -1127,41 +1117,6 @@ export default function InventoryPage() {
             <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white bg-indigo-600">4</span>
             <h3 className="font-semibold text-gray-900 text-sm">盘点信息</h3>
           </div>
-          {/* 盘点数量 */}
-          <div>
-            <p className="text-xs font-medium text-gray-700 mb-1.5">盘点数量</p>
-            <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-              <div>
-                <div className="text-xs text-gray-400 mb-0.5">账面数量</div>
-                <div className="text-sm font-semibold text-gray-700">
-                  {assetDetail?.menge ? `${assetDetail.menge}` : '—'}
-                </div>
-              </div>
-              <div>
-                <TextField
-                  fullWidth
-                  size="small"
-                  type="number"
-                  label={IS_LOST(assetStatus) ? '盘点数量（丢失=0）' : '实际盘点数量'}
-                  value={inventoryQty}
-                  onChange={(e) => setInventoryQty(e.target.value)}
-                  placeholder={IS_LOST(assetStatus) ? '丢失，数量强制为0' : '填写实盘数量'}
-                  disabled={isCompleted || IS_LOST(assetStatus)}
-                  inputProps={{ min: 0, step: 1 }}
-                  sx={{ '& .MuiInputBase-root': { fontSize: '0.85rem' } }}
-                />
-              </div>
-            </div>
-            {assetDetail?.menge && inventoryQty.trim() !== '' && (() => {
-              const bookQty = Number(assetDetail.menge);
-              const actualQty = Number(inventoryQty);
-              const diff = actualQty - bookQty;
-              if (diff === 0) {
-                return <div className="text-xs text-green-600 font-medium mt-1">✅ 数量一致，无差异</div>;
-              }
-              return <div className="text-xs text-red-600 font-medium mt-1">⚠ 差异：{diff > 0 ? '+' : ''}{diff}（盘{actualQty > bookQty ? '盈' : '亏'}）</div>;
-            })()}
-          </div>
           {/* 备注 */}
           <TextField
             fullWidth
@@ -1217,7 +1172,7 @@ export default function InventoryPage() {
             disabled
             sx={{ py: 1.2, fontWeight: 700, fontSize: '0.95rem', bgcolor: 'grey.400', '&.Mui-disabled': { bgcolor: 'grey.300', color: 'grey.500' } }}
           >
-            请先选择盘点状态
+            请先选择资产状态
           </Button>
         ) : ((currentStep as number) === STEP_SCAN && !IS_LOST(assetStatus)) ? (
           <Button
