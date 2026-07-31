@@ -6,10 +6,10 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607311130';
+export const APP_VERSION = 'v202607311211';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-31 11:30';
-export const RELEASE_NOTES = '拍照入口三合一：拍二维码/拍实物照/钉钉扫码合并为一个「拍摄照片」主按钮，拍完自动识别二维码决定类型，钉钉扫码降级为辅助小图标；降低用户操作门槛，保留所有原有功能。';
+export const RELEASE_TIME = '2026-07-31 12:11';
+export const RELEASE_NOTES = '移除钉钉扫码+增强二维码识别：1)钉钉扫码按钮及逻辑彻底移除；2)decodeQRCode改用自适应分辨率(640~1600px)+Otsu大津法二值化+反转尝试，大幅提升二维码命中率。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
@@ -17,9 +17,9 @@ export const VERSION_HISTORY: Array<{
   notes: string;
 }> = [
   {
-    version: 'v202607311130',
-    time: '2026-07-31 11:30',
-    notes: '拍照入口三合一：拍二维码/拍实物照/钉钉扫码合并为一个「拍摄照片」主按钮，拍完自动识别二维码决定类型，钉钉扫码降级为辅助小图标；降低用户操作门槛，保留所有原有功能。',
+    version: 'v202607311211',
+    time: '2026-07-31 12:11',
+    notes: '移除钉钉扫码+增强二维码识别：1)钉钉扫码按钮及逻辑彻底移除；2)decodeQRCode改用自适应分辨率(640~1600px)+Otsu大津法二值化+反转尝试，大幅提升二维码命中率。',
   },
   {
     version: 'v202607310959',

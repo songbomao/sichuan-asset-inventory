@@ -37,7 +37,6 @@ import ProgressBar from '../components/ProgressBar';
 import type { RecognizeAssetResult } from '../api/ai';
 import { RecognizeAsset } from '../api/ai';
 import jsQR from 'jsqr';
-import dd from 'dingtalk-jsapi';
 
 /** 从照片 Base64 解码二维码（固定资产编号）
  *  jsQR 对全尺寸大图+低对比度/轻微模糊的二维码鲁棒性较差，这里用多尺度 + 中心裁剪 + 灰度增强
@@ -48,45 +47,67 @@ function decodeQRCode(dataUrl: string): Promise<string | null> {
     const img = new Image();
     img.onload = async () => {
       try {
-        const maxLongSide = 1200;                 // jsQR 表现最佳的单边上限
-        const scale = Math.min(1, maxLongSide / Math.max(img.width, img.height));
+        // 尝试对大图分档缩小：640px / 960px / 1280px 三档，覆盖不同手机分辨率
+        const sizes = [640, 960, 1280, 1600];
+        const maxLongSide = Math.max(img.width, img.height);
+        const targetSize = sizes.find((s) => maxLongSide <= s) ?? sizes[sizes.length - 1];
+        const scale = Math.min(1, targetSize / maxLongSide);
         const baseW = Math.round(img.width * scale);
         const baseH = Math.round(img.height * scale);
 
         // 解码器：对给定 canvas 像素尝试 jsQR
         const tryDecode = (canvas: HTMLCanvasElement, width: number, height: number): string | null => {
-          const ctx = canvas.getContext('2d');
+          const ctx = canvas.getContext('2d', { willReadFrequently: true });
           if (!ctx) return null;
           const raw = ctx.getImageData(0, 0, width, height);
-          const code = jsQR(raw.data, raw.width, raw.height);
-          return code?.data ?? null;
+          const code = jsQR(raw.data, raw.width, raw.height, { inversionAttempts: 'dontInvert' });
+          if (code?.data) return code.data;
+          // 反转尝试（白底黑码→反转成黑底白码有时更好识别）
+          const c2 = jsQR(raw.data, raw.width, raw.height, { inversionAttempts: 'attemptBoth' });
+          return c2?.data ?? null;
         };
 
-        // 对一副已经 drawImage 好的 canvas 做灰度化+对比度拉伸，再解码
-        const tryEnhance = (canvas: HTMLCanvasElement, width: number, height: number): string | null => {
-          const ctx = canvas.getContext('2d');
+        // 灰度 + 自适应二值化（Otsu 大津法），对 QR 码最友好
+        const tryBinary = (canvas: HTMLCanvasElement, width: number, height: number): string | null => {
+          const ctx = canvas.getContext('2d', { willReadFrequently: true });
           if (!ctx) return null;
           const raw = ctx.getImageData(0, 0, width, height);
           const px = raw.data;
-          let minGray = 255, maxGray = 0;
-          const gray = new Uint8Array(raw.width * raw.height);
+          const total = width * height;
+          // 灰度化
+          const gray = new Uint8Array(total);
           for (let i = 0, j = 0; i < px.length; i += 4, j++) {
-            const g = px[i] * 0.299 + px[i + 1] * 0.587 + px[i + 2] * 0.114;
-            gray[j] = g;
-            if (g < minGray) minGray = g;
-            if (g > maxGray) maxGray = g;
+            gray[j] = px[i] * 0.299 + px[i + 1] * 0.587 + px[i + 2] * 0.114;
           }
-          const lo = Math.max(minGray, Math.round(minGray + (maxGray - minGray) * 0.02));
-          const hi = Math.min(maxGray, Math.round(maxGray - (maxGray - minGray) * 0.02));
-          const range = hi > lo ? 255 / (hi - lo) : 1;
+          // Otsu 阈值
+          const hist = new Int32Array(256);
+          for (let j = 0; j < total; j++) hist[Math.round(gray[j])]++;
+          let sum = 0;
+          for (let t = 0; t < 256; t++) sum += t * hist[t];
+          let wB = 0, wF = 0, sumB = 0;
+          let maxVariance = 0, otsuThreshold = 128;
+          for (let t = 0; t < 256; t++) {
+            wB += hist[t];
+            if (wB === 0) continue;
+            wF = total - wB;
+            if (wF === 0) break;
+            sumB += t * hist[t];
+            const mB = sumB / wB;
+            const mF = (sum - sumB) / wF;
+            const between = wB * wF * (mB - mF) * (mB - mF);
+            if (between > maxVariance) {
+              maxVariance = between;
+              otsuThreshold = t;
+            }
+          }
+          // 二值化
           for (let i = 0, j = 0; i < px.length; i += 4, j++) {
-            const v = Math.round(Math.max(0, Math.min(255, (gray[j] - lo) * range)));
-            px[i] = v;
-            px[i + 1] = v;
-            px[i + 2] = v;
+            const v = gray[j] < otsuThreshold ? 0 : 255;
+            px[i] = v; px[i + 1] = v; px[i + 2] = v;
           }
           ctx.putImageData(raw, 0, 0);
-          return jsQR(raw.data, raw.width, raw.height)?.data ?? null;
+          const code = jsQR(raw.data, raw.width, raw.height, { inversionAttempts: 'attemptBoth' });
+          return code?.data ?? null;
         };
 
         const decodeAtScale = (s: number, crop?: { x: number; y: number; w: number; h: number }): string | null => {
@@ -95,7 +116,7 @@ function decodeQRCode(dataUrl: string): Promise<string | null> {
           const h = crop ? Math.round(crop.h * s) : Math.round(baseH * s);
           canvas.width = w;
           canvas.height = h;
-          const ctx = canvas.getContext('2d');
+          const ctx = canvas.getContext('2d', { willReadFrequently: true });
           if (!ctx) return null;
           ctx.drawImage(
             img,
@@ -105,38 +126,29 @@ function decodeQRCode(dataUrl: string): Promise<string | null> {
             crop ? Math.round(crop.h * scale) : baseH,
             0, 0, w, h
           );
-          return tryDecode(canvas, w, h) || tryEnhance(canvas, w, h);
+          return tryDecode(canvas, w, h) || tryBinary(canvas, w, h);
         };
 
         let result: string | null = null;
 
-        // 1) 全图默认尺寸 + 增强
+        // 1) 全图默认尺寸
         result = decodeAtScale(1);
         if (result) return resolve(result);
 
-        // 2) 手机拍的二维码通常在中/下部 60% 区域，中心裁剪可减少干扰
-        result = decodeAtScale(1, { x: 0, y: Math.round(img.height * 0.35), w: img.width, h: Math.round(img.height * 0.65) });
+        // 2) 底部 50% 区域裁剪（手机拍二维码大概率在画面下半部）
+        const halfCrop = { x: 0, y: Math.round(img.height * 0.5), w: img.width, h: Math.round(img.height * 0.5) };
+        result = decodeAtScale(1, halfCrop);
         if (result) return resolve(result);
 
-        // 3) 多尺度（缩小）—— 对高分辨率照片反而更容易命中 jsQR  sweet spot
-        for (const s of [0.8, 0.65, 0.5, 0.35]) {
+        // 3) 多尺度重试（放大 + 缩小均尝试，覆盖不同分辨率）
+        for (const s of [1.25, 1.5, 0.8, 0.65, 0.5, 0.35]) {
           result = decodeAtScale(s);
           if (result) return resolve(result);
-          result = decodeAtScale(s, { x: 0, y: Math.round(img.height * 0.35), w: img.width, h: Math.round(img.height * 0.65) });
+          result = decodeAtScale(s, halfCrop);
           if (result) return resolve(result);
         }
 
-        // 4) 兜底：原图尺寸不做预处理再试一次（部分高质量原图不需要增强）
-        const rawCanvas = document.createElement('canvas');
-        rawCanvas.width = baseW;
-        rawCanvas.height = baseH;
-        const rawCtx = rawCanvas.getContext('2d');
-        if (rawCtx) {
-          rawCtx.drawImage(img, 0, 0, baseW, baseH);
-          result = tryDecode(rawCanvas, baseW, baseH);
-        }
-
-        // 5) 本地 jsQR 全部失败 → 调后端 ZXing.Net 兜底
+        // 4) 后端 ZXing.Net 兜底（原图 base64 原样传，后端多尺度解码）
         if (!result) {
           try {
             const resp = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/Account/UniGetToken?action=DecodeQr`, {
@@ -149,7 +161,7 @@ function decodeQRCode(dataUrl: string): Promise<string | null> {
               return resolve(json.code);
             }
           } catch {
-            // 后端不可达，静默失败
+            // 后端不可达，静默
           }
         }
 
@@ -401,31 +413,6 @@ export default function InventoryPage() {
   /** 删除指定索引照片 */
   const handleRemovePhoto = useCallback((idx: number) => {
     setAllPhotos((prev) => prev.filter((_, i) => i !== idx));
-  }, []);
-
-  /** 钉钉原生扫码：调用 dd.scan 识别二维码后自动标记 */
-  const handleDingtalkScan = useCallback(async () => {
-    try {
-      dd.scan({
-        type: 'qr',
-        success: (res: { code: string }) => {
-          if (res?.code) {
-            // 将解码结果作为一条虚拟二维码照片加入
-            setAllPhotos((prev) => [
-              ...prev,
-              { dataUrl: '', type: 'qr', decodedCode: res.code },
-            ]);
-            setSnackbar({ open: true, message: `✅ 扫码成功：${res.code}`, severity: 'success' });
-          }
-        },
-        fail: (err: unknown) => {
-          console.warn('钉钉扫码失败', err);
-          setSnackbar({ open: true, message: '扫码失败或取消', severity: 'error' });
-        },
-      });
-    } catch {
-      setSnackbar({ open: true, message: '钉钉扫码不可用（非钉钉环境）', severity: 'error' });
-    }
   }, []);
 
   /** 手动标记某张照片为二维码 */
@@ -818,7 +805,7 @@ export default function InventoryPage() {
             </Alert>
           ) : allPhotos.length > 0 && qrPhotoCount === 0 ? (
             <Alert severity="warning" sx={{ fontSize: '0.8rem', py: 0.5 }} icon={<QrCodeScannerIcon fontSize="inherit" />}>
-              未检测到二维码标签，请拍摄固定资产标签（系统会自动识别），或点击右侧「钉钉扫码」
+              未检测到二维码标签，请拍摄固定资产标签（系统会自动识别）
             </Alert>
           ) : null}
           {/* 统一拍照入口：一个按钮打开取景框，拍完自动识别二维码/实物照；钉钉扫码为辅助小按钮 */}
@@ -841,29 +828,17 @@ export default function InventoryPage() {
               maxPhotos={5}
             />
           ) : (
-            <div className="flex gap-2">
-              <Button
-                variant="contained"
-                fullWidth
-                size="small"
-                startIcon={<CameraAltIcon />}
-                onClick={() => setCameraOpen(true)}
-                disabled={isCompleted || allPhotos.length >= 5}
-                sx={{ py: 0.8, fontSize: '0.8rem' }}
-              >
-                拍摄照片
-              </Button>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={handleDingtalkScan}
-                disabled={isCompleted}
-                sx={{ py: 0.8, fontSize: '0.8rem', minWidth: 44, px: 2 }}
-                title="钉钉扫码识别二维码标签"
-              >
-                <QrCodeScannerIcon sx={{ fontSize: 18 }} />
-              </Button>
-            </div>
+            <Button
+              variant="contained"
+              fullWidth
+              size="small"
+              startIcon={<CameraAltIcon />}
+              onClick={() => setCameraOpen(true)}
+              disabled={isCompleted || allPhotos.length >= 5}
+              sx={{ py: 0.8, fontSize: '0.8rem' }}
+            >
+              拍摄照片
+            </Button>
           )}
 
           {/* 强制 AI 识别提示：已拍摄照片但未完成 AI 识别时，要求用户必须先点击 AI 识别 */}
@@ -874,17 +849,6 @@ export default function InventoryPage() {
           )}
 
           <div className="flex gap-2">
-            <Button
-              variant="outlined"
-              fullWidth
-              size="small"
-              startIcon={<QrCodeScannerIcon />}
-              onClick={handleDingtalkScan}
-              disabled={isCompleted}
-              sx={{ fontSize: '0.78rem', py: 0.5 }}
-            >
-              钉钉扫码
-            </Button>
             <Button
               variant="contained"
               fullWidth
