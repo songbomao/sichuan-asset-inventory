@@ -510,92 +510,97 @@ export default function CameraCapture({
             />
           </div>
 
-          {/* 底部拍照栏 — 只要有流就显示，不必等 cameraReady */}
+          {/* 底部拍照栏 — 三个元素全部绝对定位，同一水平基线，避免 flex 错位 */}
           {hasStream && (
             <div
-              className="absolute bottom-0 left-0 right-0 z-20"
+              className="absolute left-0 right-0 z-20"
               style={{
-                background: 'linear-gradient(0deg, rgba(0,0,0,0.75) 0%, transparent 100%)',
-                paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
-                paddingTop: 24,
+                bottom: 0,
+                height: 130,
+                background: 'linear-gradient(0deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 60%, transparent 100%)',
+                paddingBottom: 'env(safe-area-inset-bottom)',
               }}
             >
               {/* 取消：左下角 */}
-              <div className="absolute left-6 bottom-0"
-                style={{ bottom: 'max(24px, env(safe-area-inset-bottom))' }}>
-                <Button
-                  variant="outlined"
-                  onClick={handleClose}
-                  sx={{
-                    color: '#fff',
-                    borderColor: 'rgba(255,255,255,0.4)',
-                    borderRadius: '24px',
-                    px: 3,
-                    minWidth: 80,
-                    '&:hover': { borderColor: '#fff' },
-                  }}
-                >
-                  取消
-                </Button>
-              </div>
+              <button
+                type="button"
+                onClick={handleClose}
+                style={{
+                  position: 'absolute',
+                  left: 24,
+                  bottom: 'calc(env(safe-area-inset-bottom) + 36px)',
+                  color: '#fff',
+                  background: 'transparent',
+                  border: '1px solid rgba(255,255,255,0.45)',
+                  borderRadius: 24,
+                  padding: '10px 20px',
+                  fontSize: 15,
+                  lineHeight: 1,
+                  cursor: 'pointer',
+                }}
+              >
+                取消
+              </button>
 
               {/* 快门：底部居中，原生相机风格大圆按钮 */}
-              <div className="flex justify-center">
+              <div
+                onClick={cameraReady ? takePhoto : undefined}
+                role="button"
+                tabIndex={cameraReady ? 0 : -1}
+                aria-label="拍照"
+                style={{
+                  position: 'absolute',
+                  left: '50%',
+                  bottom: 'calc(env(safe-area-inset-bottom) + 27px)',
+                  transform: 'translateX(-50%)',
+                  width: 76,
+                  height: 76,
+                  borderRadius: '50%',
+                  backgroundColor: 'rgba(255,255,255,0.15)',
+                  border: '4px solid #fff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: cameraReady ? 'pointer' : 'not-allowed',
+                  touchAction: 'manipulation',
+                  opacity: cameraReady ? 1 : 0.5,
+                }}
+                onMouseDown={(e) => {
+                  if (cameraReady && e.currentTarget) e.currentTarget.style.transform = 'translateX(-50%) scale(0.92)';
+                }}
+                onMouseUp={(e) => {
+                  if (e.currentTarget) e.currentTarget.style.transform = 'translateX(-50%) scale(1)';
+                }}
+                onTouchStart={(e) => {
+                  if (cameraReady && e.currentTarget) e.currentTarget.style.transform = 'translateX(-50%) scale(0.92)';
+                }}
+                onTouchEnd={(e) => {
+                  if (e.currentTarget) e.currentTarget.style.transform = 'translateX(-50%) scale(1)';
+                }}
+              >
                 <div
-                  onClick={cameraReady ? takePhoto : undefined}
-                  role="button"
-                  tabIndex={cameraReady ? 0 : -1}
-                  aria-label="拍照"
-                  className="rounded-full flex items-center justify-center"
                   style={{
-                    width: 76,
-                    height: 76,
-                    cursor: cameraReady ? 'pointer' : 'not-allowed',
-                    touchAction: 'manipulation',
-                    opacity: cameraReady ? 1 : 0.5,
-                    backgroundColor: 'rgba(255,255,255,0.15)',
-                    border: '4px solid rgba(255,255,255,0.9)',
-                    boxShadow: cameraReady ? '0 0 0 4px rgba(255,255,255,0.15), 0 6px 20px rgba(0,0,0,0.4)' : 'none',
-                    transition: 'transform 0.1s ease, opacity 0.2s ease',
+                    width: 58,
+                    height: 58,
+                    borderRadius: '50%',
+                    backgroundColor: '#fff',
                   }}
-                  onMouseDown={(e) => {
-                    if (cameraReady && e.currentTarget) {
-                      e.currentTarget.style.transform = 'scale(0.92)';
-                    }
-                  }}
-                  onMouseUp={(e) => {
-                    if (e.currentTarget) e.currentTarget.style.transform = 'scale(1)';
-                  }}
-                  onTouchStart={(e) => {
-                    if (cameraReady && e.currentTarget) {
-                      e.currentTarget.style.transform = 'scale(0.92)';
-                    }
-                  }}
-                  onTouchEnd={(e) => {
-                    if (e.currentTarget) e.currentTarget.style.transform = 'scale(1)';
-                  }}
-                >
-                  <div
-                    className="rounded-full"
-                    style={{
-                      width: 58,
-                      height: 58,
-                      backgroundColor: '#fff',
-                      boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)',
-                    }}
-                  />
-                </div>
+                />
               </div>
 
               {/* 已拍数量提示：右下角，与取消对称 */}
-              <div className="absolute right-6 bottom-0 flex items-center justify-center"
-                style={{ bottom: 'max(24px, env(safe-area-inset-bottom))', width: 80, height: 40 }}>
-                {photoCount > 0 && (
-                  <span className="text-white/80 text-xs">
-                    已拍 {photoCount} 张
-                  </span>
-                )}
-              </div>
+              <span
+                style={{
+                  position: 'absolute',
+                  right: 24,
+                  bottom: 'calc(env(safe-area-inset-bottom) + 36px)',
+                  color: 'rgba(255,255,255,0.8)',
+                  fontSize: 13,
+                  textAlign: 'right',
+                }}
+              >
+                {photoCount > 0 ? `已拍 ${photoCount} 张` : ''}
+              </span>
             </div>
           )}
         </div>

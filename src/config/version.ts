@@ -6,16 +6,21 @@
  *   releaseNotes: 本次修改内容摘要
  *   releaseTime: 发布时间
  */
-export const APP_VERSION = 'v202607310925';
+export const APP_VERSION = 'v202607310930';
 export const APP_NAME = 'AI 盘点·账实秒合';
-export const RELEASE_TIME = '2026-07-31 09:25';
-export const RELEASE_NOTES = '重新设计拍照快门交互：移除取消按钮下方的异常方块快门，改为底部居中 native 相机风格大圆快门按钮（白边+白心+按下缩放反馈），左下角取消，右下角显示已拍数量，整体风格统一直观。';
+export const RELEASE_TIME = '2026-07-31 09:30';
+export const RELEASE_NOTES = '重写拍照底部栏布局：取消/快门/已拍数量三元素全部绝对定位同一基线，修复 iPhone 上快门被挤到取消下方的错位，快门白圈白心绝对定位居中。';
 /** 版本变更历史（最新的放最前面） */
 export const VERSION_HISTORY: Array<{
   version: string;
   time: string;
   notes: string;
 }> = [
+  {
+    version: 'v202607310930',
+    time: '2026-07-31 09:30',
+    notes: '重写拍照底部栏布局：取消/快门/已拍数量三元素全部绝对定位同一基线，修复 iPhone 上快门被挤到取消下方的错位，快门白圈白心绝对定位居中。',
+  },
   {
     version: 'v202607310925',
     time: '2026-07-31 09:25',
